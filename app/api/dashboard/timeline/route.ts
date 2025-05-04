@@ -1,36 +1,38 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/session"
 import { getActivityTimeline } from "@/lib/services/dashboard-service"
+
+// Force dynamic rendering to ensure fresh data
+export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getCurrentUser()
 
-    if (!session || !session.user || !session.user.id) {
+    if (!user || !user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Obter parâmetros de consulta
+    // Get query parameters
     const searchParams = request.nextUrl.searchParams
     const startDateParam = searchParams.get("startDate")
     const endDateParam = searchParams.get("endDate")
     const sourceParam = searchParams.get("source")
 
-    // Definir datas padrão se não fornecidas
+    // Set default dates if not provided
     const startDate = startDateParam
       ? new Date(startDateParam)
       : new Date(new Date().setDate(new Date().getDate() - 30))
 
-    // Para a data final, não permitir datas futuras
+    // For end date, don't allow future dates
     const today = new Date()
-    today.setHours(23, 59, 59, 999) // Final do dia atual
+    today.setHours(23, 59, 59, 999) // End of current day
 
     const requestedEndDate = endDateParam ? new Date(endDateParam) : today
-    // Garantir que a data final não seja futura
+    // Ensure end date is not in the future
     const endDate = requestedEndDate > today ? today : requestedEndDate
 
-    // Configurar cabeçalhos para evitar cache
+    // Configure headers to avoid caching
     const headers = new Headers()
     headers.append("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
     headers.append("Pragma", "no-cache")
@@ -38,8 +40,8 @@ export async function GET(request: NextRequest) {
     headers.append("Surrogate-Control", "no-store")
     headers.append("Vary", "*")
 
-    // Obter dados de timeline
-    const [timeline, error] = await getActivityTimeline(session.user.id, startDate, endDate, sourceParam || undefined)
+    // Get timeline data
+    const [timeline, error] = await getActivityTimeline(user.id, startDate, endDate, sourceParam || undefined)
 
     if (error) {
       console.error("Error fetching timeline data:", error)
