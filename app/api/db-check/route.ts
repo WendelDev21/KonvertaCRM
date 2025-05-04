@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/session"
+import { dbAction } from "@/lib/db-client"
+
+// Ensure this route is always dynamically rendered
+export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
@@ -10,39 +14,63 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Test database connection
-    await prisma.$connect()
+    // User ID from the session
+    const userId = currentUser.id
 
-    // Check if user exists in database
-    const userId = (currentUser as any).id
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
+    // Wrap database operations in dbAction for consistent error handling
+    const [dbResult, dbError] = await dbAction(async () => {
+      // Test database connection
+      await prisma.$connect()
+
+      // Check if user exists in database
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      })
+
+      // Count user's contacts
+      const contactCount = await prisma.contact.count({
+        where: { userId },
+      })
+
+      return {
+        user,
+        contactCount,
+      }
     })
 
-    // Count user's contacts
-    const contactCount = await prisma.contact.count({
-      where: { userId },
-    })
+    if (dbError) {
+      console.error("Database check error:", dbError)
+      return NextResponse.json(
+        {
+          status: "error",
+          error: dbError instanceof Error ? dbError.message : "Unknown database error",
+          database: {
+            connected: false,
+          },
+        },
+        { status: 500 },
+      )
+    }
 
     return NextResponse.json({
       status: "ok",
       database: {
         connected: true,
-        user: user
+        user: dbResult.user
           ? {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
+              id: dbResult.user.id,
+              name: dbResult.user.name,
+              email: dbResult.user.email,
+              role: dbResult.user.role,
             }
           : null,
-        contactCount,
+        contactCount: dbResult.contactCount,
       },
     })
   } catch (error) {
