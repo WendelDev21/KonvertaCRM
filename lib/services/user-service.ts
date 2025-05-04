@@ -1,5 +1,5 @@
 import { prisma, dbAction } from "../db-client"
-import { hash, compare } from "bcrypt"
+import { hash, compare } from "bcryptjs"
 
 export type UserRole = "user" | "admin"
 
