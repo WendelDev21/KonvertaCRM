@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server"
+import { sql } from "@/lib/db-service"
 import { getCurrentUser } from "@/lib/session"
+import { dbAction } from "@/lib/db-client"
+
+// Prevent static optimization
+export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
@@ -16,10 +21,10 @@ export async function GET() {
       },
     }
 
-    // Test database connection
-    try {
+    // Test database connection using dbAction for consistent error handling
+    const [tableCheckResult, tableCheckError] = await dbAction(async () => {
       // Check if tables exist
-      const tableCheck = await sql`
+      return await sql`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_schema = 'public'
@@ -41,22 +46,37 @@ export async function GET() {
           AND table_name = 'WebhookLog'
         ) AS "WebhookLog_exists"
       `
+    })
 
-      dbStatus.connection = true
-      dbStatus.tables.User = tableCheck[0].User_exists
-      dbStatus.tables.Contact = tableCheck[0].Contact_exists
-      dbStatus.tables.Webhook = tableCheck[0].Webhook_exists
-      dbStatus.tables.WebhookLog = tableCheck[0].WebhookLog_exists
+    if (tableCheckError) {
+      console.error("Database connection error:", tableCheckError)
+      return NextResponse.json({
+        ...dbStatus,
+        error: tableCheckError instanceof Error ? tableCheckError.message : "Unknown database error",
+      })
+    }
 
-      // If user is authenticated, get more details
-      if (currentUser) {
-        const userId = (currentUser as any).id
+    // Update status with table check results
+    const tableCheck = tableCheckResult
+    dbStatus.connection = true
+    dbStatus.tables.User = tableCheck[0].User_exists
+    dbStatus.tables.Contact = tableCheck[0].Contact_exists
+    dbStatus.tables.Webhook = tableCheck[0].Webhook_exists
+    dbStatus.tables.WebhookLog = tableCheck[0].WebhookLog_exists
 
-        // Count user's contacts
-        const contactCount = await sql`
+    // If user is authenticated, get more details
+    if (currentUser) {
+      const userId = (currentUser as any).id
+
+      // Count user's contacts using dbAction
+      const [contactCountResult, contactCountError] = await dbAction(async () => {
+        return await sql`
           SELECT COUNT(*) as count FROM "Contact" WHERE "userId" = ${userId}
         `
+      })
 
+      if (contactCountError) {
+        console.error("Error counting contacts:", contactCountError)
         return NextResponse.json({
           ...dbStatus,
           user: {
@@ -64,21 +84,26 @@ export async function GET() {
             name: currentUser.name,
             email: currentUser.email,
           },
-          data: {
-            contactCount: contactCount[0].count,
-          },
+          error: "Failed to count contacts",
         })
       }
 
-      return NextResponse.json(dbStatus)
-    } catch (error) {
-      console.error("Database connection error:", error)
       return NextResponse.json({
         ...dbStatus,
-        error: error instanceof Error ? error.message : "Unknown database error",
+        user: {
+          id: (currentUser as any).id,
+          name: currentUser.name,
+          email: currentUser.email,
+        },
+        data: {
+          contactCount: contactCountResult[0].count,
+        },
       })
     }
+
+    return NextResponse.json(dbStatus)
   } catch (error) {
+    console.error("Error checking database status:", error)
     return NextResponse.json(
       { error: `Error checking database status: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 },
