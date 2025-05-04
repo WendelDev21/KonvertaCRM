@@ -7,7 +7,6 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon, FilterIcon, X } from "lucide-react"
 import { format, subDays, startOfYear, isValid } from "date-fns"
-import { pt } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 
@@ -263,8 +262,6 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
                           setDatePickerOpen(false)
                         }
                       }}
-                      locale={pt}
-                      disabled={(date) => date > today}
                       initialFocus
                     />
                   </PopoverContent>
