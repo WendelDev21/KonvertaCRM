@@ -1,6 +1,4 @@
-import { ContactsTable } from "@/components/contacts-table"
-import { ContactFilters } from "@/components/contact-filters"
-import { Card, CardContent } from "@/components/ui/card"
+import { ContactsClientWrapper } from "@/components/contacts/contacts-client-wrapper"
 
 export default function ContactsPage() {
   return (
@@ -14,14 +12,7 @@ export default function ContactsPage() {
             </div>
           </div>
 
-          <Card className="shadow-sm">
-            <CardContent className="pt-6">
-              <ContactFilters />
-              <div className="mt-4">
-                <ContactsTable />
-              </div>
-            </CardContent>
-          </Card>
+          <ContactsClientWrapper />
         </div>
       </main>
     </div>

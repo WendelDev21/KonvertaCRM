@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { seedDatabase } from "@/lib/seed-service"
 import { getCurrentUser } from "@/lib/session"
 
 export async function POST() {
