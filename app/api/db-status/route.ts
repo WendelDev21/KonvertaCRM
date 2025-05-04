@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { sql } from "@/lib/db-service"
+import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/session"
 import { dbAction } from "@/lib/db-client"
 
@@ -24,7 +24,7 @@ export async function GET() {
     // Test database connection using dbAction for consistent error handling
     const [tableCheckResult, tableCheckError] = await dbAction(async () => {
       // Check if tables exist
-      return await sql`
+      return await prisma.$queryRaw`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
           WHERE table_schema = 'public'
@@ -70,9 +70,9 @@ export async function GET() {
 
       // Count user's contacts using dbAction
       const [contactCountResult, contactCountError] = await dbAction(async () => {
-        return await sql`
-          SELECT COUNT(*) as count FROM "Contact" WHERE "userId" = ${userId}
-        `
+        return await prisma.contact.count({
+          where: { userId },
+        })
       })
 
       if (contactCountError) {
@@ -96,7 +96,7 @@ export async function GET() {
           email: currentUser.email,
         },
         data: {
-          contactCount: contactCountResult[0].count,
+          contactCount: contactCountResult,
         },
       })
     }
