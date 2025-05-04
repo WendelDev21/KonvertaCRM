@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/session"
 import prisma from "@/lib/prisma"
 
-// Rota de diagnóstico para verificar os dados no banco
+// Diagnostic route to check database data
 export async function GET() {
   try {
     const currentUser = await getCurrentUser()
@@ -11,25 +11,29 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = (currentUser as any).id
+    const userId = currentUser.id
 
-    // Buscar todos os contatos para verificar os valores reais de status e source
+    // Fetch contacts to verify actual status and source values
     const contacts = await prisma.contact.findMany({
       where: { userId },
-      take: 10, // Limitar a 10 contatos para não sobrecarregar
+      take: 10, // Limit to 10 contacts to avoid overload
     })
 
-    // Extrair valores únicos de status e source
+    // Extract unique status and source values
     const uniqueStatuses = [...new Set(contacts.map((c) => c.status))]
     const uniqueSources = [...new Set(contacts.map((c) => c.source))]
 
-    // Contar quantos contatos existem para cada status e source
+    // Count contacts for each status and source
     const statusCounts = {}
     const sourceCounts = {}
 
     for (const contact of contacts) {
-      statusCounts[contact.status] = (statusCounts[contact.status] || 0) + 1
-      sourceCounts[contact.source] = (sourceCounts[contact.source] || 0) + 1
+      if (contact.status) {
+        statusCounts[contact.status] = (statusCounts[contact.status] || 0) + 1
+      }
+      if (contact.source) {
+        sourceCounts[contact.source] = (sourceCounts[contact.source] || 0) + 1
+      }
     }
 
     return NextResponse.json({
@@ -43,15 +47,13 @@ export async function GET() {
         name: c.name,
         status: c.status,
         source: c.source,
-        // Incluir o tipo e o valor exato para debugging
+        // Include type and exact value for debugging
         statusType: typeof c.status,
         sourceType: typeof c.source,
-        statusExact: JSON.stringify(c.status),
-        sourceExact: JSON.stringify(c.source),
       })),
     })
   } catch (error) {
     console.error("Error in debug route:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error", details: String(error) }, { status: 500 })
   }
 }
