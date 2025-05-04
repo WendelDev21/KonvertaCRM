@@ -15,6 +15,9 @@ export default function IntegrationsPage() {
             <TabsList className="mb-6">
               <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
               <TabsTrigger value="apis">APIs</TabsTrigger>
+              <TabsTrigger value="external" disabled>
+                Serviços Externos
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="webhooks">
@@ -40,6 +43,12 @@ export default function IntegrationsPage() {
                 </div>
 
                 <ApiRoutesList />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="external">
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Integração com serviços externos em desenvolvimento.</p>
               </div>
             </TabsContent>
           </Tabs>

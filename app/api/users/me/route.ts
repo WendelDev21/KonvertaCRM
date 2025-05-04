@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/session"
-import { hash, compare } from "bcryptjs"
+import { hash, compare } from "bcrypt"
 
 // GET /api/users/me - Obter informações do usuário atual
 export async function GET() {

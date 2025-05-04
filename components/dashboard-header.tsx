@@ -54,9 +54,9 @@ export function DashboardHeader() {
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">K</span>
+                <span className="text-primary-foreground font-bold">MC</span>
               </div>
-              <span className="font-bold text-xl hidden sm:inline-block">Konverta CRM</span>
+              <span className="font-bold text-xl hidden sm:inline-block">Mini CRM</span>
             </Link>
 
             {/* Menu para desktop */}

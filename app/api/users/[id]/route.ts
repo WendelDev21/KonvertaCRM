@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/session"
-import { hash } from "bcryptjs"
+import { hash } from "bcrypt"
 
 // GET /api/users/[id] - Get a specific user
 export async function GET(request: Request, { params }: { params: { id: string } }) {

@@ -1,17 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/session"
-import { getContactById, createContact } from "@/lib/services/contact-service"
+import { getContactById, createContact, type ContactInput } from "@/lib/services/contact-service"
 import prisma from "@/lib/prisma"
 import { triggerWebhooks } from "@/lib/webhook-db"
 
-// Tell Next.js this route should not be statically optimized
-export const dynamic = "force-dynamic"
-
-// Helper function to normalize strings for comparison
+// Função auxiliar para normalizar strings para comparação
 function normalizeString(str: string): string {
   return str.toLowerCase().trim()
 }
 
+// Modificar a função GET para implementar a filtragem
 export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser()
@@ -43,7 +41,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(contact)
     }
 
-    // Fetch all contacts first
+    // Buscar todos os contatos primeiro
     const allContacts = await prisma.contact.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -51,10 +49,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`Found ${allContacts.length} total contacts for user`)
 
-    // Apply filters manually for better control
+    // Aplicar filtros manualmente para maior controle
     let filteredContacts = allContacts
 
-    // Filter by status
+    // Filtrar por status
     if (status && status !== "todos") {
       filteredContacts = filteredContacts.filter(
         (contact) => normalizeString(contact.status) === normalizeString(status),
@@ -62,7 +60,7 @@ export async function GET(request: NextRequest) {
       console.log(`After status filter (${status}): ${filteredContacts.length} contacts`)
     }
 
-    // Filter by source
+    // Filtrar por source
     if (source && source !== "todas") {
       filteredContacts = filteredContacts.filter(
         (contact) => normalizeString(contact.source) === normalizeString(source),
@@ -70,7 +68,7 @@ export async function GET(request: NextRequest) {
       console.log(`After source filter (${source}): ${filteredContacts.length} contacts`)
     }
 
-    // Filter by query
+    // Filtrar por query
     if (query) {
       const searchLower = normalizeString(query)
       filteredContacts = filteredContacts.filter(
@@ -82,7 +80,7 @@ export async function GET(request: NextRequest) {
       console.log(`After query filter (${query}): ${filteredContacts.length} contacts`)
     }
 
-    // Log results for debugging
+    // Log dos resultados para debugging
     if (filteredContacts.length > 0) {
       console.log("Sample filtered contact:", {
         id: filteredContacts[0].id,
@@ -118,7 +116,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const contactData = {
+    const contactData: ContactInput = {
       name: body.name,
       contact: body.contact,
       source: body.source,
@@ -132,7 +130,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Trigger webhook for the contact.created event
+    // Disparar o webhook para o evento contact.created
     await triggerWebhooks("contact.created", newContact, userId)
 
     return NextResponse.json(newContact, { status: 201 })
