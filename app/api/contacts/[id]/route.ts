@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/session"
-import { getContactById, updateContact, deleteContact, type ContactInput } from "@/lib/services/contact-service"
+import { getContactById, updateContact, deleteContact } from "@/lib/services/contact-service"
 import { triggerWebhooks } from "@/lib/webhook-db"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     console.log("Original contact:", originalContact)
 
-    const updateData: Partial<ContactInput> = {}
+    const updateData = {}
     if (body.name !== undefined) updateData.name = body.name
     if (body.contact !== undefined) updateData.contact = body.contact
     if (body.source !== undefined) updateData.source = body.source
@@ -145,3 +145,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     return NextResponse.json({ error: "Error deleting contact" }, { status: 500 })
   }
 }
+
+// Add this to prevent Next.js from attempting to statically optimize this route
+export const dynamic = "force-dynamic"
