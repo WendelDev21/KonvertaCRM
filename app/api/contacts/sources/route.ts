@@ -1,26 +1,31 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/session"
+import { dbAction } from "@/lib/db-client"
 import { prisma } from "@/lib/prisma"
+
+// Tell Next.js this route should not be statically optimized
+export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const currentUser = await getCurrentUser()
 
-    if (!session || !session.user || !session.user.id) {
+    if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const userId = (currentUser as any).id
+
     // Get counts by source
-    const sourceCounts = await prisma.contact.groupBy({
-      by: ["source"],
-      where: {
-        userId: session.user.id,
-      },
-      _count: {
-        id: true,
-      },
-    })
+    const sourceCounts = await dbAction(() =>
+      prisma.contact.groupBy({
+        by: ["source"],
+        where: { userId },
+        _count: {
+          id: true,
+        },
+      }),
+    )
 
     // Format the response
     const sources = sourceCounts.map((item) => ({
@@ -29,15 +34,13 @@ export async function GET() {
     }))
 
     // Get all unique sources
-    const allSources = await prisma.contact.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      select: {
-        source: true,
-      },
-      distinct: ["source"],
-    })
+    const allSources = await dbAction(() =>
+      prisma.contact.findMany({
+        where: { userId },
+        select: { source: true },
+        distinct: ["source"],
+      }),
+    )
 
     const uniqueSources = allSources.map((item) => item.source)
 
