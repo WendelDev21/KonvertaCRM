@@ -1,13 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
+import { dbAction } from "@/lib/db-client"
+
+export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getCurrentUser()
 
-    if (!session || !session.user || !session.user.id) {
+    if (!user || !user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     // Build filter for queries
     const filter: any = {
-      userId: session.user.id,
+      userId: user.id,
     }
 
     if (startDateParam || endDateParam) {
@@ -34,46 +36,50 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get counts by status
-    const statusCounts = await prisma.contact.groupBy({
-      by: ["status"],
-      where: filter,
-      _count: {
-        id: true,
-      },
-    })
-
     // Calculate conversion rates
-    const conversionRates: Record<string, number> = {}
+    const conversionRates = await dbAction(async () => {
+      // Get counts by status
+      const statusCounts = await prisma.contact.groupBy({
+        by: ["status"],
+        where: filter,
+        _count: {
+          id: true,
+        },
+      })
 
-    // Overall rate
-    const totalContacts = statusCounts.reduce((sum, item) => sum + item._count.id, 0)
-    const closedContacts = statusCounts.find((item) => item.status === "Fechado")?._count.id || 0
-    conversionRates.overall = totalContacts > 0 ? Math.round((closedContacts / totalContacts) * 100) : 0
+      // Calculate conversion rates
+      const rates: Record<string, number> = {}
 
-    // Rates by source
-    if (!sourceParam || sourceParam === "Todos") {
-      // Calculate rates for each source
-      const sources = ["WhatsApp", "Instagram", "Outro"]
+      // Overall rate
+      const totalContacts = statusCounts.reduce((sum, item) => sum + item._count.id, 0)
+      const closedContacts = statusCounts.find((item) => item.status === "Fechado")?._count.id || 0
+      rates.overall = totalContacts > 0 ? Math.round((closedContacts / totalContacts) * 100) : 0
 
-      for (const source of sources) {
-        const sourceFilter = { ...filter, source }
+      // Rates by source
+      if (!sourceParam || sourceParam === "Todos") {
+        // Calculate rates for each source
+        const sources = ["WhatsApp", "Instagram", "Outro"]
 
-        const sourceStatusCounts = await prisma.contact.groupBy({
-          by: ["status"],
-          where: sourceFilter,
-          _count: {
-            id: true,
-          },
-        })
+        for (const source of sources) {
+          const sourceFilter = { ...filter, source }
 
-        const sourceTotalContacts = sourceStatusCounts.reduce((sum, item) => sum + item._count.id, 0)
-        const sourceClosedContacts = sourceStatusCounts.find((item) => item.status === "Fechado")?._count.id || 0
+          const sourceStatusCounts = await prisma.contact.groupBy({
+            by: ["status"],
+            where: sourceFilter,
+            _count: {
+              id: true,
+            },
+          })
 
-        conversionRates[source] =
-          sourceTotalContacts > 0 ? Math.round((sourceClosedContacts / sourceTotalContacts) * 100) : 0
+          const sourceTotalContacts = sourceStatusCounts.reduce((sum, item) => sum + item._count.id, 0)
+          const sourceClosedContacts = sourceStatusCounts.find((item) => item.status === "Fechado")?._count.id || 0
+
+          rates[source] = sourceTotalContacts > 0 ? Math.round((sourceClosedContacts / sourceTotalContacts) * 100) : 0
+        }
       }
-    }
+
+      return rates
+    })
 
     return NextResponse.json({ conversionRates })
   } catch (error) {
