@@ -1,57 +1,53 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getCurrentUser } from "@/lib/session"
-import prisma from "@/lib/prisma"
-import type { ContactSource } from "@/lib/services/contact-service"
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
-// Tell Next.js this route should not be statically optimized
-export const dynamic = "force-dynamic"
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const currentUser = await getCurrentUser()
+    const session = await getServerSession(authOptions)
 
-    if (!currentUser) {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const userId = (currentUser as any).id
 
     // Get counts by source
     const sourceCounts = await prisma.contact.groupBy({
       by: ["source"],
-      where: { userId },
+      where: {
+        userId: session.user.id,
+      },
       _count: {
-        source: true,
+        id: true,
       },
     })
 
-    // Initialize with zeros for all possible sources
-    const result: Record<ContactSource, number> = {
-      WhatsApp: 0,
-      Instagram: 0,
-      Outro: 0,
-    }
+    // Format the response
+    const sources = sourceCounts.map((item) => ({
+      name: item.source,
+      count: item._count.id,
+    }))
 
-    // Fill with actual results
-    sourceCounts.forEach((count) => {
-      result[count.source as ContactSource] = count._count.source
-    })
-
-    // Get all unique sources used in the system
-    const sources = await prisma.contact.findMany({
-      where: { userId },
-      select: { source: true },
+    // Get all unique sources
+    const allSources = await prisma.contact.findMany({
+      where: {
+        userId: session.user.id,
+      },
+      select: {
+        source: true,
+      },
       distinct: ["source"],
     })
 
-    const uniqueSources = sources.map((item) => item.source)
+    const uniqueSources = allSources.map((item) => item.source)
 
     return NextResponse.json({
-      counts: result,
-      sources: uniqueSources,
+      sources,
+      uniqueSources,
+      defaultSources: ["WhatsApp", "Instagram", "Outro"],
     })
   } catch (error) {
     console.error("Error fetching contact sources:", error)
-    return NextResponse.json({ error: "Error fetching contact sources" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

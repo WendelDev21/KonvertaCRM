@@ -11,13 +11,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Obter parâmetros de consulta
+    // Get query parameters
     const searchParams = request.nextUrl.searchParams
     const startDateParam = searchParams.get("startDate")
     const endDateParam = searchParams.get("endDate")
     const sourceParam = searchParams.get("source")
 
-    // Construir filtro para consultas
+    // Build filter for queries
     const filter: any = {
       userId: session.user.id,
     }
@@ -34,54 +34,48 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Calcular taxas de conversão
-    try {
-      // Obter contagens por status
-      const statusCounts = await prisma.contact.groupBy({
-        by: ["status"],
-        where: filter,
-        _count: {
-          id: true,
-        },
-      })
+    // Get counts by status
+    const statusCounts = await prisma.contact.groupBy({
+      by: ["status"],
+      where: filter,
+      _count: {
+        id: true,
+      },
+    })
 
-      // Calcular taxas de conversão por origem
-      const conversionRates: Record<string, number> = {}
+    // Calculate conversion rates
+    const conversionRates: Record<string, number> = {}
 
-      // Taxa geral
-      const totalContacts = statusCounts.reduce((sum, item) => sum + item._count.id, 0)
-      const closedContacts = statusCounts.find((item) => item.status === "Fechado")?._count.id || 0
-      conversionRates.overall = totalContacts > 0 ? Math.round((closedContacts / totalContacts) * 100) : 0
+    // Overall rate
+    const totalContacts = statusCounts.reduce((sum, item) => sum + item._count.id, 0)
+    const closedContacts = statusCounts.find((item) => item.status === "Fechado")?._count.id || 0
+    conversionRates.overall = totalContacts > 0 ? Math.round((closedContacts / totalContacts) * 100) : 0
 
-      // Taxas por origem
-      if (!sourceParam || sourceParam === "Todos") {
-        // Calcular taxas para cada origem
-        const sources = ["WhatsApp", "Instagram", "Outro"]
+    // Rates by source
+    if (!sourceParam || sourceParam === "Todos") {
+      // Calculate rates for each source
+      const sources = ["WhatsApp", "Instagram", "Outro"]
 
-        for (const source of sources) {
-          const sourceFilter = { ...filter, source }
+      for (const source of sources) {
+        const sourceFilter = { ...filter, source }
 
-          const sourceStatusCounts = await prisma.contact.groupBy({
-            by: ["status"],
-            where: sourceFilter,
-            _count: {
-              id: true,
-            },
-          })
+        const sourceStatusCounts = await prisma.contact.groupBy({
+          by: ["status"],
+          where: sourceFilter,
+          _count: {
+            id: true,
+          },
+        })
 
-          const sourceTotalContacts = sourceStatusCounts.reduce((sum, item) => sum + item._count.id, 0)
-          const sourceClosedContacts = sourceStatusCounts.find((item) => item.status === "Fechado")?._count.id || 0
+        const sourceTotalContacts = sourceStatusCounts.reduce((sum, item) => sum + item._count.id, 0)
+        const sourceClosedContacts = sourceStatusCounts.find((item) => item.status === "Fechado")?._count.id || 0
 
-          conversionRates[source] =
-            sourceTotalContacts > 0 ? Math.round((sourceClosedContacts / sourceTotalContacts) * 100) : 0
-        }
+        conversionRates[source] =
+          sourceTotalContacts > 0 ? Math.round((sourceClosedContacts / sourceTotalContacts) * 100) : 0
       }
-
-      return NextResponse.json({ conversionRates })
-    } catch (error) {
-      console.error("Error calculating conversion rates:", error)
-      return NextResponse.json({ error: "Database error" }, { status: 500 })
     }
+
+    return NextResponse.json({ conversionRates })
   } catch (error) {
     console.error("Error in conversion API:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
