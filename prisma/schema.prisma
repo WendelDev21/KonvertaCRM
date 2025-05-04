@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id                  String    @id @default(uuid())
+  name                String
+  email               String    @unique
+  password            String
+  role                String    @default("user")
+  image               String?
+  bio                 String?   @db.Text
+  theme               String?
+  notificationSettings String?  @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  contacts            Contact[]
+  webhooks            Webhook[]
+}
+
+// Contact model
+model Contact {
+  id        String   @id @default(uuid())
+  name      String
+  contact   String
+  source    String
+  status    String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Webhook model
+model Webhook {
+  id            String       @id @default(uuid())
+  name          String
+  url           String
+  events        String       // Stored as JSON string
+  secret        String?
+  isActive      Boolean      @default(true)
+  lastTriggered DateTime?
+  lastStatus    Int?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs          WebhookLog[]
+}
+
+// Webhook log model
+model WebhookLog {
+  id         String   @id @default(uuid())
+  event      String
+  payload    String   // Stored as JSON string
+  status     Int?
+  response   String?
+  createdAt  DateTime @default(now())
+  webhookId  String
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+}

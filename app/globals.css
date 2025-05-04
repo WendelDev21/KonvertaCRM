@@ -1,0 +1,313 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Estilos para melhorar o suporte de arrastar e soltar em dispositivos móveis */
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  [data-draggable="true"] {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    touch-action: none;
+  }
+
+  /* Desativar o comportamento de pull-to-refresh em dispositivos móveis */
+  @media (pointer: coarse) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
+  }
+
+  /* Estilos para o container do Kanban */
+  .kanban-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    -webkit-overflow-scrolling: touch; /* Para melhor scroll em iOS */
+    scroll-behavior: smooth;
+  }
+
+  .kanban-container::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .kanban-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .kanban-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+  }
+
+  /* Indicadores de scroll */
+  .scroll-indicator-left {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .scroll-indicator-right {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .kanban-container:not(.at-start) ~ .scroll-indicator-left {
+    opacity: 1;
+  }
+
+  .kanban-container:not(.at-end) ~ .scroll-indicator-right {
+    opacity: 1;
+  }
+
+  /* Estilos para cards em dispositivos móveis */
+  .kanban-card-mobile {
+    transform-origin: center center;
+  }
+
+  .kanban-card-mobile[data-is-dragging="true"] {
+    z-index: 999;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  .kanban-card-mobile:active .mobile-drag-overlay {
+    opacity: 0.2;
+  }
+}
+
+/* Estilos específicos para o Kanban */
+.kanban-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  -webkit-overflow-scrolling: touch; /* Para melhor scroll em iOS */
+  scroll-behavior: smooth;
+  padding-bottom: 1rem;
+}
+
+.kanban-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.kanban-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanban-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+/* Melhorias para o arrasto em dispositivos móveis */
+@media (max-width: 768px) {
+  [data-draggable="true"] {
+    transform-origin: center center;
+    will-change: transform, opacity;
+  }
+
+  [data-draggable="true"]:active {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+
+  .mobile-drag-overlay:active {
+    opacity: 0.2 !important;
+  }
+
+  /* Desativar o comportamento de pull-to-refresh durante o arrasto */
+  body.dragging {
+    overscroll-behavior: none;
+  }
+}
+
+/* Estilos para botões de detalhes nos gráficos */
+.recharts-responsive-container {
+  position: relative;
+}
+
+/* Animações e transições */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Melhorias visuais para componentes */
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-md;
+}
+
+.nav-item {
+  @apply flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors;
+}
+
+.nav-item-active {
+  @apply bg-primary/10 text-primary dark:bg-primary/20;
+}
+
+.nav-item-inactive {
+  @apply text-muted-foreground hover:bg-secondary hover:text-foreground;
+}
+
+/* Melhorias para tabelas */
+.table-container {
+  @apply rounded-lg border shadow-sm overflow-hidden;
+}
+
+.table-row-hover {
+  @apply hover:bg-muted/50 transition-colors;
+}
+
+/* Status badges */
+.status-badge {
+  @apply px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.status-new {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300;
+}
+
+.status-talking {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300;
+}
+
+.status-interested {
+  @apply bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300;
+}
+
+.status-closed {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300;
+}
+
+.status-lost {
+  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300;
+}
+
+/* Melhorias para formulários */
+.form-container {
+  @apply space-y-6 animate-fade-in;
+}
+
+.form-section {
+  @apply p-6 rounded-lg border bg-card;
+}
+
+.form-section-title {
+  @apply text-lg font-medium mb-4;
+}
+
+/* Melhorias para o dashboard */
+.dashboard-card {
+  @apply p-6 rounded-lg border bg-card shadow-sm hover:shadow-md transition-all;
+}
+
+.dashboard-stat {
+  @apply text-2xl font-bold;
+}
+
+.dashboard-label {
+  @apply text-sm text-muted-foreground;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-secondary/50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
