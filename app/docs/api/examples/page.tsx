@@ -1,9 +1,11 @@
+"use client"
+
 import Link from "next/link"
 import { DashboardHeader } from "@/components/dashboard-header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Copy } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
 export default function ApiExamplesPage() {
   return (
@@ -37,145 +39,139 @@ export default function ApiExamplesPage() {
             <TabsContent value="javascript">
               <Card>
                 <CardHeader>
-                  <CardTitle>Exemplos em JavaScript</CardTitle>
+                  <CardTitle>JavaScript / Node.js</CardTitle>
                   <CardDescription>
                     Exemplos de como utilizar as APIs do Mini CRM com JavaScript e Node.js
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Autenticação</h3>
+                    <h3 className="text-lg font-medium mb-2">Autenticação e Obtenção de Token</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Login e obtenção de token</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`// Usando fetch no navegador ou Node.js
-async function login(email, password) {
-  const response = await fetch('/api/auth/login', {
+                        <pre>{`// Usando fetch (navegador ou Node.js moderno)
+async function obterToken(email, senha) {
+  const resposta = await fetch('https://seu-dominio.com/api/auth/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({
+      email: email,
+      password: senha
+    })
   });
   
-  const data = await response.json();
+  const dados = await resposta.json();
   
-  if (!response.ok) {
-    throw new Error(data.message || 'Erro ao fazer login');
+  if (!resposta.ok) {
+    throw new Error(\`Erro: ${dados.message || resposta.statusText}\`);
   }
   
-  // Armazene o token para uso futuro
-  localStorage.setItem('authToken', data.token);
-  
-  return data;
+  return dados.token;
 }
 
 // Exemplo de uso
-login('admin@example.com', 'senha123')
-  .then(data => console.log('Login bem-sucedido:', data))
-  .catch(error => console.error('Erro:', error));`}
-                        </pre>
+obterToken('usuario@exemplo.com', 'senha123')
+  .then(token => {
+    console.log('Token obtido:', token);
+    // Armazene o token para uso em outras requisições
+  })
+  .catch(erro => {
+    console.error('Falha na autenticação:', erro);
+  });`}</pre>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Listar Contatos</h3>
+                    <h3 className="text-lg font-medium mb-2">Listando Contatos</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Obter lista de contatos com filtros</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`// Função para obter contatos com filtros opcionais
-async function getContacts({ status, source, query } = {}) {
-  // Construir URL com parâmetros de consulta
-  const url = new URL('/api/contacts', window.location.origin);
+                        <pre>{`// Usando fetch com token JWT
+async function listarContatos(token, filtros = {}) {
+  // Construir query string a partir dos filtros
+  const queryParams = new URLSearchParams();
   
-  if (status) url.searchParams.append('status', status);
-  if (source) url.searchParams.append('source', source);
-  if (query) url.searchParams.append('q', query);
+  if (filtros.status) queryParams.append('status', filtros.status);
+  if (filtros.source) queryParams.append('source', filtros.source);
+  if (filtros.q) queryParams.append('q', filtros.q);
   
-  const token = localStorage.getItem('authToken');
+  const queryString = queryParams.toString();
+  const url = \`https://seu-dominio.com/api/contacts\${queryString ? '?' + queryString : ''}\`;
   
-  const response = await fetch(url.toString(), {
+  const resposta = await fetch(url, {
     method: 'GET',
     headers: {
       'Authorization': \`Bearer \${token}\`
     }
   });
   
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erro ao obter contatos');
+  const dados = await resposta.json();
+  
+  if (!resposta.ok) {
+    throw new Error(\`Erro: \${dados.message || resposta.statusText}\`);
   }
   
-  return response.json();
+  return dados;
 }
 
 // Exemplo de uso
-getContacts({ status: 'Novo', source: 'WhatsApp' })
-  .then(contacts => console.log('Contatos:', contacts))
-  .catch(error => console.error('Erro:', error));`}
-                        </pre>
+const token = 'seu-token-jwt';
+listarContatos(token, { status: 'Novo', source: 'WhatsApp' })
+  .then(contatos => {
+    console.log('Contatos encontrados:', contatos.length);
+    contatos.forEach(contato => {
+      console.log(\`\${contato.name} - \${contato.status}\`);
+    });
+  })
+  .catch(erro => {
+    console.error('Falha ao listar contatos:', erro);
+  });`}</pre>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Criar um Webhook</h3>
+                    <h3 className="text-lg font-medium mb-2">Criando um Novo Contato</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Configurar um novo webhook</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`// Função para criar um novo webhook
-async function createWebhook(webhookData) {
-  const token = localStorage.getItem('authToken');
-  
-  const response = await fetch('/api/webhooks', {
+                        <pre>{`async function criarContato(token, dadosContato) {
+  const resposta = await fetch('https://seu-dominio.com/api/contacts', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': \`Bearer \${token}\`
     },
-    body: JSON.stringify(webhookData)
+    body: JSON.stringify(dadosContato)
   });
   
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Erro ao criar webhook');
+  const dados = await resposta.json();
+  
+  if (!resposta.ok) {
+    throw new Error(\`Erro: \${dados.message || resposta.statusText}\`);
   }
   
-  return response.json();
+  return dados;
 }
 
 // Exemplo de uso
-const newWebhook = {
-  name: 'Notificação de Novo Contato',
-  url: 'https://meu-sistema.com/webhooks/mini-crm',
-  events: ['contact.created'],
-  secret: 'meu-segredo-secreto',
-  isActive: true
+const token = 'seu-token-jwt';
+const novoContato = {
+  name: 'Maria Silva',
+  contact: '+5511988888888',
+  source: 'Instagram',
+  status: 'Novo',
+  notes: 'Cliente interessada em nosso serviço premium'
 };
 
-createWebhook(newWebhook)
-  .then(webhook => console.log('Webhook criado:', webhook))
-  .catch(error => console.error('Erro:', error));`}
-                        </pre>
+criarContato(token, novoContato)
+  .then(contatoCriado => {
+    console.log('Contato criado com sucesso:', contatoCriado);
+  })
+  .catch(erro => {
+    console.error('Falha ao criar contato:', erro);
+  });`}</pre>
                       </div>
                     </div>
                   </div>
@@ -186,155 +182,81 @@ createWebhook(newWebhook)
             <TabsContent value="python">
               <Card>
                 <CardHeader>
-                  <CardTitle>Exemplos em Python</CardTitle>
+                  <CardTitle>Python</CardTitle>
                   <CardDescription>Exemplos de como utilizar as APIs do Mini CRM com Python</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Cliente Python para a API do Mini CRM</h3>
+                    <h3 className="text-lg font-medium mb-2">Autenticação e Obtenção de Token</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Classe de cliente completa</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`import requests
-import json
+                        <pre>{`import requests
 
-class MiniCRMClient:
-    def __init__(self, base_url, token=None):
-        self.base_url = base_url
-        self.token = token
-        
-    def set_token(self, token):
-        self.token = token
-        
-    def request(self, endpoint, method='GET', params=None, data=None):
-        url = f"{self.base_url}{endpoint}"
-        
-        headers = {}
-        if self.token:
-            headers['Authorization'] = f"Bearer {self.token}"
-            
-        if data:
-            headers['Content-Type'] = 'application/json'
-            
-        response = requests.request(
-            method=method,
-            url=url,
-            headers=headers,
-            params=params,
-            data=json.dumps(data) if data else None
-        )
-        
-        if response.status_code >= 400:
-            try:
-                error_data = response.json()
-                message = error_data.get('message', f"Error {response.status_code}")
-            except:
-                message = f"Error {response.status_code}"
-                
-            raise Exception(message)
-            
-        return response.json()
+def obter_token(email, senha):
+    url = "https://seu-dominio.com/api/auth/login"
+    payload = {
+        "email": email,
+        "password": senha
+    }
     
-    # Autenticação
-    def login(self, email, password):
-        data = self.request(
-            endpoint="/api/auth/login",
-            method="POST",
-            data={"email": email, "password": password}
-        )
-        
-        self.set_token(data.get('token'))
-        return data
+    response = requests.post(url, json=payload)
     
-    # Contatos
-    def get_contacts(self, status=None, source=None, query=None):
-        params = {}
-        if status:
-            params['status'] = status
-        if source:
-            params['source'] = source
-        if query:
-            params['q'] = query
-            
-        return self.request(
-            endpoint="/api/contacts",
-            params=params
-        )
+    if response.status_code != 200:
+        raise Exception(f"Erro: {response.json().get('message', response.reason)}")
     
-    def get_contact(self, contact_id):
-        return self.request(f"/api/contacts/{contact_id}")
-    
-    def create_contact(self, contact_data):
-        return self.request(
-            endpoint="/api/contacts",
-            method="POST",
-            data=contact_data
-        )
-    
-    def update_contact(self, contact_id, contact_data):
-        return self.request(
-            endpoint=f"/api/contacts/{contact_id}",
-            method="PUT",
-            data=contact_data
-        )
-    
-    def delete_contact(self, contact_id):
-        return self.request(
-            endpoint=f"/api/contacts/{contact_id}",
-            method="DELETE"
-        )
-    
-    # Webhooks
-    def get_webhooks(self):
-        return self.request("/api/webhooks")
-    
-    def create_webhook(self, webhook_data):
-        return self.request(
-            endpoint="/api/webhooks",
-            method="POST",
-            data=webhook_data
-        )
-    
-    # Adicione mais métodos conforme necessário...
-
+    return response.json()["token"]
 
 # Exemplo de uso
-if __name__ == "__main__":
-    client = MiniCRMClient(base_url="https://seu-dominio.com")
+try:
+    token = obter_token("usuario@exemplo.com", "senha123")
+    print(f"Token obtido: {token}")
+    # Armazene o token para uso em outras requisições
+except Exception as e:
+    print(f"Falha na autenticação: {e}")`}</pre>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Listando Contatos</h3>
+                    <div className="bg-muted p-4 rounded-lg">
+                      <div className="bg-background p-3 rounded text-sm font-mono">
+                        <pre>{`import requests
+
+def listar_contatos(token, filtros=None):
+    url = "https://seu-dominio.com/api/contacts"
     
-    # Login
-    client.login(email="admin@example.com", password="senha123")
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
     
-    # Obter contatos
-    contacts = client.get_contacts(status="Novo", source="WhatsApp")
-    print(f"Contatos: {contacts}")
+    # Adicionar parâmetros de consulta se fornecidos
+    params = {}
+    if filtros:
+        if "status" in filtros:
+            params["status"] = filtros["status"]
+        if "source" in filtros:
+            params["source"] = filtros["source"]
+        if "q" in filtros:
+            params["q"] = filtros["q"]
     
-    # Criar um contato
-    new_contact = client.create_contact({
-        "name": "Maria Silva",
-        "contact": "+5511888888888",
-        "source": "Instagram",
-        "status": "Novo",
-        "notes": "Cliente viu nossa propaganda no Instagram"
-    })
-    print(f"Novo contato: {new_contact}")
+    response = requests.get(url, headers=headers, params=params)
     
-    # Criar um webhook
-    new_webhook = client.create_webhook({
-        "name": "Notificação de Novo Contato",
-        "url": "https://meu-sistema.com/webhooks/mini-crm",
-        "events": ["contact.created"],
-        "secret": "meu-segredo-secreto",
-        "isActive": True
-    })
-    print(f"Novo webhook: {new_webhook}")`}
-                        </pre>
+    if response.status_code != 200:
+        raise Exception(f"Erro: {response.json().get('message', response.reason)}")
+    
+    return response.json()
+
+# Exemplo de uso
+try:
+    token = "seu-token-jwt"
+    contatos = listar_contatos(token, {"status": "Novo", "source": "WhatsApp"})
+    
+    print(f"Contatos encontrados: {len(contatos)}")
+    for contato in contatos:
+        print(f"{contato['name']} - {contato['status']}")
+except Exception as e:
+    print(f"Falha ao listar contatos: {e}")`}</pre>
                       </div>
                     </div>
                   </div>
@@ -345,175 +267,52 @@ if __name__ == "__main__":
             <TabsContent value="php">
               <Card>
                 <CardHeader>
-                  <CardTitle>Exemplos em PHP</CardTitle>
+                  <CardTitle>PHP</CardTitle>
                   <CardDescription>Exemplos de como utilizar as APIs do Mini CRM com PHP</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Cliente PHP para a API do Mini CRM</h3>
+                    <h3 className="text-lg font-medium mb-2">Autenticação e Obtenção de Token</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Classe de cliente completa</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`<?php
-
-class MiniCRMClient {
-    private $baseUrl;
-    private $token;
+                        <pre>{`<?php
+function obterToken($email, $senha) {
+    $url = 'https://seu-dominio.com/api/auth/login';
+    $dados = [
+        'email' => $email,
+        'password' => $senha
+    ];
     
-    public function __construct($baseUrl, $token = null) {
-        $this->baseUrl = $baseUrl;
-        $this->token = $token;
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($dados));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json'
+    ]);
+    
+    $resposta = curl_exec($ch);
+    $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    $respostaObj = json_decode($resposta);
+    
+    if ($statusCode !== 200) {
+        throw new Exception('Erro: ' . ($respostaObj->message ?? 'Falha na requisição'));
     }
     
-    public function setToken($token) {
-        $this->token = $token;
-    }
-    
-    private function request($endpoint, $method = 'GET', $params = [], $data = null) {
-        $url = $this->baseUrl . $endpoint;
-        
-        // Adicionar parâmetros de consulta à URL
-        if (!empty($params) && $method === 'GET') {
-            $url .= '?' . http_build_query($params);
-        }
-        
-        $headers = [];
-        if ($this->token) {
-            $headers[] = 'Authorization: Bearer ' . $this->token;
-        }
-        
-        if ($data !== null) {
-            $headers[] = 'Content-Type: application/json';
-        }
-        
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        
-        if ($method !== 'GET') {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-            if ($data !== null) {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            }
-        }
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        
-        if (curl_errno($ch)) {
-            throw new Exception('Curl error: ' . curl_error($ch));
-        }
-        
-        curl_close($ch);
-        
-        $responseData = json_decode($response, true);
-        
-        if ($httpCode >= 400) {
-            $message = isset($responseData['message']) ? $responseData['message'] : "Error {$httpCode}";
-            throw new Exception($message);
-        }
-        
-        return $responseData;
-    }
-    
-    // Autenticação
-    public function login($email, $password) {
-        $data = $this->request(
-            '/api/auth/login',
-            'POST',
-            [],
-            ['email' => $email, 'password' => $password]
-        );
-        
-        if (isset($data['token'])) {
-            $this->setToken($data['token']);
-        }
-        
-        return $data;
-    }
-    
-    // Contatos
-    public function getContacts($status = null, $source = null, $query = null) {
-        $params = [];
-        if ($status !== null) $params['status'] = $status;
-        if ($source !== null) $params['source'] = $source;
-        if ($query !== null) $params['q'] = $query;
-        
-        return $this->request('/api/contacts', 'GET', $params);
-    }
-    
-    public function getContact($contactId) {
-        return $this->request("/api/contacts/{$contactId}");
-    }
-    
-    public function createContact($contactData) {
-        return $this->request('/api/contacts', 'POST', [], $contactData);
-    }
-    
-    public function updateContact($contactId, $contactData) {
-        return $this->request("/api/contacts/{$contactId}", 'PUT', [], $contactData);
-    }
-    
-    public function deleteContact($contactId) {
-        return $this->request("/api/contacts/{$contactId}", 'DELETE');
-    }
-    
-    // Webhooks
-    public function getWebhooks() {
-        return $this->request('/api/webhooks');
-    }
-    
-    public function createWebhook($webhookData) {
-        return $this->request('/api/webhooks', 'POST', [], $webhookData);
-    }
-    
-    // Adicione mais métodos conforme necessário...
+    return $respostaObj->token;
 }
 
 // Exemplo de uso
-$client = new MiniCRMClient('https://seu-dominio.com');
-
 try {
-    // Login
-    $loginResult = $client->login('admin@example.com', 'senha123');
-    echo "Login bem-sucedido: " . print_r($loginResult, true) . "\\n";
-    
-    // Obter contatos
-    $contacts = $client->getContacts('Novo', 'WhatsApp');
-    echo "Contatos: " . print_r($contacts, true) . "\\n";
-    
-    // Criar um contato
-    $newContact = $client->createContact([
-        'name' => 'Maria Silva',
-        'contact' => '+5511888888888',
-        'source' => 'Instagram',
-        'status' => 'Novo',
-        'notes' => 'Cliente viu nossa propaganda no Instagram'
-    ]);
-    echo "Novo contato: " . print_r($newContact, true) . "\\n";
-    
-    // Criar um webhook
-    $newWebhook = $client->createWebhook([
-        'name' => 'Notificação de Novo Contato',
-        'url' => 'https://meu-sistema.com/webhooks/mini-crm',
-        'events' => ['contact.created'],
-        'secret' => 'meu-segredo-secreto',
-        'isActive' => true
-    ]);
-    echo "Novo webhook: " . print_r($newWebhook, true) . "\\n";
-    
+    $token = obterToken('usuario@exemplo.com', 'senha123');
+    echo "Token obtido: " . $token;
+    // Armazene o token para uso em outras requisições
 } catch (Exception $e) {
-    echo "Erro: " . $e->getMessage() . "\\n";
+    echo "Falha na autenticação: " . $e->getMessage();
 }
-?>`}
-                        </pre>
+?>`}</pre>
                       </div>
                     </div>
                   </div>
@@ -524,100 +323,53 @@ try {
             <TabsContent value="curl">
               <Card>
                 <CardHeader>
-                  <CardTitle>Exemplos com cURL</CardTitle>
+                  <CardTitle>cURL (Linha de Comando)</CardTitle>
                   <CardDescription>
                     Exemplos de como utilizar as APIs do Mini CRM com cURL na linha de comando
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Autenticação</h3>
+                    <h3 className="text-lg font-medium mb-2">Autenticação e Obtenção de Token</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Login e obtenção de token</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`curl -X POST https://seu-dominio.com/api/auth/login \\
-  -H "Content-Type: application/json" \\
+                        <pre>{`curl -X POST \\
+  https://seu-dominio.com/api/auth/login \\
+  -H 'Content-Type: application/json' \\
   -d '{
-    "email": "admin@example.com",
+    "email": "usuario@exemplo.com",
     "password": "senha123"
-  }'`}
-                        </pre>
+  }'`}</pre>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Listar Contatos</h3>
+                    <h3 className="text-lg font-medium mb-2">Listando Contatos</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Obter lista de contatos com filtros</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`curl -X GET "https://seu-dominio.com/api/contacts?status=Novo&source=WhatsApp" \\
-  -H "Authorization: Bearer seu-token-jwt"`}
-                        </pre>
+                        <pre>{`curl -X GET \\
+  'https://seu-dominio.com/api/contacts?status=Novo&source=WhatsApp' \\
+  -H 'Authorization: Bearer seu-token-jwt'`}</pre>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Criar um Contato</h3>
+                    <h3 className="text-lg font-medium mb-2">Criando um Novo Contato</h3>
                     <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Adicionar um novo contato</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
                       <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`curl -X POST https://seu-dominio.com/api/contacts \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer seu-token-jwt" \\
+                        <pre>{`curl -X POST \\
+  https://seu-dominio.com/api/contacts \\
+  -H 'Content-Type: application/json' \\
+  -H 'Authorization: Bearer seu-token-jwt' \\
   -d '{
     "name": "Maria Silva",
-    "contact": "+5511888888888",
+    "contact": "+5511988888888",
     "source": "Instagram",
     "status": "Novo",
-    "notes": "Cliente viu nossa propaganda no Instagram"
-  }'`}
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Criar um Webhook</h3>
-                    <div className="bg-muted p-4 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="font-medium">Configurar um novo webhook</p>
-                        <Button variant="ghost" size="icon">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="bg-background p-3 rounded text-sm font-mono">
-                        <pre>
-                          {`curl -X POST https://seu-dominio.com/api/webhooks \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer seu-token-jwt" \\
-  -d '{
-    "name": "Notificação de Novo Contato",
-    "url": "https://meu-sistema.com/webhooks/mini-crm",
-    "events": ["contact.created"],
-    "secret": "meu-segredo-secreto",
-    "isActive": true
-  }'`}
-                        </pre>
+    "notes": "Cliente interessada em nosso serviço premium"
+  }'`}</pre>
                       </div>
                     </div>
                   </div>

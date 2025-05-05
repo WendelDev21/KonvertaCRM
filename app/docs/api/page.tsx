@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
