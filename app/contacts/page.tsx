@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { ContactsTable } from "@/components/contacts-table"
 import { ContactFilters } from "@/components/contact-filters"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,9 +17,13 @@ export default function ContactsPage() {
 
           <Card className="shadow-sm">
             <CardContent className="pt-6">
-              <ContactFilters />
+              <Suspense fallback={<div className="py-10 text-center">Carregando filtros...</div>}>
+                <ContactFilters />
+              </Suspense>
               <div className="mt-4">
-                <ContactsTable />
+                <Suspense fallback={<div className="py-10 text-center">Carregando contatos...</div>}>
+                  <ContactsTable />
+                </Suspense>
               </div>
             </CardContent>
           </Card>

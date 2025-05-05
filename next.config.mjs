@@ -9,12 +9,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Add configuration to exclude problematic API routes
+  // Fix the outputFileTracingExcludes configuration
   experimental: {
-    // This will prevent Next.js from attempting to build the problematic routes
+    // Change from boolean values to arrays of patterns
     outputFileTracingExcludes: {
-      '/api/debug/**': true,
-      '/api/debug-token/**': true,
+      '/api/debug/**': ['**/node_modules/**'],
+      '/api/debug-token/**': ['**/node_modules/**']
     },
   },
   // Exclude specific pages from the build

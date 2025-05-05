@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { sql } from "@/lib/db-service"
 import { getCurrentUser } from "@/lib/session"
 
 export async function GET() {

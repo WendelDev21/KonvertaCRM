@@ -1,14 +1,15 @@
 "use client"
 
 import { LoginForm } from "@/components/login-form"
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 
-export default function LoginPage() {
+// Create a client component that uses useSearchParams
+function LoginPageContent() {
   const router = useRouter()
   const { status } = useSession()
 
@@ -55,5 +56,23 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+// Main page component with Suspense
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-center">
+            <div className="h-10 w-40 bg-muted rounded mx-auto mb-4"></div>
+            <div className="h-6 w-60 bg-muted rounded mx-auto"></div>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   )
 }
