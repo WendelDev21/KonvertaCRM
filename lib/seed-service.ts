@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client"
-import { hash } from "bcrypt"
+import { hash } from "bcryptjs"
 import type { ContactSource, ContactStatus } from "@/lib/db"
 
 const prisma = new PrismaClient()
