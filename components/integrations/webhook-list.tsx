@@ -237,7 +237,7 @@ export function WebhookList() {
         <Card>
           <CardHeader>
             <CardTitle>Nenhum webhook configurado</CardTitle>
-            <CardDescription>Crie seu primeiro webhook para integrar o Mini CRM com outros sistemas</CardDescription>
+            <CardDescription>Crie seu primeiro webhook para integrar o Konverta com outros sistemas</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => setIsCreating(true)}>

@@ -212,7 +212,7 @@ export function ApiRoutesList() {
         <CardHeader>
           <CardTitle>Rotas de API</CardTitle>
           <CardDescription>
-            Utilize estas rotas para integrar o Mini CRM com outros sistemas. Todas as rotas requerem autenticação.
+            Utilize estas rotas para integrar o Konverta com outros sistemas. Todas as rotas requerem autenticação.
           </CardDescription>
         </CardHeader>
         <CardContent>

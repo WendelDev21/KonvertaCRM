@@ -26,9 +26,9 @@ function LoginPageContent() {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">MC</span>
+              <span className="text-primary-foreground font-bold text-xl"></span>
             </div>
-            <h1 className="text-2xl font-bold">Mini CRM</h1>
+            <h1 className="text-2xl font-bold">Konverta</h1>
           </div>
           <ThemeToggle />
         </div>
@@ -52,7 +52,7 @@ function LoginPageContent() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Mini CRM. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} Konverta. Todos os direitos reservados.
         </p>
       </div>
     </div>

@@ -26,7 +26,7 @@ export default function RegisterPage() {
             <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-xl">MC</span>
             </div>
-            <h1 className="text-2xl font-bold">Mini CRM</h1>
+            <h1 className="text-2xl font-bold">Konverta</h1>
           </div>
           <ThemeToggle />
         </div>
@@ -42,7 +42,7 @@ export default function RegisterPage() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Mini CRM. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} Konverta. Todos os direitos reservados.
         </p>
       </div>
     </div>

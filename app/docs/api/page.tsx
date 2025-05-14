@@ -24,7 +24,7 @@ export default function ApiDocsPage() {
               </Button>
               <h1 className="text-3xl font-bold">Documentação da API</h1>
               <p className="text-muted-foreground mt-2">
-                Guia completo para utilizar as APIs do Mini CRM em suas integrações
+                Guia completo para utilizar as APIs do Konverta em suas integrações
               </p>
             </div>
           </div>
@@ -43,14 +43,14 @@ export default function ApiDocsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="md:col-span-2">
                   <CardHeader>
-                    <CardTitle>Introdução às APIs do Mini CRM</CardTitle>
+                    <CardTitle>Introdução às APIs do Konverta</CardTitle>
                     <CardDescription>
-                      As APIs do Mini CRM permitem que você integre seus sistemas e aplicações com nossa plataforma.
+                      As APIs do Konverta permitem que você integre seus sistemas e aplicações com nossa plataforma.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <p>
-                      Nossa API RESTful fornece acesso programático aos dados e funcionalidades do Mini CRM, permitindo
+                      Nossa API RESTful fornece acesso programático aos dados e funcionalidades do Konverta, permitindo
                       que você:
                     </p>
                     <ul className="list-disc pl-6 space-y-2">
@@ -142,7 +142,7 @@ export default function ApiDocsPage() {
                 <CardHeader>
                   <CardTitle>Autenticação</CardTitle>
                   <CardDescription>
-                    Todas as requisições à API do Mini CRM requerem autenticação. Existem duas formas de autenticação
+                    Todas as requisições à API do Konverta requerem autenticação. Existem duas formas de autenticação
                     suportadas.
                   </CardDescription>
                 </CardHeader>
@@ -229,7 +229,7 @@ export default function ApiDocsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>API de Contatos</CardTitle>
-                  <CardDescription>Gerencie contatos e leads através da API de Contatos do Mini CRM.</CardDescription>
+                  <CardDescription>Gerencie contatos e leads através da API de Contatos do Konverta.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
@@ -310,14 +310,14 @@ export default function ApiDocsPage() {
                 <CardHeader>
                   <CardTitle>API de Webhooks</CardTitle>
                   <CardDescription>
-                    Configure e gerencie webhooks para receber notificações de eventos no Mini CRM.
+                    Configure e gerencie webhooks para receber notificações de eventos no Konverta.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
                     <h3 className="text-lg font-medium mb-2">O que são Webhooks?</h3>
                     <p className="mb-4">
-                      Webhooks são callbacks HTTP que são acionados quando determinados eventos ocorrem no Mini CRM.
+                      Webhooks são callbacks HTTP que são acionados quando determinados eventos ocorrem no Konverta.
                       Eles permitem que seu sistema seja notificado em tempo real sobre eventos como a criação de um
                       novo contato ou a mudança de status de um lead.
                     </p>
@@ -503,7 +503,7 @@ export default function ApiDocsPage() {
                 <CardHeader>
                   <CardTitle>API de Usuários</CardTitle>
                   <CardDescription>
-                    Gerencie usuários e permissões através da API de Usuários do Mini CRM.
+                    Gerencie usuários e permissões através da API de Usuários do Konverta.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">

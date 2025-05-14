@@ -54,9 +54,9 @@ export function DashboardHeader() {
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">MC</span>
+                <span className="text-primary-foreground font-bold"></span>
               </div>
-              <span className="font-bold text-xl hidden sm:inline-block">Mini CRM</span>
+              <span className="font-bold text-xl hidden sm:inline-block">Konverta</span>
             </Link>
 
             {/* Menu para desktop */}
@@ -106,7 +106,7 @@ export function DashboardHeader() {
                     <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
                       <span className="text-primary-foreground font-bold">MC</span>
                     </div>
-                    <span className="font-bold text-xl">Mini CRM</span>
+                    <span className="font-bold text-xl">Konverta</span>
                   </div>
 
                   <nav className="flex flex-col gap-2">

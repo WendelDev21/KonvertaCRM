@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const testPayload = {
       event: "test",
       payload: {
-        message: "This is a test webhook from Mini CRM",
+        message: "This is a test webhook from Konverta",
         timestamp: new Date().toISOString(),
       },
     }
