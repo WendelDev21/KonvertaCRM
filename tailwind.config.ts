@@ -49,11 +49,11 @@ const config: Config = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         chart: {
-          "1": "#4f46e5",
-          "2": "#0ea5e9",
-          "3": "#10b981",
-          "4": "#f59e0b",
-          "5": "#ef4444",
+          "1": "#0F172A", // Updated to match new dark blue theme
+          "2": "#1E293B", // Slate blue
+          "3": "#334155", // Lighter slate
+          "4": "#f59e0b", // Amber for contrast
+          "5": "#ef4444", // Red for negative indicators
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background, var(--background)))",

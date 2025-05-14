@@ -57,7 +57,7 @@ export function MainNav() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold text-xl">Konverta CRM</span>
+            <span className="font-bold text-xl">Konverta</span>
           </Link>
           <nav className="flex items-center space-x-1 text-sm font-medium">
             {mainNavItems.map((item) => (
@@ -83,7 +83,7 @@ export function MainNav() {
           <SheetContent side="left" className="pr-0">
             <div className="px-7">
               <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
-                <span className="font-bold text-xl">Konverta CRM</span>
+                <span className="font-bold text-xl">Konverta</span>
               </Link>
             </div>
             <div className="mt-8 px-2">
@@ -127,7 +127,7 @@ export function MainNav() {
         </Sheet>
 
         <Link href="/" className="mr-6 flex items-center space-x-2 md:hidden">
-          <span className="font-bold text-lg">Konverta CRM</span>
+          <span className="font-bold text-lg">Konverta</span>
         </Link>
 
         <div className="flex flex-1 items-center justify-end space-x-2">

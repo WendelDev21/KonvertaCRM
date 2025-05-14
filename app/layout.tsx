@@ -9,9 +9,12 @@ import { LayoutClient } from "./layout-client"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Konverta CRM",
+  title: "Konverta",
   description: "Um CRM simples e eficiente para pequenas empresas",
   generator: "v0.dev",
+  icons: {
+    icon: "/favicon.png",
+  },
 }
 
 export default function RootLayout({

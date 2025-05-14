@@ -9,7 +9,7 @@ export function LoginClientWrapper() {
   return (
     <Card className="border-2 shadow-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">Konverta CRM</CardTitle>
+        <CardTitle className="text-2xl text-center">Konverta</CardTitle>
         <CardDescription className="text-center">Entre com suas credenciais para acessar o sistema</CardDescription>
       </CardHeader>
       <CardContent>

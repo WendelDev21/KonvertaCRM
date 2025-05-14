@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
+import Image from "next/image"
 
 // Create a client component that uses useSearchParams
 function LoginPageContent() {
@@ -21,39 +22,63 @@ function LoginPageContent() {
   }, [router, status])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-muted/30 p-4">
-      <div className="w-full max-w-md space-y-8 animate-fade-in">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl"></span>
+    <div className="h-screen flex items-stretch overflow-hidden">
+      {/* Left side - Decorative with updated gradient colors as requested */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex-col justify-center items-center p-6 relative">
+        <div className="max-w-md text-center">
+          <Image src="/icon.png" alt="Konverta Logo" width={120} height={120} className="mx-auto mb-6" />
+          <h1 className="text-4xl font-bold text-white mb-4">Konverta</h1>
+          <p className="text-white/90 text-lg mb-6">Plataforma completa para gestão de leads e oportunidades</p>
+          <div className="grid grid-cols-2 gap-4 mt-8">
+            <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm">
+              <h3 className="text-white font-medium mb-1">Gestão Simplificada</h3>
+              <p className="text-white/80 text-sm">Organize seus contatos de forma eficiente</p>
             </div>
-            <h1 className="text-2xl font-bold">Konverta</h1>
+            <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm">
+              <h3 className="text-white font-medium mb-1">Análise de Dados</h3>
+              <p className="text-white/80 text-sm">Visualize métricas importantes em tempo real</p>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Right side - Login form */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 bg-background relative">
+        <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
 
-        <Card className="border-2 shadow-sm">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Konverta CRM</CardTitle>
-            <CardDescription className="text-center">Entre com suas credenciais para acessar o sistema</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LoginForm />
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4 border-t pt-4">
-            <div className="text-center text-sm">
-              Não tem uma conta?{" "}
-              <Link href="/register" className="text-primary font-medium hover:underline">
-                Registre-se
-              </Link>
-            </div>
-          </CardFooter>
-        </Card>
+        {/* Mobile only logo */}
+        <div className="md:hidden flex flex-col items-center mb-6">
+          <Image src="/icon.png" alt="Konverta Logo" width={64} height={64} className="mb-2" />
+          <h1 className="text-2xl font-bold">Konverta</h1>
+        </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Konverta. Todos os direitos reservados.
-        </p>
+        <div className="w-full max-w-md">
+          <Card className="border shadow-sm bg-card/50 backdrop-blur-sm">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl text-center">Bem-vindo de volta</CardTitle>
+              <CardDescription className="text-center">
+                Entre com suas credenciais para acessar o sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LoginForm />
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4 border-t pt-4">
+              <div className="text-center text-sm">
+                Não tem uma conta?{" "}
+                <Link href="/register" className="text-primary font-medium hover:underline">
+                  Registre-se
+                </Link>
+              </div>
+            </CardFooter>
+          </Card>
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            &copy; {new Date().getFullYear()} Konverta. Todos os direitos reservados.
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -64,7 +89,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="h-screen flex items-center justify-center">
           <div className="animate-pulse text-center">
             <div className="h-10 w-40 bg-muted rounded mx-auto mb-4"></div>
             <div className="h-6 w-60 bg-muted rounded mx-auto"></div>
