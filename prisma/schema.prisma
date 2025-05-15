@@ -25,6 +25,7 @@ model User {
   updatedAt           DateTime  @updatedAt
   contacts            Contact[]
   webhooks            Webhook[]
+  apiTokens           ApiToken[]
 }
 
 // Contact model
@@ -68,4 +69,17 @@ model WebhookLog {
   createdAt  DateTime @default(now())
   webhookId  String
   webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+}
+
+// API Token model
+model ApiToken {
+  id          String    @id @default(uuid())
+  token       String    @unique
+  name        String?
+  lastUsed    DateTime?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

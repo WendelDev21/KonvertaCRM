@@ -28,7 +28,10 @@ export function ClientDashboard() {
       <DashboardFilters onFilterChange={handleFilterChange} isLoading={isLoading} />
 
       <div className="space-y-6">
-        <StatusCards startDate={filters.startDate} endDate={filters.endDate} source={filters.source} />
+        {/* Usar o componente do lado do cliente para evitar problemas de hidratação */}
+        <div suppressHydrationWarning>
+          <StatusCards startDate={filters.startDate} endDate={filters.endDate} source={filters.source} />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ActivityTimelineChart startDate={filters.startDate} endDate={filters.endDate} source={filters.source} />

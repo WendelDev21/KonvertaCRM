@@ -53,7 +53,8 @@ export function DashboardHeader() {
           {/* Logo e navegação principal */}
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <img src="/icon.png" alt="Konverta Logo" className="w-10 h-10" />              
+              <img src="/icon.png" alt="Konverta Logo" className="w-10 h-10" />
+              <span className="font-bold text-xl hidden sm:inline-block"></span>
             </Link>
 
             {/* Menu para desktop */}
@@ -101,6 +102,7 @@ export function DashboardHeader() {
                 <div className="py-4">
                   <div className="flex items-center gap-2 mb-6">
                     <img src="/icon.png" alt="Konverta Logo" className="w-10 h-10" />
+                    <span className="font-bold text-xl">Konverta</span>
                   </div>
 
                   <nav className="flex flex-col gap-2">

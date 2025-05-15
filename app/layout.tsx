@@ -9,7 +9,7 @@ import { LayoutClient } from "./layout-client"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Konverta",
+  title: "Konverta CRM",
   description: "Um CRM simples e eficiente para pequenas empresas",
   generator: "v0.dev",
   icons: {

@@ -33,6 +33,7 @@ interface ActivityTimelineChartProps {
   endDate?: Date | null
   source?: ContactSource
   data?: TimelineData[] // Opcional, para permitir passar dados diretamente
+  refreshKey?: number // Adicionado para forçar atualização
 }
 
 interface TimelineData {
@@ -53,14 +54,49 @@ const statusColors = {
   Perdido: "#ef4444", // Vermelho
 }
 
-export function ActivityTimelineChart({ startDate, endDate, source, data: initialData }: ActivityTimelineChartProps) {
-  const [data, setData] = useState<TimelineData[]>(initialData || [])
-  const [isLoading, setIsLoading] = useState(!initialData)
+// Dados de exemplo para quando não há dados reais
+const generateSampleData = () => {
+  const sampleData = []
+  for (let i = 6; i >= 0; i--) {
+    const date = subDays(new Date(), i)
+    const dateStr = date.toISOString().split("T")[0]
+    sampleData.push({
+      date: dateStr,
+      Novo: Math.floor(Math.random() * 5),
+      Conversando: Math.floor(Math.random() * 5),
+      Interessado: Math.floor(Math.random() * 5),
+      Fechado: Math.floor(Math.random() * 3),
+      Perdido: Math.floor(Math.random() * 2),
+    })
+  }
+  return sampleData
+}
+
+export function ActivityTimelineChart({
+  startDate,
+  endDate,
+  source,
+  data: initialData,
+  refreshKey = 0, // Valor padrão para evitar undefined
+}: ActivityTimelineChartProps) {
+  console.log("[ActivityTimelineChart] Rendering with props:", {
+    startDate: startDate?.toISOString(),
+    endDate: endDate?.toISOString(),
+    source,
+    initialDataLength: initialData?.length,
+    refreshKey,
+  })
+
+  // Usar dados de exemplo se não houver dados iniciais
+  const [data, setData] = useState<TimelineData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [queryParams, setQueryParams] = useState<string>("")
-  const [refreshKey, setRefreshKey] = useState<number>(0)
+  const lastQueryParamsRef = useRef<string>("")
+  const [internalRefreshKey, setInternalRefreshKey] = useState<number>(0)
   const [viewType, setViewType] = useState<"area" | "bar" | "line">("area")
   const lastFetchTime = useRef<number>(0)
+  const componentMountedRef = useRef<boolean>(false)
+  const initialRenderRef = useRef<boolean>(true)
 
   // Estado para controlar quais status estão visíveis
   const [visibleStatuses, setVisibleStatuses] = useState<Record<string, boolean>>({
@@ -76,10 +112,59 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedData, setSelectedData] = useState<TimelineData | null>(null)
 
+  // Efeito para inicializar os dados
+  useEffect(() => {
+    // Inicializar com dados de exemplo para evitar gráfico vazio
+    setData(generateSampleData())
+  }, [])
+
+  // Efeito para atualizar os dados quando initialData muda
+  useEffect(() => {
+    console.log("[ActivityTimelineChart] initialData changed:", initialData?.length)
+    if (initialData && initialData.length > 0) {
+      console.log("[ActivityTimelineChart] Setting data from initialData:", initialData)
+
+      // Verificar se os dados têm o formato correto
+      const validData = initialData.map((item) => ({
+        date: item.date || "",
+        Novo: Number(item.Novo || item.novos || 0),
+        Conversando: Number(item.Conversando || item.conversando || 0),
+        Interessado: Number(item.Interessado || item.interessado || 0),
+        Fechado: Number(item.Fechado || item.fechados || 0),
+        Perdido: Number(item.Perdido || item.perdidos || 0),
+      }))
+
+      console.log("[ActivityTimelineChart] Processed data:", validData)
+      setData(validData)
+      setIsLoading(false)
+    } else if (!initialData && initialRenderRef.current) {
+      // Se não há dados iniciais na primeira renderização, buscar dados
+      console.log("[ActivityTimelineChart] No initial data, will fetch from API")
+      initialRenderRef.current = false
+    }
+  }, [initialData])
+
   // Função para forçar atualização
   const refreshData = useCallback(() => {
-    setRefreshKey((prev) => prev + 1)
+    console.log("[ActivityTimelineChart] Manual refresh triggered")
+    setInternalRefreshKey((prev) => prev + 1)
     setIsLoading(true)
+  }, [])
+
+  // Efeito para atualizar quando refreshKey externo muda
+  useEffect(() => {
+    if (componentMountedRef.current && refreshKey > 0) {
+      console.log("[ActivityTimelineChart] External refresh triggered", refreshKey)
+      refreshData()
+    }
+  }, [refreshKey, refreshData])
+
+  // Marcar o componente como montado após a primeira renderização
+  useEffect(() => {
+    componentMountedRef.current = true
+    return () => {
+      componentMountedRef.current = false
+    }
   }, [])
 
   // Memoize the query params to prevent unnecessary re-renders
@@ -104,28 +189,61 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
     return params.toString()
   }, [startDate, endDate, source])
 
+  // Função para normalizar os parâmetros de consulta (remover o timestamp)
+  const normalizeQueryParams = useCallback((queryParams: string) => {
+    const params = new URLSearchParams(queryParams)
+    params.delete("_t") // Remover o timestamp
+    return params.toString()
+  }, [])
+
   // Fetch data when query params change or refreshKey changes
   useEffect(() => {
-    // Se dados iniciais foram fornecidos, não buscar da API
-    if (initialData) {
-      setData(initialData)
+    // Se dados iniciais foram fornecidos e não houve atualização forçada, não buscar da API
+    if (initialData && initialData.length > 0 && internalRefreshKey === 0 && initialRenderRef.current) {
+      console.log("[ActivityTimelineChart] Using initial data", initialData.length)
+
+      // Verificar se os dados têm o formato correto
+      const validData = initialData.map((item) => ({
+        date: item.date || "",
+        Novo: Number(item.Novo || item.novos || 0),
+        Conversando: Number(item.Conversando || item.conversando || 0),
+        Interessado: Number(item.Interessado || item.interessado || 0),
+        Fechado: Number(item.Fechado || item.fechados || 0),
+        Perdido: Number(item.Perdido || item.perdidos || 0),
+      }))
+
+      setData(validData)
       setIsLoading(false)
       return
     }
 
-    const newQueryParams = getQueryParams()
+    const queryParams = getQueryParams()
+    const normalizedQueryParams = normalizeQueryParams(queryParams)
+    const normalizedLastParams = normalizeQueryParams(lastQueryParamsRef.current)
     const currentTime = Date.now()
+    const timeSinceLastFetch = currentTime - lastFetchTime.current
+
+    console.log("[ActivityTimelineChart] Checking if fetch is needed:", {
+      paramsChanged: normalizedQueryParams !== normalizedLastParams,
+      timeSinceLastFetch,
+      internalRefreshKey,
+      initialDataProvided: !!initialData,
+    })
 
     // Verificar se já se passaram pelo menos 2 segundos desde a última atualização
-    // ou se os parâmetros de consulta mudaram
-    if (newQueryParams !== queryParams || currentTime - lastFetchTime.current > 2000 || refreshKey > 0) {
+    // ou se os parâmetros de consulta mudaram ou se houve uma atualização forçada
+    if (normalizedQueryParams !== normalizedLastParams || timeSinceLastFetch > 2000 || internalRefreshKey > 0) {
+      console.log("[ActivityTimelineChart] Fetching new data")
       lastFetchTime.current = currentTime
+      lastQueryParamsRef.current = queryParams
 
       const fetchData = async () => {
         setIsLoading(true)
         setError(null)
         try {
-          const response = await fetch(`/api/dashboard/timeline?${newQueryParams}`, {
+          console.log("[Chart] Fetching timeline data with params:", queryParams)
+
+          const response = await fetch(`/api/dashboard/timeline?${queryParams}`, {
             // Adicionar cabeçalhos para evitar cache
             headers: {
               "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -139,20 +257,25 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
           }
 
           const responseData = await response.json()
+          console.log("[Chart] Received response:", responseData)
 
-          if (!responseData.timeline) {
-            throw new Error("Invalid data format")
+          // Verificar se a resposta tem o formato esperado
+          if (!responseData.timeline || !Array.isArray(responseData.timeline)) {
+            console.error("[Chart] Invalid response format:", responseData)
+            throw new Error("Invalid data format: timeline property is missing or not an array")
           }
 
           // Transformar os dados para o formato esperado pelo gráfico
           const formattedData = responseData.timeline.map((item: any) => ({
-            date: item.date,
-            Novo: item.novos || 0,
-            Conversando: item.conversando || 0,
-            Interessado: item.interessado || 0,
-            Fechado: item.fechados || 0,
-            Perdido: item.perdidos || 0,
+            date: item.date || "",
+            Novo: Number(item.novos || 0),
+            Conversando: Number(item.conversando || 0),
+            Interessado: Number(item.interessado || 0),
+            Fechado: Number(item.fechados || 0),
+            Perdido: Number(item.perdidos || 0),
           }))
+
+          console.log("[Chart] Formatted data:", formattedData)
 
           // Filtrar para garantir que não haja datas futuras
           const today = new Date()
@@ -165,30 +288,17 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
 
           // Se não houver dados, gerar dados de exemplo para os últimos 7 dias
           if (filteredData.length === 0) {
-            const sampleData = []
-            for (let i = 6; i >= 0; i--) {
-              const date = subDays(new Date(), i)
-              const dateStr = date.toISOString().split("T")[0]
-              sampleData.push({
-                date: dateStr,
-                Novo: 0,
-                Conversando: 0,
-                Interessado: 0,
-                Fechado: 0,
-                Perdido: 0,
-              })
-            }
-            setData(sampleData)
+            console.log("[Chart] No data available, generating sample data")
+            setData(generateSampleData())
           } else {
+            console.log("[Chart] Setting filtered data:", filteredData)
             setData(filteredData)
           }
-
-          // Atualizar queryParams depois de buscar os dados
-          setQueryParams(newQueryParams)
         } catch (err) {
-          console.error("Error fetching timeline data:", err)
-          setError("Failed to load activity timeline data")
-          setData([])
+          console.error("[Chart] Error fetching timeline data:", err)
+          setError(`Failed to load activity timeline data: ${err instanceof Error ? err.message : String(err)}`)
+          // Usar dados de exemplo em caso de erro
+          setData(generateSampleData())
         } finally {
           setIsLoading(false)
         }
@@ -196,19 +306,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
 
       fetchData()
     }
-  }, [getQueryParams, refreshKey, initialData])
-
-  // Efeito para atualizar os dados periodicamente (a cada 30 segundos)
-  useEffect(() => {
-    // Não atualizar automaticamente se dados iniciais foram fornecidos
-    if (initialData) return
-
-    const intervalId = setInterval(() => {
-      refreshData()
-    }, 30000) // 30 segundos
-
-    return () => clearInterval(intervalId)
-  }, [refreshData, initialData])
+  }, [getQueryParams, internalRefreshKey, initialData, normalizeQueryParams, startDate, endDate, source])
 
   const formatXAxis = useCallback((tickItem: string) => {
     try {
@@ -382,6 +480,14 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
     return null
   }
 
+  // Verificar se há dados válidos para renderizar o gráfico
+  const hasValidData =
+    data &&
+    data.length > 0 &&
+    data.some(
+      (item) => item.Novo > 0 || item.Conversando > 0 || item.Interessado > 0 || item.Fechado > 0 || item.Perdido > 0,
+    )
+
   if (isLoading) {
     return (
       <Card className="border shadow-sm">
@@ -413,14 +519,17 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
             <RefreshCw className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent className="h-[300px] flex items-center justify-center">
+        <CardContent className="h-[300px] flex flex-col items-center justify-center gap-4">
           <div className="text-red-500">{error}</div>
+          <Button variant="outline" onClick={refreshData}>
+            Tentar novamente
+          </Button>
         </CardContent>
       </Card>
     )
   }
 
-  if (data.length === 0) {
+  if (!hasValidData) {
     return (
       <Card className="border shadow-sm">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -438,6 +547,8 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
       </Card>
     )
   }
+
+  console.log("[ActivityTimelineChart] Rendering chart with data:", data.length)
 
   // Formatar a data selecionada para exibição no modal
   const formattedSelectedDate = selectedDate
@@ -516,6 +627,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     stroke={statusColors.Novo}
                     fill={statusColors.Novo}
                     fillOpacity={0.8}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Conversando && (
@@ -526,6 +638,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     stroke={statusColors.Conversando}
                     fill={statusColors.Conversando}
                     fillOpacity={0.8}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Interessado && (
@@ -536,6 +649,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     stroke={statusColors.Interessado}
                     fill={statusColors.Interessado}
                     fillOpacity={0.8}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Fechado && (
@@ -546,6 +660,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     stroke={statusColors.Fechado}
                     fill={statusColors.Fechado}
                     fillOpacity={0.8}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Perdido && (
@@ -556,6 +671,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     stroke={statusColors.Perdido}
                     fill={statusColors.Perdido}
                     fillOpacity={0.8}
+                    isAnimationActive={false}
                   />
                 )}
               </AreaChart>
@@ -583,6 +699,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     strokeWidth={2}
                     dot={{ r: 3 }}
                     activeDot={{ r: 5 }}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Conversando && (
@@ -593,6 +710,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     strokeWidth={2}
                     dot={{ r: 3 }}
                     activeDot={{ r: 5 }}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Interessado && (
@@ -603,6 +721,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     strokeWidth={2}
                     dot={{ r: 3 }}
                     activeDot={{ r: 5 }}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Fechado && (
@@ -613,6 +732,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     strokeWidth={2}
                     dot={{ r: 3 }}
                     activeDot={{ r: 5 }}
+                    isAnimationActive={false}
                   />
                 )}
                 {visibleStatuses.Perdido && (
@@ -623,6 +743,7 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                     strokeWidth={2}
                     dot={{ r: 3 }}
                     activeDot={{ r: 5 }}
+                    isAnimationActive={false}
                   />
                 )}
               </LineChart>
@@ -642,15 +763,21 @@ export function ActivityTimelineChart({ startDate, endDate, source, data: initia
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend content={renderCustomizedLegend} />
-                {visibleStatuses.Novo && <Bar dataKey="Novo" stackId="a" fill={statusColors.Novo} />}
+                {visibleStatuses.Novo && (
+                  <Bar dataKey="Novo" stackId="a" fill={statusColors.Novo} isAnimationActive={false} />
+                )}
                 {visibleStatuses.Conversando && (
-                  <Bar dataKey="Conversando" stackId="a" fill={statusColors.Conversando} />
+                  <Bar dataKey="Conversando" stackId="a" fill={statusColors.Conversando} isAnimationActive={false} />
                 )}
                 {visibleStatuses.Interessado && (
-                  <Bar dataKey="Interessado" stackId="a" fill={statusColors.Interessado} />
+                  <Bar dataKey="Interessado" stackId="a" fill={statusColors.Interessado} isAnimationActive={false} />
                 )}
-                {visibleStatuses.Fechado && <Bar dataKey="Fechado" stackId="a" fill={statusColors.Fechado} />}
-                {visibleStatuses.Perdido && <Bar dataKey="Perdido" stackId="a" fill={statusColors.Perdido} />}
+                {visibleStatuses.Fechado && (
+                  <Bar dataKey="Fechado" stackId="a" fill={statusColors.Fechado} isAnimationActive={false} />
+                )}
+                {visibleStatuses.Perdido && (
+                  <Bar dataKey="Perdido" stackId="a" fill={statusColors.Perdido} isAnimationActive={false} />
+                )}
               </BarChart>
             )}
           </ResponsiveContainer>

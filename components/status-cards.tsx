@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ContactSource } from "./dashboard/dashboard-filters"
 
@@ -22,7 +22,9 @@ export function StatusCards({ startDate, endDate, source }: StatusCardsProps) {
   const [statusCounts, setStatusCounts] = useState<StatusCount[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [queryParams, setQueryParams] = useState<string>("")
+
+  // Usar uma ref para armazenar o último queryParams processado
+  const lastQueryParamsRef = useRef<string>("")
 
   // Memoize the query params to prevent unnecessary re-renders
   const getQueryParams = useCallback(() => {
@@ -40,6 +42,9 @@ export function StatusCards({ startDate, endDate, source }: StatusCardsProps) {
       params.append("source", source)
     }
 
+    // Adicionar timestamp para evitar cache
+    params.append("_t", Date.now().toString())
+
     return params.toString()
   }, [startDate, endDate, source])
 
@@ -47,20 +52,37 @@ export function StatusCards({ startDate, endDate, source }: StatusCardsProps) {
   useEffect(() => {
     const newQueryParams = getQueryParams()
 
-    // Only fetch if the query params have changed
-    if (newQueryParams !== queryParams) {
-      setQueryParams(newQueryParams)
+    // Remover o timestamp para comparação, já que ele sempre muda
+    const normalizedNewParams = newQueryParams.replace(/&_t=\d+/, "")
+    const normalizedLastParams = lastQueryParamsRef.current.replace(/&_t=\d+/, "")
+
+    // Only fetch if the query params have changed (ignoring timestamp)
+    if (normalizedNewParams !== normalizedLastParams) {
+      // Atualizar a ref com o valor atual completo (incluindo timestamp)
+      lastQueryParamsRef.current = newQueryParams
 
       const fetchData = async () => {
         setIsLoading(true)
         setError(null)
         try {
-          const response = await fetch(`/api/dashboard?${newQueryParams}`)
+          console.log("StatusCards: Fetching data with params:", newQueryParams)
+
+          const response = await fetch(`/api/dashboard?${newQueryParams}`, {
+            // Adicionar cabeçalhos para evitar cache
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
+          })
+
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`)
           }
 
           const data = await response.json()
+          console.log("StatusCards: Data received:", data)
 
           // Verificar se os dados são válidos
           if (!data.statusCounts) {
@@ -145,7 +167,7 @@ export function StatusCards({ startDate, endDate, source }: StatusCardsProps) {
 
       fetchData()
     }
-  }, [getQueryParams, queryParams])
+  }, [getQueryParams]) // Dependência apenas na função getQueryParams que é memoizada
 
   if (isLoading) {
     return (

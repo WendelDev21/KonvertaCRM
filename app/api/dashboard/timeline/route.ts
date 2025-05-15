@@ -1,65 +1,67 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { getActivityTimeline } from "@/lib/services/dashboard-service"
+import { apiAuthMiddleware } from "@/middleware/api-auth"
+
+export const dynamic = "force-dynamic" // Desabilitar cache para sempre obter dados frescos
 
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
+  return apiAuthMiddleware(request, async (req, userId) => {
+    try {
+      // Obter parâmetros de consulta
+      const searchParams = req.nextUrl.searchParams
+      const startDateParam = searchParams.get("startDate")
+      const endDateParam = searchParams.get("endDate")
+      const sourceParam = searchParams.get("source")
 
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+      // Definir datas padrão se não fornecidas
+      const startDate = startDateParam
+        ? new Date(startDateParam)
+        : new Date(new Date().setDate(new Date().getDate() - 30))
 
-    // Obter parâmetros de consulta
-    const searchParams = request.nextUrl.searchParams
-    const startDateParam = searchParams.get("startDate")
-    const endDateParam = searchParams.get("endDate")
-    const sourceParam = searchParams.get("source")
+      // Para a data final, não permitir datas futuras
+      const today = new Date()
+      today.setHours(23, 59, 59, 999) // Final do dia atual
 
-    // Definir datas padrão se não fornecidas
-    const startDate = startDateParam
-      ? new Date(startDateParam)
-      : new Date(new Date().setDate(new Date().getDate() - 30))
+      const requestedEndDate = endDateParam ? new Date(endDateParam) : today
+      // Garantir que a data final não seja futura
+      const endDate = requestedEndDate > today ? today : requestedEndDate
 
-    // Para a data final, não permitir datas futuras
-    const today = new Date()
-    today.setHours(23, 59, 59, 999) // Final do dia atual
+      console.log(
+        `[API] Buscando timeline para usuário ${userId} de ${startDate.toISOString()} até ${endDate.toISOString()}`,
+      )
 
-    const requestedEndDate = endDateParam ? new Date(endDateParam) : today
-    // Garantir que a data final não seja futura
-    const endDate = requestedEndDate > today ? today : requestedEndDate
+      // Configurar cabeçalhos para evitar cache
+      const headers = new Headers()
+      headers.append("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
+      headers.append("Pragma", "no-cache")
+      headers.append("Expires", "0")
+      headers.append("Surrogate-Control", "no-store")
+      headers.append("Vary", "*")
 
-    // Configurar cabeçalhos para evitar cache
-    const headers = new Headers()
-    headers.append("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
-    headers.append("Pragma", "no-cache")
-    headers.append("Expires", "0")
-    headers.append("Surrogate-Control", "no-store")
-    headers.append("Vary", "*")
+      // Obter dados de timeline
+      const [timeline, error] = await getActivityTimeline(userId, startDate, endDate, sourceParam || undefined)
 
-    // Obter dados de timeline
-    const [timeline, error] = await getActivityTimeline(session.user.id, startDate, endDate, sourceParam || undefined)
+      if (error) {
+        console.error("Error fetching timeline data:", error)
+        return NextResponse.json(
+          { error: "Failed to fetch timeline data" },
+          {
+            status: 500,
+            headers,
+          },
+        )
+      }
 
-    if (error) {
-      console.error("Error fetching timeline data:", error)
+      // Garantir que a resposta tenha o formato esperado pelo frontend
       return NextResponse.json(
-        { error: "Failed to fetch timeline data" },
+        { timeline },
         {
-          status: 500,
           headers,
         },
       )
+    } catch (error) {
+      console.error("Error in timeline API:", error)
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 })
     }
-
-    return NextResponse.json(
-      { timeline },
-      {
-        headers,
-      },
-    )
-  } catch (error) {
-    console.error("Error in timeline API:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-  }
+  })
 }

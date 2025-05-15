@@ -307,7 +307,7 @@ export function KanbanBoard() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Kanban de Contatos</h1>
+        <h1 className="text-2xl font-bold"></h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => fetchContacts(true)} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
