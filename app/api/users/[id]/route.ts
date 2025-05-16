@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       })
 
       if (!user || (user.role !== "admin" && userId !== params.id)) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
       }
 
       const requestedUser = await prisma.user.findUnique({
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           name: true,
           email: true,
           role: true,
+          plan: true,
           createdAt: true,
           updatedAt: true,
           // Exclude password
@@ -56,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       })
 
       if (!user || (user.role !== "admin" && userId !== params.id)) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
       }
 
       const body = await req.json()
@@ -67,9 +68,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       if (body.name) updateData.name = body.name
       if (body.email) updateData.email = body.email
 
-      // Only admin can update roles
+      // Only admin can update roles and plans
       if (body.role && user.role === "admin") {
         updateData.role = body.role
+      }
+
+      if (body.plan && user.role === "admin") {
+        updateData.plan = body.plan
       }
 
       // Handle password update
@@ -87,6 +92,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           name: true,
           email: true,
           role: true,
+          plan: true,
           createdAt: true,
           updatedAt: true,
           // Exclude password
@@ -112,7 +118,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       })
 
       if (!user || user.role !== "admin") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
       }
 
       await prisma.user.delete({

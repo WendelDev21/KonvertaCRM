@@ -10,6 +10,10 @@ export async function middleware(request: NextRequest) {
   const publicPaths = ["/", "/login", "/register"]
   const isPublicPath = publicPaths.some((pp) => path === pp || path.startsWith(`${pp}/`))
 
+  // Admin-only paths
+  const adminPaths = ["/admin"]
+  const isAdminPath = adminPaths.some((ap) => path === ap || path.startsWith(`${ap}/`))
+
   // Check if the user is authenticated
   const token = await getToken({
     req: request,
@@ -28,6 +32,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
+  // Check admin access for admin paths
+  if (isAdminPath && (!token || token.role !== "admin")) {
+    return NextResponse.redirect(new URL("/dashboard", request.url))
+  }
+
   return NextResponse.next()
 }
 
@@ -42,5 +51,7 @@ export const config = {
     "/kanban/:path*",
     "/settings/:path*",
     "/integrations/:path*",
+    "/admin/:path*",
+    "/docs/api/admin/:path*",
   ],
 }

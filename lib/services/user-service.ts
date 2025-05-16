@@ -1,13 +1,15 @@
 import { prisma, dbAction } from "../db-client"
-import { hash, compare } from "bcryptjs" // Changed from bcrypt to bcryptjs
+import { hash, compare } from "bcryptjs"
 
 export type UserRole = "user" | "admin"
+export type UserPlan = "starter" | "pro" | "business"
 
 export type UserInput = {
   name: string
   email: string
   password: string
   role?: UserRole
+  plan?: UserPlan
   bio?: string
   theme?: string
   image?: string
@@ -33,6 +35,7 @@ export async function createUser(data: UserInput) {
         email: data.email,
         password: hashedPassword,
         role: data.role || "user",
+        plan: data.plan || "starter",
         bio: data.bio,
         theme: data.theme,
         image: data.image,
@@ -43,6 +46,7 @@ export async function createUser(data: UserInput) {
         name: true,
         email: true,
         role: true,
+        plan: true,
         bio: true,
         theme: true,
         image: true,
@@ -69,6 +73,7 @@ export async function getUserById(id: string) {
         name: true,
         email: true,
         role: true,
+        plan: true,
         bio: true,
         theme: true,
         image: true,
@@ -107,6 +112,7 @@ export async function updateUser(id: string, data: Partial<Omit<UserInput, "pass
     if (data.name) updateData.name = data.name
     if (data.email) updateData.email = data.email
     if (data.role) updateData.role = data.role
+    if (data.plan) updateData.plan = data.plan
     if (data.bio !== undefined) updateData.bio = data.bio
     if (data.theme !== undefined) updateData.theme = data.theme
     if (data.image !== undefined) updateData.image = data.image
@@ -129,6 +135,7 @@ export async function updateUser(id: string, data: Partial<Omit<UserInput, "pass
         name: true,
         email: true,
         role: true,
+        plan: true,
         bio: true,
         theme: true,
         image: true,

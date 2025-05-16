@@ -17,6 +17,7 @@ model User {
   email               String    @unique
   password            String
   role                String    @default("user")
+  plan                String    @default("starter")  // Novo campo para o plano do usuário
   image               String?
   bio                 String?   @db.Text
   theme               String?

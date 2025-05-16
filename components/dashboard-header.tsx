@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Kanban, Menu, Users, Puzzle, Settings, PlusCircle } from "lucide-react"
+import { LayoutDashboard, Kanban, Menu, Users, Puzzle, Settings, PlusCircle, Shield } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserAvatar } from "@/components/user-avatar"
@@ -14,6 +14,9 @@ import { useSession } from "next-auth/react"
 export function DashboardHeader() {
   const pathname = usePathname()
   const { data: session } = useSession()
+
+  // Verificar se o usuário é admin
+  const isAdmin = session?.user?.role === "admin"
 
   const mainNavItems = [
     {
@@ -37,6 +40,15 @@ export function DashboardHeader() {
       icon: Puzzle,
     },
   ]
+
+  // Adicionar item de administração apenas para admins
+  if (isAdmin) {
+    mainNavItems.push({
+      name: "Administração",
+      path: "/admin",
+      icon: Shield,
+    })
+  }
 
   const settingsNavItems = [
     {
@@ -166,6 +178,7 @@ export function DashboardHeader() {
                             <div>
                               <p className="font-medium">{session.user.name}</p>
                               <p className="text-xs text-muted-foreground">{session.user.email}</p>
+                              {isAdmin && <p className="text-xs font-medium text-primary mt-1">Administrador</p>}
                             </div>
                           </div>
                           <Button

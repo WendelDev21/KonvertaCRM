@@ -3,6 +3,8 @@ import { getContactById, createContact, type ContactInput } from "@/lib/services
 import prisma from "@/lib/prisma"
 import { triggerWebhooks } from "@/lib/webhook-db"
 import { apiAuthMiddleware } from "@/middleware/api-auth"
+// Importe o serviço de verificação de plano
+import { checkContactLimit } from "@/lib/services/plan-service"
 
 // Função auxiliar para normalizar strings para comparação
 function normalizeString(str: string): string {
@@ -93,6 +95,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/contacts - Cria um novo contato
+// Modifique a função POST para verificar o limite de contatos
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
@@ -103,6 +106,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: "Incomplete data. Name, contact, source, and status are required." },
           { status: 400 },
+        )
+      }
+
+      // Verificar limite de contatos do plano
+      const { allowed, limit, current } = await checkContactLimit(userId)
+
+      if (!allowed) {
+        return NextResponse.json(
+          {
+            error: "Limite de contatos atingido",
+            details: {
+              limit,
+              current,
+              message: "Você atingiu o limite de contatos do seu plano. Faça upgrade para adicionar mais contatos.",
+            },
+          },
+          { status: 403 },
         )
       }
 

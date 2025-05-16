@@ -2,6 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAllWebhooks, getWebhookById, createWebhook, type WebhookEvent } from "@/lib/webhook-db"
 import { apiAuthMiddleware } from "@/middleware/api-auth"
 
+// Importe o serviço de verificação de plano
+import { checkWebhookLimit } from "@/lib/services/plan-service"
+
 // GET /api/webhooks - Lista todos os webhooks configurados
 export async function GET(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
@@ -26,7 +29,7 @@ export async function GET(request: NextRequest) {
   })
 }
 
-// POST /api/webhooks - Cria um novo webhook
+// Modifique a função POST para verificar o limite de webhooks
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
@@ -60,6 +63,23 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           )
         }
+      }
+
+      // Verificar limite de webhooks do plano
+      const { allowed, limit, current } = await checkWebhookLimit(userId)
+
+      if (!allowed) {
+        return NextResponse.json(
+          {
+            error: "Limite de webhooks atingido",
+            details: {
+              limit,
+              current,
+              message: "Você atingiu o limite de webhooks do seu plano. Faça upgrade para adicionar mais webhooks.",
+            },
+          },
+          { status: 403 },
+        )
       }
 
       const newWebhook = await createWebhook(

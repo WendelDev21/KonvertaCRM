@@ -256,7 +256,6 @@ export default function DashboardPage() {
           {/* Cabeçalho da página */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              
               <p className="text-muted-foreground mt-1">
                 Bem-vindo, {session?.user?.name?.split(" ")[0] || "Usuário"}! Aqui está o resumo dos seus contatos.
               </p>
@@ -275,10 +274,6 @@ export default function DashboardPage() {
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                 <span>{refreshing ? "Atualizando..." : "Atualizar"}</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={checkDashboardData} className="flex items-center gap-1">
-                <Bug className="h-4 w-4" />
-                <span>Debug</span>
               </Button>
             </div>
           </div>

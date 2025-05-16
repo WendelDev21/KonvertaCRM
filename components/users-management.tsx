@@ -29,11 +29,17 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { Loader2, Plus, Pencil, Trash2 } from "lucide-react"
 
+// Importe o componente UserPlanManager e o tipo UserPlan
+import { UserPlanManager } from "@/components/admin/user-plan-manager"
+import type { UserPlan } from "@/lib/types/user-types"
+
+// Atualize a interface User para incluir o campo plan
 interface User {
   id: string
   name: string
   email: string
   role: string
+  plan: UserPlan
   createdAt: string
 }
 
@@ -91,6 +97,8 @@ export function UsersManagement() {
     setSelectedUser(null)
   }
 
+  // Dentro do componente UsersManagement, atualize a função handleOpenDialog
+  // para incluir o plano do usuário no formData
   const handleOpenDialog = (user?: User) => {
     if (user) {
       setSelectedUser(user)
@@ -254,6 +262,7 @@ export function UsersManagement() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Função</TableHead>
+                <TableHead>Plano</TableHead>
                 <TableHead>Criado em</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -281,6 +290,19 @@ export function UsersManagement() {
                         {user.role === "admin" ? "Administrador" : "Usuário"}
                       </span>
                     </TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          user.plan === "starter"
+                            ? "bg-blue-100 text-blue-800"
+                            : user.plan === "pro"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-green-100 text-green-800"
+                        }`}
+                      >
+                        {user.plan === "starter" ? "Starter" : user.plan === "pro" ? "Pro" : "Business"}
+                      </span>
+                    </TableCell>
                     <TableCell>{formatDate(user.createdAt)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(user)}>
@@ -295,6 +317,17 @@ export function UsersManagement() {
               )}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {selectedUser && (
+        <div className="mt-6">
+          <UserPlanManager
+            userId={selectedUser.id}
+            userName={selectedUser.name}
+            currentPlan={selectedUser.plan || "starter"}
+            onPlanUpdated={fetchUsers}
+          />
         </div>
       )}
 

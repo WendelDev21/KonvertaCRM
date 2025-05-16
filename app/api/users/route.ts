@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       })
 
       if (!user || user.role !== "admin") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
       }
 
       const users = await prisma.user.findMany({
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
           name: true,
           email: true,
           role: true,
+          plan: true,
           createdAt: true,
           updatedAt: true,
           // Exclude password
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       })
 
       if (!user || user.role !== "admin") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
       }
 
       const body = await req.json()
@@ -81,12 +82,14 @@ export async function POST(request: NextRequest) {
           email: body.email,
           password: hashedPassword,
           role: body.role || "user", // Default to "user" if not specified
+          plan: body.plan || "starter", // Default to "starter" if not specified
         },
         select: {
           id: true,
           name: true,
           email: true,
           role: true,
+          plan: true,
           createdAt: true,
           updatedAt: true,
           // Exclude password

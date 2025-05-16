@@ -1,18 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
-import { Copy, Server } from "lucide-react"
+import { Copy, Server, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import { useSession } from "next-auth/react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface ApiRoute {
   method: string
   path: string
   description: string
+  adminOnly?: boolean
   params?: { name: string; type: string; description: string; required: boolean }[]
   queryParams?: { name: string; type: string; description: string; required: boolean }[]
   bodyParams?: { name: string; type: string; description: string; required: boolean }[]
@@ -218,6 +221,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       method: "GET",
       path: "/api/users",
       description: "Lista todos os usuários (apenas admin)",
+      adminOnly: true,
       response: "Array de usuários",
       example: "curl -X GET 'https://seu-dominio.com/api/users' -H 'Authorization: Bearer seu_token_aqui'",
     },
@@ -225,6 +229,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       method: "GET",
       path: "/api/users/[id]",
       description: "Obtém detalhes de um usuário específico",
+      adminOnly: true,
       params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
       response: "Detalhes do usuário",
       example: "curl -X GET 'https://seu-dominio.com/api/users/123456' -H 'Authorization: Bearer seu_token_aqui'",
@@ -233,6 +238,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       method: "PUT",
       path: "/api/users/[id]",
       description: "Atualiza um usuário específico (admin ou próprio usuário)",
+      adminOnly: true,
       params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
       bodyParams: [
         { name: "name", type: "string", description: "Nome do usuário", required: false },
@@ -248,6 +254,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       method: "DELETE",
       path: "/api/users/[id]",
       description: "Remove um usuário (apenas admin)",
+      adminOnly: true,
       params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
       response: "{ success: true }",
       example: "curl -X DELETE 'https://seu-dominio.com/api/users/123456' -H 'Authorization: Bearer seu_token_aqui'",
@@ -257,25 +264,70 @@ const apiRoutes: Record<string, ApiRoute[]> = {
     {
       method: "GET",
       path: "/api/tokens",
-      description: "Lista tokens de API do usuário",
-      response: "Array de tokens",
+      description: "Obtém informações sobre o token do usuário atual",
+      response: "Informações do token",
       example: "curl -X GET 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
       path: "/api/tokens",
-      description: "Gera um novo token de API",
+      description: "Gera um novo token para o usuário atual",
       response: "{ token: string }",
       example: "curl -X POST 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "DELETE",
       path: "/api/tokens",
-      description: "Revoga todos os tokens ou um token específico",
-      queryParams: [{ name: "id", type: "string", description: "ID do token (opcional)", required: false }],
+      description: "Revoga o token do usuário atual",
+      queryParams: [{ name: "id", type: "string", description: "ID do token", required: true }],
       response: "{ success: true }",
       example:
         "curl -X DELETE 'https://seu-dominio.com/api/tokens?id=123456' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "GET",
+      path: "/api/admin/tokens",
+      description: "Lista todos os tokens (apenas admin)",
+      adminOnly: true,
+      response: "Array de tokens",
+      example: "curl -X GET 'https://seu-dominio.com/api/admin/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+  ],
+  admin: [
+    {
+      method: "GET",
+      path: "/api/admin/stats",
+      description: "Obtém estatísticas gerais do sistema",
+      adminOnly: true,
+      response: "Estatísticas do sistema",
+      example: "curl -X GET 'https://seu-dominio.com/api/admin/stats' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "POST",
+      path: "/api/admin/users",
+      description: "Cria um novo usuário (com qualquer nível)",
+      adminOnly: true,
+      bodyParams: [
+        { name: "name", type: "string", description: "Nome do usuário", required: true },
+        { name: "email", type: "string", description: "Email do usuário", required: true },
+        { name: "password", type: "string", description: "Senha do usuário", required: true },
+        { name: "role", type: "string", description: "Função (admin, user)", required: true },
+        { name: "plan", type: "string", description: "Plano (starter, pro, business)", required: true },
+      ],
+      response: "Usuário criado",
+      example:
+        'curl -X POST \'https://seu-dominio.com/api/admin/users\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Admin Novo","email":"admin@exemplo.com","password":"senha123","role":"admin","plan":"business"}\'',
+    },
+    {
+      method: "PUT",
+      path: "/api/admin/users/[id]/plan",
+      description: "Atualiza o plano de um usuário",
+      adminOnly: true,
+      params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
+      bodyParams: [{ name: "plan", type: "string", description: "Plano (starter, pro, business)", required: true }],
+      response: "Plano atualizado",
+      example:
+        "curl -X PUT 'https://seu-dominio.com/api/admin/users/123456/plan' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"plan\":\"pro\"}'",
     },
   ],
 }
@@ -283,6 +335,14 @@ const apiRoutes: Record<string, ApiRoute[]> = {
 export function ApiRoutesList() {
   const [activeTab, setActiveTab] = useState("contacts")
   const { toast } = useToast()
+  const { data: session } = useSession()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    if (session?.user?.role === "admin") {
+      setIsAdmin(true)
+    }
+  }, [session])
 
   const copyExample = (example: string) => {
     navigator.clipboard.writeText(example)
@@ -324,96 +384,117 @@ export function ApiRoutesList() {
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            {isAdmin && <TabsTrigger value="tokens">Tokens</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="admin">Administração</TabsTrigger>}
           </TabsList>
 
           {Object.entries(apiRoutes).map(([key, routes]) => (
             <TabsContent key={key} value={key} className="space-y-4">
               <Accordion type="single" collapsible className="w-full">
-                {routes.map((route, index) => (
-                  <AccordionItem key={index} value={`${key}-${index}`}>
-                    <AccordionTrigger className="flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <Badge className={getMethodColor(route.method)}>{route.method}</Badge>
-                        <span className="font-mono text-sm">{route.path}</span>
-                      </div>
-                      <span className="flex-1 text-left ml-4 text-muted-foreground text-sm">{route.description}</span>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-4 p-4">
-                        {route.params && (
-                          <div>
-                            <h4 className="font-medium mb-2">Parâmetros de URL</h4>
-                            <ul className="space-y-2">
-                              {route.params.map((param, i) => (
-                                <li key={i} className="text-sm">
-                                  <span className="font-mono">{param.name}</span>
-                                  <span className="text-muted-foreground"> ({param.type})</span>
-                                  {param.required && <span className="text-red-500 ml-1">*</span>}
-                                  <span className="block text-muted-foreground">{param.description}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {route.queryParams && (
-                          <div>
-                            <h4 className="font-medium mb-2">Parâmetros de Query</h4>
-                            <ul className="space-y-2">
-                              {route.queryParams.map((param, i) => (
-                                <li key={i} className="text-sm">
-                                  <span className="font-mono">{param.name}</span>
-                                  <span className="text-muted-foreground"> ({param.type})</span>
-                                  {param.required && <span className="text-red-500 ml-1">*</span>}
-                                  <span className="block text-muted-foreground">{param.description}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {route.bodyParams && (
-                          <div>
-                            <h4 className="font-medium mb-2">Parâmetros do Body</h4>
-                            <ul className="space-y-2">
-                              {route.bodyParams.map((param, i) => (
-                                <li key={i} className="text-sm">
-                                  <span className="font-mono">{param.name}</span>
-                                  <span className="text-muted-foreground"> ({param.type})</span>
-                                  {param.required && <span className="text-red-500 ml-1">*</span>}
-                                  <span className="block text-muted-foreground">{param.description}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        <div>
-                          <h4 className="font-medium mb-2">Resposta</h4>
-                          <p className="text-sm text-muted-foreground">{route.response}</p>
-                        </div>
-
-                        <div>
-                          <h4 className="font-medium mb-2">Exemplo</h4>
-                          <div className="relative">
-                            <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs">
-                              <code>{route.example}</code>
-                            </pre>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute top-2 right-2"
-                              onClick={() => copyExample(route.example)}
+                {routes
+                  .filter((route) => !route.adminOnly || (route.adminOnly && isAdmin))
+                  .map((route, index) => (
+                    <AccordionItem key={index} value={`${key}-${index}`}>
+                      <AccordionTrigger className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className={getMethodColor(route.method)}>{route.method}</Badge>
+                          <span className="font-mono text-sm">{route.path}</span>
+                          {route.adminOnly && (
+                            <Badge
+                              variant="outline"
+                              className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
                             >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
+                              Admin
+                            </Badge>
+                          )}
                         </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
+                        <span className="flex-1 text-left ml-4 text-muted-foreground text-sm">{route.description}</span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4 p-4">
+                          {route.params && (
+                            <div>
+                              <h4 className="font-medium mb-2">Parâmetros de URL</h4>
+                              <ul className="space-y-2">
+                                {route.params.map((param, i) => (
+                                  <li key={i} className="text-sm">
+                                    <span className="font-mono">{param.name}</span>
+                                    <span className="text-muted-foreground"> ({param.type})</span>
+                                    {param.required && <span className="text-red-500 ml-1">*</span>}
+                                    <span className="block text-muted-foreground">{param.description}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {route.queryParams && (
+                            <div>
+                              <h4 className="font-medium mb-2">Parâmetros de Query</h4>
+                              <ul className="space-y-2">
+                                {route.queryParams.map((param, i) => (
+                                  <li key={i} className="text-sm">
+                                    <span className="font-mono">{param.name}</span>
+                                    <span className="text-muted-foreground"> ({param.type})</span>
+                                    {param.required && <span className="text-red-500 ml-1">*</span>}
+                                    <span className="block text-muted-foreground">{param.description}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {route.bodyParams && (
+                            <div>
+                              <h4 className="font-medium mb-2">Parâmetros do Body</h4>
+                              <ul className="space-y-2">
+                                {route.bodyParams.map((param, i) => (
+                                  <li key={i} className="text-sm">
+                                    <span className="font-mono">{param.name}</span>
+                                    <span className="text-muted-foreground"> ({param.type})</span>
+                                    {param.required && <span className="text-red-500 ml-1">*</span>}
+                                    <span className="block text-muted-foreground">{param.description}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div>
+                            <h4 className="font-medium mb-2">Resposta</h4>
+                            <p className="text-sm text-muted-foreground">{route.response}</p>
+                          </div>
+
+                          <div>
+                            <h4 className="font-medium mb-2">Exemplo</h4>
+                            <div className="relative">
+                              <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs">
+                                <code>{route.example}</code>
+                              </pre>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute top-2 right-2"
+                                onClick={() => copyExample(route.example)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {route.adminOnly && (
+                            <Alert className="bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300 border-red-200 dark:border-red-800">
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertTitle>Acesso Restrito</AlertTitle>
+                              <AlertDescription>
+                                Esta rota está disponível apenas para usuários com nível de acesso administrador.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
               </Accordion>
             </TabsContent>
           ))}

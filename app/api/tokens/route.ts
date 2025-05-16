@@ -44,7 +44,7 @@ async function generateToken(userId: string): Promise<string | null> {
 }
 
 // GET /api/tokens - Obter o token atual do usuário
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser()
 
