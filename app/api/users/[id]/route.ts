@@ -1,136 +1,146 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { hash } from "bcryptjs"
-import { apiAuthMiddleware } from "@/middleware/api-auth"
+import { apiAuthMiddleware } from "@/lib/auth-utils"
 import type { NextRequest } from "next/server"
 
-// GET /api/users/[id] - Obtém detalhes de um usuário específico
+// GET /api/users/[id] - Obtém detalhes de um usuário específico (apenas admin)
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  return apiAuthMiddleware(request, async (req, userId) => {
-    try {
-      // Verificar se o usuário é admin ou o próprio usuário
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      })
+  return apiAuthMiddleware(
+    request,
+    async (req, userId) => {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: params.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            plan: true,
+            createdAt: true,
+            updatedAt: true,
+            image: true,
+          },
+        })
 
-      if (!user || (user.role !== "admin" && userId !== params.id)) {
-        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
+        if (!user) {
+          return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+        }
+
+        return NextResponse.json(user)
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        return NextResponse.json({ error: "Erro ao buscar usuário" }, { status: 500 })
       }
-
-      const requestedUser = await prisma.user.findUnique({
-        where: {
-          id: params.id,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          plan: true,
-          createdAt: true,
-          updatedAt: true,
-          // Exclude password
-        },
-      })
-
-      if (!requestedUser) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 })
-      }
-
-      return NextResponse.json(requestedUser)
-    } catch (error) {
-      console.error("Error fetching user:", error)
-      return NextResponse.json({ error: "Error fetching user" }, { status: 500 })
-    }
-  })
+    },
+    true,
+  ) // true indica que requer admin
 }
 
-// PUT /api/users/[id] - Atualiza um usuário específico
+// PUT /api/users/[id] - Atualiza um usuário (apenas admin)
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  return apiAuthMiddleware(request, async (req, userId) => {
-    try {
-      // Verificar se o usuário é admin ou o próprio usuário
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      })
+  return apiAuthMiddleware(
+    request,
+    async (req, userId) => {
+      try {
+        const body = await req.json()
 
-      if (!user || (user.role !== "admin" && userId !== params.id)) {
-        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
+        // Validar dados
+        if (!body.name || !body.email) {
+          return NextResponse.json({ error: "Nome e email são obrigatórios" }, { status: 400 })
+        }
+
+        // Verificar se o usuário existe
+        const userExists = await prisma.user.findUnique({
+          where: { id: params.id },
+        })
+
+        if (!userExists) {
+          return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+        }
+
+        // Verificar se o email já está em uso por outro usuário
+        if (body.email !== userExists.email) {
+          const emailExists = await prisma.user.findUnique({
+            where: { email: body.email },
+          })
+
+          if (emailExists && emailExists.id !== params.id) {
+            return NextResponse.json({ error: "Email já está em uso por outro usuário" }, { status: 400 })
+          }
+        }
+
+        // Preparar dados para atualização
+        const updateData: any = {
+          name: body.name,
+          email: body.email,
+          role: body.role || userExists.role,
+          plan: body.plan || userExists.plan,
+        }
+
+        // Se a senha foi fornecida, hash e atualiza
+        if (body.password) {
+          updateData.password = await hash(body.password, 10)
+        }
+
+        // Atualizar usuário
+        const updatedUser = await prisma.user.update({
+          where: { id: params.id },
+          data: updateData,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            plan: true,
+            createdAt: true,
+            updatedAt: true,
+            image: true,
+          },
+        })
+
+        return NextResponse.json(updatedUser)
+      } catch (error) {
+        console.error("Erro ao atualizar usuário:", error)
+        return NextResponse.json({ error: "Erro ao atualizar usuário" }, { status: 500 })
       }
-
-      const body = await req.json()
-
-      // Prepare update data
-      const updateData: any = {}
-
-      if (body.name) updateData.name = body.name
-      if (body.email) updateData.email = body.email
-
-      // Only admin can update roles and plans
-      if (body.role && user.role === "admin") {
-        updateData.role = body.role
-      }
-
-      if (body.plan && user.role === "admin") {
-        updateData.plan = body.plan
-      }
-
-      // Handle password update
-      if (body.password) {
-        updateData.password = await hash(body.password, 10)
-      }
-
-      const updatedUser = await prisma.user.update({
-        where: {
-          id: params.id,
-        },
-        data: updateData,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          plan: true,
-          createdAt: true,
-          updatedAt: true,
-          // Exclude password
-        },
-      })
-
-      return NextResponse.json(updatedUser)
-    } catch (error) {
-      console.error("Error updating user:", error)
-      return NextResponse.json({ error: "Error updating user" }, { status: 500 })
-    }
-  })
+    },
+    true,
+  ) // true indica que requer admin
 }
 
-// DELETE /api/users/[id] - Remove um usuário (admin only)
+// DELETE /api/users/[id] - Exclui um usuário (apenas admin)
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  return apiAuthMiddleware(request, async (req, userId) => {
-    try {
-      // Verificar se o usuário é admin
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      })
+  return apiAuthMiddleware(
+    request,
+    async (req, userId) => {
+      try {
+        // Verificar se o usuário existe
+        const userExists = await prisma.user.findUnique({
+          where: { id: params.id },
+        })
 
-      if (!user || user.role !== "admin") {
-        return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403 })
+        if (!userExists) {
+          return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+        }
+
+        // Impedir que um admin exclua a si mesmo
+        if (params.id === userId) {
+          return NextResponse.json({ error: "Não é possível excluir seu próprio usuário" }, { status: 400 })
+        }
+
+        // Excluir usuário
+        await prisma.user.delete({
+          where: { id: params.id },
+        })
+
+        return NextResponse.json({ success: true })
+      } catch (error) {
+        console.error("Erro ao excluir usuário:", error)
+        return NextResponse.json({ error: "Erro ao excluir usuário" }, { status: 500 })
       }
-
-      await prisma.user.delete({
-        where: {
-          id: params.id,
-        },
-      })
-
-      return NextResponse.json({ success: true })
-    } catch (error) {
-      console.error("Error deleting user:", error)
-      return NextResponse.json({ error: "Error deleting user" }, { status: 500 })
-    }
-  })
+    },
+    true,
+  ) // true indica que requer admin
 }

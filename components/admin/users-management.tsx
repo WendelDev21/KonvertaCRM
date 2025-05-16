@@ -36,8 +36,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Plus, Pencil, Trash2, Shield, User } from "lucide-react"
+import { MoreHorizontal, Plus, Pencil, Trash2, Shield, User, Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 // Tipos
 interface AdminUser {
@@ -55,6 +56,7 @@ export function UsersManagement() {
   const router = useRouter()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
@@ -74,19 +76,82 @@ export function UsersManagement() {
   async function fetchUsers() {
     try {
       setLoading(true)
-      const response = await fetch("/api/users")
+      setError(null)
+
+      console.log("Buscando usuários...")
+
+      const response = await fetch("/api/users", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Importante para incluir cookies de autenticação
+      })
+
+      console.log("Status da resposta:", response.status)
+
+      // Se a resposta não for ok, tente obter o texto da resposta primeiro
       if (!response.ok) {
-        throw new Error("Falha ao buscar usuários")
+        let errorMessage = `Erro ${response.status}: ${response.statusText}`
+
+        try {
+          // Tente obter o corpo da resposta como texto primeiro
+          const responseText = await response.text()
+          console.log("Texto da resposta:", responseText)
+
+          // Se o texto parecer JSON, tente fazer o parse
+          if (responseText && (responseText.startsWith("{") || responseText.startsWith("["))) {
+            try {
+              const errorData = JSON.parse(responseText)
+              if (errorData && errorData.error) {
+                errorMessage = errorData.error
+              }
+            } catch (parseError) {
+              console.error("Erro ao fazer parse do JSON:", parseError)
+            }
+          }
+        } catch (textError) {
+          console.error("Erro ao obter texto da resposta:", textError)
+        }
+
+        throw new Error(errorMessage)
       }
-      const data = await response.json()
-      setUsers(data)
-    } catch (error) {
+
+      // Se a resposta for ok, tente obter o JSON
+      let data
+      try {
+        const responseText = await response.text()
+        console.log("Texto da resposta:", responseText)
+
+        // Se o texto estiver vazio, retorne um array vazio
+        if (!responseText.trim()) {
+          data = []
+        } else {
+          data = JSON.parse(responseText)
+        }
+      } catch (parseError) {
+        console.error("Erro ao fazer parse do JSON:", parseError)
+        throw new Error("Erro ao processar a resposta do servidor")
+      }
+
+      console.log(`Recebidos ${Array.isArray(data) ? data.length : 0} usuários`)
+
+      // Verificar se data é um array
+      if (!Array.isArray(data)) {
+        console.error("Dados recebidos não são um array:", data)
+        setUsers([])
+      } else {
+        setUsers(data)
+      }
+    } catch (error: any) {
       console.error("Erro ao buscar usuários:", error)
+      setError(error.message || "Não foi possível carregar os usuários")
       toast({
         title: "Erro",
-        description: "Não foi possível carregar os usuários",
+        description: error.message || "Não foi possível carregar os usuários",
         variant: "destructive",
       })
+      setUsers([])
     } finally {
       setLoading(false)
     }
@@ -128,11 +193,12 @@ export function UsersManagement() {
 
     try {
       setIsSubmitting(true)
-      const response = await fetch("/api/users", {
+      const response = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           name: formName,
           email: formEmail,
@@ -142,9 +208,26 @@ export function UsersManagement() {
         }),
       })
 
+      // Processar resposta de forma segura
+      let errorMessage = `Erro ${response.status}: ${response.statusText}`
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Falha ao adicionar usuário")
+        try {
+          const responseText = await response.text()
+          if (responseText && (responseText.startsWith("{") || responseText.startsWith("["))) {
+            try {
+              const errorData = JSON.parse(responseText)
+              if (errorData && errorData.error) {
+                errorMessage = errorData.error
+              }
+            } catch (parseError) {
+              console.error("Erro ao fazer parse do JSON:", parseError)
+            }
+          }
+        } catch (textError) {
+          console.error("Erro ao obter texto da resposta:", textError)
+        }
+
+        throw new Error(errorMessage)
       }
 
       toast({
@@ -195,12 +278,30 @@ export function UsersManagement() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(updateData),
       })
 
+      // Processar resposta de forma segura
+      let errorMessage = `Erro ${response.status}: ${response.statusText}`
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Falha ao atualizar usuário")
+        try {
+          const responseText = await response.text()
+          if (responseText && (responseText.startsWith("{") || responseText.startsWith("["))) {
+            try {
+              const errorData = JSON.parse(responseText)
+              if (errorData && errorData.error) {
+                errorMessage = errorData.error
+              }
+            } catch (parseError) {
+              console.error("Erro ao fazer parse do JSON:", parseError)
+            }
+          }
+        } catch (textError) {
+          console.error("Erro ao obter texto da resposta:", textError)
+        }
+
+        throw new Error(errorMessage)
       }
 
       toast({
@@ -226,11 +327,29 @@ export function UsersManagement() {
     try {
       const response = await fetch(`/api/users/${userId}`, {
         method: "DELETE",
+        credentials: "include",
       })
 
+      // Processar resposta de forma segura
+      let errorMessage = `Erro ${response.status}: ${response.statusText}`
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Falha ao excluir usuário")
+        try {
+          const responseText = await response.text()
+          if (responseText && (responseText.startsWith("{") || responseText.startsWith("["))) {
+            try {
+              const errorData = JSON.parse(responseText)
+              if (errorData && errorData.error) {
+                errorMessage = errorData.error
+              }
+            } catch (parseError) {
+              console.error("Erro ao fazer parse do JSON:", parseError)
+            }
+          }
+        } catch (textError) {
+          console.error("Erro ao obter texto da resposta:", textError)
+        }
+
+        throw new Error(errorMessage)
       }
 
       toast({
@@ -288,89 +407,111 @@ export function UsersManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Usuários</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddDialogOpen}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Adicionar Novo Usuário</DialogTitle>
-              <DialogDescription>Preencha os campos abaixo para adicionar um novo usuário.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Nome completo"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  placeholder="email@exemplo.com"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formPassword}
-                  onChange={(e) => setFormPassword(e.target.value)}
-                  placeholder="Senha"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Função</Label>
-                <Select value={formRole} onValueChange={setFormRole}>
-                  <SelectTrigger id="role">
-                    <SelectValue placeholder="Selecione uma função" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">Usuário</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="plan">Plano</Label>
-                <Select value={formPlan} onValueChange={setFormPlan}>
-                  <SelectTrigger id="plan">
-                    <SelectValue placeholder="Selecione um plano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="starter">Starter</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancelar
+        <div className="flex gap-2">
+          <Button onClick={fetchUsers} variant="outline" disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            Atualizar
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={handleAddDialogOpen}>
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Usuário
               </Button>
-              <Button onClick={handleAddUser} disabled={isSubmitting}>
-                {isSubmitting ? "Adicionando..." : "Adicionar Usuário"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+                <DialogDescription>Preencha os campos abaixo para adicionar um novo usuário.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Nome</Label>
+                  <Input
+                    id="name"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="Nome completo"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="password">Senha</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    placeholder="Senha"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="role">Função</Label>
+                  <Select value={formRole} onValueChange={setFormRole}>
+                    <SelectTrigger id="role">
+                      <SelectValue placeholder="Selecione uma função" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">Usuário</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="plan">Plano</Label>
+                  <Select value={formPlan} onValueChange={setFormPlan}>
+                    <SelectTrigger id="plan">
+                      <SelectValue placeholder="Selecione um plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="starter">Starter</SelectItem>
+                      <SelectItem value="pro">Pro</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleAddUser} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adicionando...
+                    </>
+                  ) : (
+                    "Adicionar Usuário"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erro</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <p>Carregando usuários...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="ml-2">Carregando usuários...</p>
         </div>
       ) : (
         <div className="border rounded-md">
@@ -503,7 +644,14 @@ export function UsersManagement() {
               Cancelar
             </Button>
             <Button onClick={handleUpdateUser} disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar Alterações"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

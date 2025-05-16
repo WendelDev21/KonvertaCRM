@@ -1,45 +1,10 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
+import { hash } from "bcryptjs"
 import { apiAuthMiddleware } from "@/lib/auth-utils"
 import type { NextRequest } from "next/server"
 
-// GET /api/users - Lista todos os usuários (apenas admin)
-export async function GET(request: NextRequest) {
-  return apiAuthMiddleware(
-    request,
-    async (req, userId) => {
-      try {
-        console.log("Buscando usuários...")
-
-        const users = await prisma.user.findMany({
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            plan: true,
-            createdAt: true,
-            updatedAt: true,
-            image: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        })
-
-        console.log(`Encontrados ${users.length} usuários`)
-
-        return NextResponse.json(users)
-      } catch (error) {
-        console.error("Erro ao buscar usuários:", error)
-        return NextResponse.json({ error: "Erro ao buscar usuários" }, { status: 500 })
-      }
-    },
-    true,
-  ) // true indica que requer admin
-}
-
-// POST /api/users - Cria um novo usuário (apenas admin)
+// POST /api/admin/users - Cria um novo usuário (apenas admin)
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(
     request,
@@ -61,12 +26,15 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "Email já está em uso" }, { status: 400 })
         }
 
+        // Hash da senha
+        const hashedPassword = await hash(body.password, 10)
+
         // Criar usuário
         const newUser = await prisma.user.create({
           data: {
             name: body.name,
             email: body.email,
-            password: body.password, // A senha será hash no modelo
+            password: hashedPassword,
             role: body.role || "user",
             plan: body.plan || "free",
           },

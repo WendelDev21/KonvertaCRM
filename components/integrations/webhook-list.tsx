@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Edit, Plus, Trash2, Loader2, ExternalLink } from "lucide-react"
+import { Edit, Plus, Trash2, Loader2, ExternalLink, RefreshCw } from "lucide-react"
 import { WebhookForm } from "./webhook-form"
 import type { WebhookEvent } from "@/lib/webhook-db"
 
@@ -24,7 +24,7 @@ interface Webhook {
   id: string
   name: string
   url: string
-  events: WebhookEvent[]
+  events: WebhookEvent[] | string
   secret?: string
   createdAt: string
   isActive: boolean
@@ -40,29 +40,109 @@ export function WebhookList() {
   const [webhookToDelete, setWebhookToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const fetchWebhooks = async () => {
     setIsLoading(true)
+    setError(null)
     try {
-      const response = await fetch("/api/webhooks")
-      if (!response.ok) throw new Error("Erro ao buscar webhooks")
-      const data = await response.json()
-      setWebhooks(data)
+      console.log("Fetching webhooks...")
+
+      // Usar fetch com credentials: "include" para enviar cookies de autenticação
+      const response = await fetch("/api/webhooks", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+        },
+      })
+
+      console.log("Response status:", response.status)
+
+      // Se a resposta não for ok, tentar obter a mensagem de erro
+      if (!response.ok) {
+        let errorMessage = "Erro ao buscar webhooks"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+          console.error("Error response:", errorData)
+        } catch (e) {
+          console.error("Erro ao parsear resposta de erro:", e)
+        }
+        throw new Error(errorMessage)
+      }
+
+      // Obter o texto da resposta
+      const responseText = await response.text()
+      console.log("Response text length:", responseText.length)
+
+      // Se o texto estiver vazio, retornar array vazio
+      if (!responseText.trim()) {
+        console.log("Empty response, returning empty array")
+        setWebhooks([])
+        return
+      }
+
+      // Tentar parsear o JSON
+      let data
+      try {
+        data = JSON.parse(responseText)
+        console.log("Parsed data:", data)
+      } catch (e) {
+        console.error("Erro ao parsear resposta JSON:", e)
+        console.error("Response text:", responseText.substring(0, 200))
+        throw new Error("Resposta inválida do servidor")
+      }
+
+      // Verificar se data.webhooks é um array
+      if (data && data.webhooks && Array.isArray(data.webhooks)) {
+        console.log("Webhooks array found with", data.webhooks.length, "items")
+
+        // Processar os webhooks para garantir que events seja um array
+        const processedWebhooks = data.webhooks.map((webhook: Webhook) => {
+          // Se events for uma string, tentar parsear como JSON
+          if (typeof webhook.events === "string") {
+            try {
+              webhook.events = JSON.parse(webhook.events as string)
+            } catch (e) {
+              // Se não conseguir parsear, manter como string
+              console.warn("Não foi possível parsear events como JSON:", webhook.events)
+            }
+          }
+          return webhook
+        })
+
+        setWebhooks(processedWebhooks)
+      } else {
+        console.error("data.webhooks is not an array:", data)
+        setWebhooks([])
+      }
+
+      setError(null)
     } catch (error) {
       console.error("Erro ao buscar webhooks:", error)
+      setError(error instanceof Error ? error.message : "Erro desconhecido")
       toast({
         title: "Erro",
-        description: "Não foi possível carregar os webhooks.",
+        description: error instanceof Error ? error.message : "Não foi possível carregar os webhooks.",
         variant: "destructive",
       })
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }
 
   useEffect(() => {
     fetchWebhooks()
   }, [])
+
+  const handleRefresh = () => {
+    setIsRefreshing(true)
+    fetchWebhooks()
+  }
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     setIsUpdatingStatus(id)
@@ -72,10 +152,20 @@ export function WebhookList() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ isActive }),
       })
 
-      if (!response.ok) throw new Error("Erro ao atualizar status")
+      if (!response.ok) {
+        let errorMessage = "Erro ao atualizar status"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          // Se não conseguir parsear o JSON, usa a mensagem padrão
+        }
+        throw new Error(errorMessage)
+      }
 
       setWebhooks(webhooks.map((webhook) => (webhook.id === id ? { ...webhook, isActive } : webhook)))
 
@@ -87,7 +177,7 @@ export function WebhookList() {
       console.error("Erro ao atualizar status:", error)
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar o status do webhook.",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o status do webhook.",
         variant: "destructive",
       })
     } finally {
@@ -102,9 +192,19 @@ export function WebhookList() {
     try {
       const response = await fetch(`/api/webhooks/${webhookToDelete}`, {
         method: "DELETE",
+        credentials: "include",
       })
 
-      if (!response.ok) throw new Error("Erro ao excluir webhook")
+      if (!response.ok) {
+        let errorMessage = "Erro ao excluir webhook"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          // Se não conseguir parsear o JSON, usa a mensagem padrão
+        }
+        throw new Error(errorMessage)
+      }
 
       setWebhooks(webhooks.filter((webhook) => webhook.id !== webhookToDelete))
 
@@ -116,7 +216,7 @@ export function WebhookList() {
       console.error("Erro ao excluir webhook:", error)
       toast({
         title: "Erro",
-        description: "Não foi possível excluir o webhook.",
+        description: error instanceof Error ? error.message : "Não foi possível excluir o webhook.",
         variant: "destructive",
       })
     } finally {
@@ -158,14 +258,28 @@ export function WebhookList() {
     }
   }
 
-  const getEventLabels = (events: WebhookEvent[]) => {
-    if (events.includes("all")) {
+  const getEventLabels = (events: WebhookEvent[] | string) => {
+    // Se events for uma string, tentar parsear como JSON
+    let eventsArray: WebhookEvent[] = []
+
+    if (typeof events === "string") {
+      try {
+        eventsArray = JSON.parse(events)
+      } catch (e) {
+        console.warn("Não foi possível parsear events como JSON:", events)
+        return <Badge variant="outline">Eventos inválidos</Badge>
+      }
+    } else {
+      eventsArray = events
+    }
+
+    if (eventsArray.includes("all")) {
       return <Badge variant="secondary">Todos os eventos</Badge>
     }
 
     return (
       <div className="flex flex-wrap gap-1">
-        {events.map((event) => {
+        {eventsArray.map((event) => {
           let label = ""
           let color = ""
 
@@ -222,11 +336,29 @@ export function WebhookList() {
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Webhooks</h2>
-        <Button onClick={() => setIsCreating(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Webhook
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isLoading || isRefreshing}
+            title="Atualizar webhooks"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+          </Button>
+          <Button onClick={() => setIsCreating(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Webhook
+          </Button>
+        </div>
       </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 dark:bg-red-900 dark:text-red-100 dark:border-red-800">
+          <strong className="font-bold">Erro: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
