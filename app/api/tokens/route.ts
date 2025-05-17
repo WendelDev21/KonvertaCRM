@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       })
 
       return NextResponse.json({
+        success: true,
         tokens: tokens.map((token) => ({
           id: token.id,
           name: token.name || "API Token",
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       })
     } catch (error) {
       console.error("[API] Erro ao listar tokens:", error)
-      return NextResponse.json({ error: "Erro ao listar tokens" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Erro ao listar tokens" }, { status: 500 })
     }
   })
 }
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
       if (!user) {
         console.error("[API] Usuário não encontrado:", userId)
-        return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+        return NextResponse.json({ success: false, error: "Usuário não encontrado" }, { status: 404 })
       }
 
       // Gerar token aleatório
@@ -88,10 +89,10 @@ export async function POST(request: NextRequest) {
 
       console.log("[API] Token gerado com sucesso, ID:", newToken.id)
 
-      return NextResponse.json({ token: tokenValue })
+      return NextResponse.json({ success: true, token: tokenValue })
     } catch (error) {
       console.error("[API] Erro ao gerar token:", error)
-      return NextResponse.json({ error: "Erro ao gerar token" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "Erro ao gerar token" }, { status: 500 })
     }
   })
 }
