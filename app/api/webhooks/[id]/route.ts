@@ -31,23 +31,23 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 // PUT /api/webhooks/[id] - Atualiza um webhook existente
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  console.log("PUT request received for webhook:", params.id)
+  console.log(`[API] Webhooks: PUT request received for webhook ID: ${params.id}`)
 
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
-      console.log("Processing PUT request for webhook:", params.id, "by user:", userId)
+      console.log(`[API] Webhooks: Processing PUT request for webhook ID: ${params.id}, user ID: ${userId}`)
 
       // Clone the request to read the body
       const clonedReq = req.clone()
       const body = await clonedReq.json()
-      console.log("Request body:", body)
+      console.log("[API] Webhooks: Request body:", body)
 
       // Validate URL if provided
       if (body.url) {
         try {
           new URL(body.url)
         } catch (e) {
-          console.error("Invalid URL provided:", body.url)
+          console.error("[API] Webhooks: Invalid URL provided:", body.url)
           return NextResponse.json({ error: "Invalid URL. Provide a complete and valid URL." }, { status: 400 })
         }
       }
@@ -55,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       // Validate events if provided
       if (body.events) {
         if (!Array.isArray(body.events)) {
-          console.error("Events is not an array:", body.events)
+          console.error("[API] Webhooks: Events is not an array:", body.events)
           return NextResponse.json({ error: "Events must be an array." }, { status: 400 })
         }
 
@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
         for (const event of body.events) {
           if (!validEvents.includes(event as WebhookEvent)) {
-            console.error("Invalid event:", event)
+            console.error("[API] Webhooks: Invalid event:", event)
             return NextResponse.json(
               { error: `Invalid event: ${event}. Valid events: ${validEvents.join(", ")}` },
               { status: 400 },
@@ -78,19 +78,22 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         }
       }
 
-      console.log("Updating webhook:", params.id)
+      console.log(`[API] Webhooks: Updating webhook ID: ${params.id}`)
       const updatedWebhook = await updateWebhook(params.id, body, userId)
 
       if (!updatedWebhook) {
-        console.error("Webhook not found:", params.id)
+        console.error(`[API] Webhooks: Webhook not found, ID: ${params.id}`)
         return NextResponse.json({ error: "Webhook not found" }, { status: 404 })
       }
 
-      console.log("Webhook updated successfully:", updatedWebhook)
+      console.log("[API] Webhooks: Webhook updated successfully:", updatedWebhook.id)
       return NextResponse.json(updatedWebhook)
     } catch (error) {
-      console.error("Error updating webhook:", error)
-      return NextResponse.json({ error: "Error updating webhook" }, { status: 500 })
+      console.error("[API] Webhooks: Error updating webhook:", error)
+      return NextResponse.json(
+        { error: `Error updating webhook: ${error instanceof Error ? error.message : String(error)}` },
+        { status: 500 },
+      )
     }
   })
 }

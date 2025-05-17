@@ -200,23 +200,23 @@ export async function getWebhookLogs(webhookId: string, limit = 50): Promise<Web
 
 // Function to trigger webhooks
 export async function triggerWebhooks(event: WebhookEvent, payload: any, userId: string): Promise<void> {
-  console.log(`Triggering webhooks for event: ${event}, userId: ${userId}`)
+  console.log(`[Webhook] Triggering webhooks for event: ${event}, userId: ${userId}`)
 
   try {
     const webhooks = await getWebhooksByEvent(event, userId)
 
     // If there are no webhooks for this event, return
     if (webhooks.length === 0) {
-      console.log(`No webhooks found for event: ${event}`)
+      console.log(`[Webhook] No webhooks found for event: ${event}`)
       return
     }
 
-    console.log(`Found ${webhooks.length} webhooks for event: ${event}`)
+    console.log(`[Webhook] Found ${webhooks.length} webhooks for event: ${event}`)
 
     // For each webhook, make the HTTP call
     for (const webhook of webhooks) {
       try {
-        console.log(`Processing webhook: ${webhook.id} (${webhook.name}) to URL: ${webhook.url}`)
+        console.log(`[Webhook] Processing webhook: ${webhook.id} (${webhook.name}) to URL: ${webhook.url}`)
 
         // Prepare the request body
         const body = JSON.stringify({
@@ -236,10 +236,10 @@ export async function triggerWebhooks(event: WebhookEvent, payload: any, userId:
           // In a real implementation, you would use a cryptography library
           // to create an HMAC signature of the body with the secret
           headers["X-Webhook-Signature"] = `sha256=${webhook.secret}`
-          console.log(`Added signature header for webhook: ${webhook.id}`)
+          console.log(`[Webhook] Added signature header for webhook: ${webhook.id}`)
         }
 
-        console.log(`Sending webhook to: ${webhook.url}`)
+        console.log(`[Webhook] Sending webhook to: ${webhook.url}`)
 
         // Make the HTTP call
         const response = await fetch(webhook.url, {
@@ -250,10 +250,17 @@ export async function triggerWebhooks(event: WebhookEvent, payload: any, userId:
 
         // Record the result
         const status = response.status
-        const responseText = await response.text()
+        let responseText = ""
+
+        try {
+          responseText = await response.text()
+        } catch (textError) {
+          console.error(`[Webhook] Error reading response text:`, textError)
+          responseText = "Error reading response"
+        }
 
         console.log(
-          `Webhook response: Status ${status}, Body: ${responseText.substring(0, 100)}${responseText.length > 100 ? "..." : ""}`,
+          `[Webhook] Response: Status ${status}, Body: ${responseText.substring(0, 100)}${responseText.length > 100 ? "..." : ""}`,
         )
 
         // Update the webhook with the last status
@@ -275,9 +282,9 @@ export async function triggerWebhooks(event: WebhookEvent, payload: any, userId:
           response: responseText,
         })
 
-        console.log(`Webhook ${webhook.id} processed successfully`)
+        console.log(`[Webhook] Webhook ${webhook.id} processed successfully`)
       } catch (error) {
-        console.error(`Error triggering webhook ${webhook.id} to ${webhook.url}:`, error)
+        console.error(`[Webhook] Error triggering webhook ${webhook.id} to ${webhook.url}:`, error)
 
         // Log the error
         await logWebhookCall({
@@ -300,6 +307,6 @@ export async function triggerWebhooks(event: WebhookEvent, payload: any, userId:
       }
     }
   } catch (error) {
-    console.error(`Error in triggerWebhooks function:`, error)
+    console.error(`[Webhook] Error in triggerWebhooks function:`, error)
   }
 }

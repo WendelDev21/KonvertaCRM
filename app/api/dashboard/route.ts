@@ -76,6 +76,14 @@ async function handleDashboardRequest(request: NextRequest, userId: string) {
       console.log("[API] Dashboard: Calling getDashboardData")
       const dashboardData = await getDashboardData(userId, startDate, endDate, sourceParam || undefined)
 
+      if (!dashboardData) {
+        console.error("[API] Dashboard: No data returned from getDashboardData")
+        return NextResponse.json(
+          { error: "Failed to fetch dashboard data: No data returned" },
+          { status: 500, headers },
+        )
+      }
+
       console.log("[API] Dashboard: Data fetched successfully:", {
         statusCounts: dashboardData?.statusCounts ? Object.keys(dashboardData.statusCounts).length : 0,
         sourceCounts: dashboardData?.sourceCounts ? Object.keys(dashboardData.sourceCounts).length : 0,

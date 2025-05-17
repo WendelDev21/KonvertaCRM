@@ -29,26 +29,26 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
-      console.log(`PUT request received for contact ID: ${params.id}`)
-      console.log(`User ID: ${userId}`)
+      console.log(`[API] Contacts: PUT request received for contact ID: ${params.id}`)
+      console.log(`[API] Contacts: User ID: ${userId}`)
 
       const body = await req.json()
-      console.log("Request body:", body)
+      console.log("[API] Contacts: Request body:", body)
 
       // Get the original contact for comparison
       const [originalContact, getError] = await getContactById(params.id, userId)
 
       if (getError) {
-        console.error("Error fetching original contact:", getError)
+        console.error("[API] Contacts: Error fetching original contact:", getError)
         return NextResponse.json({ error: getError.message }, { status: 500 })
       }
 
       if (!originalContact) {
-        console.log("Contact not found")
+        console.log("[API] Contacts: Contact not found")
         return NextResponse.json({ error: "Contact not found" }, { status: 404 })
       }
 
-      console.log("Original contact:", originalContact)
+      console.log("[API] Contacts: Original contact:", originalContact)
 
       const updateData: Partial<ContactInput> = {}
       if (body.name !== undefined) updateData.name = body.name
@@ -57,25 +57,25 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       if (body.status !== undefined) updateData.status = body.status
       if (body.notes !== undefined) updateData.notes = body.notes
 
-      console.log("Update data:", updateData)
+      console.log("[API] Contacts: Update data:", updateData)
 
       const [updatedContact, updateError] = await updateContact(params.id, updateData, userId)
 
       if (updateError) {
-        console.error("Error updating contact:", updateError)
+        console.error("[API] Contacts: Error updating contact:", updateError)
         return NextResponse.json({ error: updateError.message }, { status: 500 })
       }
 
       if (!updatedContact) {
-        console.log("Contact not found after update")
+        console.log("[API] Contacts: Contact not found after update")
         return NextResponse.json({ error: "Contact not found or update failed" }, { status: 404 })
       }
 
-      console.log("Updated contact:", updatedContact)
+      console.log("[API] Contacts: Updated contact:", updatedContact)
 
       // Verificar se o status foi alterado para disparar o evento específico
       if (originalContact.status !== updatedContact.status) {
-        console.log(`Status changed from ${originalContact.status} to ${updatedContact.status}`)
+        console.log(`[API] Contacts: Status changed from ${originalContact.status} to ${updatedContact.status}`)
         await triggerWebhooks(
           "contact.status_changed",
           {
@@ -93,8 +93,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       // Return the updated contact
       return NextResponse.json(updatedContact)
     } catch (error) {
-      console.error("Error updating contact:", error)
-      return NextResponse.json({ error: "Error updating contact" }, { status: 500 })
+      console.error("[API] Contacts: Error updating contact:", error)
+      return NextResponse.json(
+        { error: `Error updating contact: ${error instanceof Error ? error.message : String(error)}` },
+        { status: 500 },
+      )
     }
   })
 }
