@@ -112,13 +112,13 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="contact">Contato</Label>
+            <Label htmlFor="contact">Telefone ou @Instagram</Label>
             <Input
               id="contact"
               name="contact"
               value={formData.contact}
               onChange={handleChange}
-              placeholder="Email, telefone, etc."
+              placeholder="+55 00 00000-0000 ou @usuario"
               required
             />
           </div>
@@ -130,11 +130,8 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
                 <SelectValue placeholder="Selecione a origem" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Email">Email</SelectItem>
                 <SelectItem value="WhatsApp">WhatsApp</SelectItem>
                 <SelectItem value="Instagram">Instagram</SelectItem>
-                <SelectItem value="Telefone">Telefone</SelectItem>
-                <SelectItem value="Site">Site</SelectItem>
                 <SelectItem value="Outro">Outro</SelectItem>
               </SelectContent>
             </Select>
@@ -166,7 +163,7 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
               name="notes"
               value={formData.notes}
               onChange={handleChange}
-              placeholder="Observações sobre o contato"
+              placeholder="Adicione informações relevantes sobre o contato"
               rows={3}
             />
           </div>

@@ -275,10 +275,6 @@ export default function DashboardPage() {
                 <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                 <span>{refreshing ? "Atualizando..." : "Atualizar"}</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={checkDashboardData} className="flex items-center gap-1">
-                <Bug className="h-4 w-4" />
-                <span>Debug</span>
-              </Button>
             </div>
           </div>
 
