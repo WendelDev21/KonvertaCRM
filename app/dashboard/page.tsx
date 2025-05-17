@@ -256,7 +256,6 @@ export default function DashboardPage() {
           {/* Cabeçalho da página */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              
               <p className="text-muted-foreground mt-1">
                 Bem-vindo, {session?.user?.name?.split(" ")[0] || "Usuário"}! Aqui está o resumo dos seus contatos.
               </p>

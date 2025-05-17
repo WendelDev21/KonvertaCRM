@@ -214,69 +214,6 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       example:
         "curl -X PUT 'https://seu-dominio.com/api/users/me' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"Novo Nome\"}'",
     },
-    {
-      method: "GET",
-      path: "/api/users",
-      description: "Lista todos os usuários (apenas admin)",
-      response: "Array de usuários",
-      example: "curl -X GET 'https://seu-dominio.com/api/users' -H 'Authorization: Bearer seu_token_aqui'",
-    },
-    {
-      method: "GET",
-      path: "/api/users/[id]",
-      description: "Obtém detalhes de um usuário específico",
-      params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
-      response: "Detalhes do usuário",
-      example: "curl -X GET 'https://seu-dominio.com/api/users/123456' -H 'Authorization: Bearer seu_token_aqui'",
-    },
-    {
-      method: "PUT",
-      path: "/api/users/[id]",
-      description: "Atualiza um usuário específico (admin ou próprio usuário)",
-      params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
-      bodyParams: [
-        { name: "name", type: "string", description: "Nome do usuário", required: false },
-        { name: "email", type: "string", description: "Email do usuário", required: false },
-        { name: "role", type: "string", description: "Função (admin, user)", required: false },
-        { name: "password", type: "string", description: "Nova senha", required: false },
-      ],
-      response: "Usuário atualizado",
-      example:
-        "curl -X PUT 'https://seu-dominio.com/api/users/123456' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"Novo Nome\",\"role\":\"admin\"}'",
-    },
-    {
-      method: "DELETE",
-      path: "/api/users/[id]",
-      description: "Remove um usuário (apenas admin)",
-      params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
-      response: "{ success: true }",
-      example: "curl -X DELETE 'https://seu-dominio.com/api/users/123456' -H 'Authorization: Bearer seu_token_aqui'",
-    },
-  ],
-  tokens: [
-    {
-      method: "GET",
-      path: "/api/tokens",
-      description: "Lista tokens de API do usuário",
-      response: "Array de tokens",
-      example: "curl -X GET 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
-    },
-    {
-      method: "POST",
-      path: "/api/tokens",
-      description: "Gera um novo token de API",
-      response: "{ token: string }",
-      example: "curl -X POST 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
-    },
-    {
-      method: "DELETE",
-      path: "/api/tokens",
-      description: "Revoga todos os tokens ou um token específico",
-      queryParams: [{ name: "id", type: "string", description: "ID do token (opcional)", required: false }],
-      response: "{ success: true }",
-      example:
-        "curl -X DELETE 'https://seu-dominio.com/api/tokens?id=123456' -H 'Authorization: Bearer seu_token_aqui'",
-    },
   ],
 }
 
@@ -324,7 +261,6 @@ export function ApiRoutesList() {
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="tokens">Tokens</TabsTrigger>
           </TabsList>
 
           {Object.entries(apiRoutes).map(([key, routes]) => (
