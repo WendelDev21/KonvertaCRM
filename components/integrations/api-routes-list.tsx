@@ -215,6 +215,22 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         "curl -X PUT 'https://seu-dominio.com/api/users/me' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"Novo Nome\"}'",
     },
   ],
+  tokens: [
+    {
+      method: "GET",
+      path: "/api/tokens",
+      description: "Lista tokens de API do usuário",
+      response: "Array de tokens",
+      example: "curl -X GET 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "POST",
+      path: "/api/tokens",
+      description: "Gera um novo token de API",
+      response: "{ token: string }",
+      example: "curl -X POST 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+  ],
 }
 
 export function ApiRoutesList() {
@@ -261,6 +277,7 @@ export function ApiRoutesList() {
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="tokens">Tokens</TabsTrigger>
           </TabsList>
 
           {Object.entries(apiRoutes).map(([key, routes]) => (
