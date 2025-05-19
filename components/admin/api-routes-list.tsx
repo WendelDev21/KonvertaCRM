@@ -246,6 +246,16 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       example:
         "curl -X DELETE 'https://seu-dominio.com/api/admin/users/123456' -H 'Authorization: Bearer seu_token_aqui'",
     },
+    {
+      method: "DELETE",
+      path: "/api/admin/users/delete/[id]",
+      description: "Remove um usuário permanentemente (remove do banco de dados)",
+      auth: "Somente Admin",
+      params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
+      response: "{ success: true, id: string, isActive: false }",
+      example:
+        "curl -X DELETE 'https://seu-dominio.com/api/admin/users/delete/123456' -H 'Authorization: Bearer seu_token_aqui'",
+    },
   ],
   tokens: [
     {

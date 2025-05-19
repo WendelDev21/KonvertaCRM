@@ -23,6 +23,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Check if user is inactive
+  if (token && !isPublicPath && token.isActive === false) {
+    // Log the user out and redirect to login with error message
+    const response = NextResponse.redirect(new URL("/login?error=AccountDisabled", request.url))
+
+    // Clear the auth cookie to log the user out
+    response.cookies.delete("next-auth.session-token")
+    response.cookies.delete("__Secure-next-auth.session-token")
+
+    return response
+  }
+
   // Redirect authenticated users away from login/register pages
   if (token && isPublicPath) {
     return NextResponse.redirect(new URL("/dashboard", request.url))

@@ -18,7 +18,6 @@ export function DashboardHeader() {
   // Verificar se o usuário é admin
   const isAdmin = session?.user && (session.user as any).role === "admin"
 
-  
   const mainNavItems = [
     {
       name: "Dashboard",

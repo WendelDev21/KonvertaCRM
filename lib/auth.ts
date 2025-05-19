@@ -22,6 +22,7 @@ export const authOptions: NextAuthOptions = {
           bio: token.bio,
           theme: token.theme,
           image: token.image,
+          isActive: token.isActive,
         },
       }
     },
@@ -35,6 +36,7 @@ export const authOptions: NextAuthOptions = {
           bio: (user as any).bio,
           theme: (user as any).theme,
           image: user.image,
+          isActive: (user as any).isActive,
         }
       }
 
@@ -65,6 +67,11 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Check if user is inactive
+        if (user.isActive === false) {
+          throw new Error("Sua conta foi desativada. Entre em contato com o administrador do sistema.")
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -73,6 +80,7 @@ export const authOptions: NextAuthOptions = {
           bio: user.bio,
           theme: user.theme,
           image: user.image,
+          isActive: user.isActive,
         }
       },
     }),

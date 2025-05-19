@@ -20,6 +20,9 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
+  // Add this near the top of your component where you handle errors
+  const error = searchParams?.get("error")
+
   // Login form state
   const [loginData, setLoginData] = useState({
     email: "",
@@ -130,6 +133,13 @@ export function LoginForm() {
             Lembrar de mim
           </label>
         </div>
+
+        {error === "AccountDisabled" && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+            <p className="font-bold">Conta desativada</p>
+            <p>Sua conta foi desativada. Entre em contato com o administrador do sistema.</p>
+          </div>
+        )}
 
         {formError && <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">{formError}</div>}
 
