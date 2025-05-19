@@ -20,9 +20,9 @@ export function ContactCard({ contact, onClick, isDragging, isUpdating }: Contac
       case "Novo":
         return "border-l-4 border-l-sky-500 dark:border-l-sky-400"
       case "Conversando":
-        return "border-l-4 border-l-violet-500 dark:border-l-violet-400"
-      case "Interessado":
         return "border-l-4 border-l-amber-500 dark:border-l-amber-400"
+      case "Interessado":
+        return "border-l-4 border-l-violet-500 dark:border-l-violet-400"
       case "Fechado":
         return "border-l-4 border-l-emerald-500 dark:border-l-emerald-400"
       case "Perdido":

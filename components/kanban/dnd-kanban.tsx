@@ -52,14 +52,15 @@ const columnColors: Record<ContactStatus, { bg: string; border: string; hoverBg:
     hoverBg: "group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40",
   },
   Conversando: {
-    bg: "bg-gradient-to-b from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30",
-    border: "border-purple-200 dark:border-purple-800",
-    hoverBg: "group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40",
-  },
-  Interessado: {
     bg: "bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/30",
     border: "border-amber-200 dark:border-amber-800",
     hoverBg: "group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40",
+  },
+  Interessado: {
+    bg: "bg-gradient-to-b from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30",
+    border: "border-purple-200 dark:border-purple-800",
+    hoverBg: "group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40",
+    
   },
   Fechado: {
     bg: "bg-gradient-to-b from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/30",

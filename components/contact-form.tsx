@@ -229,7 +229,7 @@ export function ContactForm({ contactId }: ContactFormProps) {
             placeholder="Adicione informações relevantes sobre o contato"
             className="min-h-[120px] pl-10"
           />
-        </div>
+        </div> 
       </div>
 
       <div className="flex justify-between pt-4">

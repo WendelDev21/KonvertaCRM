@@ -37,9 +37,9 @@ export function KanbanColumn({
       case "Novo":
         return "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800/50"
       case "Conversando":
-        return "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-800/50"
-      case "Interessado":
         return "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800/50"
+      case "Interessado":
+        return "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-800/50"
       case "Fechado":
         return "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800/50"
       case "Perdido":
@@ -55,9 +55,9 @@ export function KanbanColumn({
       case "Novo":
         return "bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-400"
       case "Conversando":
-        return "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-400"
-      case "Interessado":
         return "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400"
+      case "Interessado":
+        return "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-400"
       case "Fechado":
         return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
       case "Perdido":
@@ -75,9 +75,9 @@ export function KanbanColumn({
       case "Novo":
         return "ring-4 ring-sky-300/50 dark:ring-sky-700/50"
       case "Conversando":
-        return "ring-4 ring-violet-300/50 dark:ring-violet-700/50"
-      case "Interessado":
         return "ring-4 ring-amber-300/50 dark:ring-amber-700/50"
+      case "Interessado":
+        return "ring-4 ring-violet-300/50 dark:ring-violet-700/50"
       case "Fechado":
         return "ring-4 ring-emerald-300/50 dark:ring-emerald-700/50"
       case "Perdido":
