@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Kanban, Menu, Users, Puzzle, Settings, PlusCircle } from "lucide-react"
+import { LayoutDashboard, Kanban, Menu, Users, Puzzle, Settings, PlusCircle, ShieldAlert } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserAvatar } from "@/components/user-avatar"
@@ -15,6 +15,10 @@ export function DashboardHeader() {
   const pathname = usePathname()
   const { data: session } = useSession()
 
+  // Verificar se o usuário é admin
+  const isAdmin = session?.user && (session.user as any).role === "admin"
+
+  
   const mainNavItems = [
     {
       name: "Dashboard",
@@ -37,6 +41,16 @@ export function DashboardHeader() {
       icon: Puzzle,
     },
   ]
+
+  // Adicionar link de administração apenas para admins
+  if (isAdmin) {
+    mainNavItems.push({
+      path: "/admin",
+      name: "Administração",
+      icon: ShieldAlert,
+      active: pathname === "/admin" || pathname.startsWith("/admin/"),
+    })
+  }
 
   const settingsNavItems = [
     {
