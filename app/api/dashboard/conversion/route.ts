@@ -8,8 +8,14 @@ export async function GET(request: NextRequest) {
     try {
       const { searchParams } = new URL(req.url)
       const period = searchParams.get("period") || "month"
+      const startDate = searchParams.get("startDate") ? new Date(searchParams.get("startDate")!) : null
+      const endDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : null
+      const source = searchParams.get("source") || null
 
-      const conversionData = await getConversionData(userId, period)
+      // Log the parameters for debugging
+      console.log("Conversion API called with params:", { period, startDate, endDate, source })
+
+      const [conversionData] = await getConversionData(userId, period)
       return NextResponse.json(conversionData)
     } catch (error) {
       console.error("Error fetching conversion data:", error)

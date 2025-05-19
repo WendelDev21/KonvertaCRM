@@ -181,11 +181,140 @@ export async function getDashboardData(userId: string, startDate: Date, endDate:
 }
 
 export async function getConversionData(userId: string, period: string) {
-  // Placeholder implementation
-  return {
-    overall: 25,
-    WhatsApp: 30,
-    Instagram: 15,
-    Outro: 10,
-  }
+  return dbAction(async () => {
+    try {
+      console.log("[Service] getConversionData: Starting data fetch for user", userId, "period:", period)
+
+      // Define date range based on period
+      const endDate = new Date()
+      const startDate = new Date()
+
+      switch (period) {
+        case "week":
+          startDate.setDate(startDate.getDate() - 7)
+          break
+        case "month":
+          startDate.setMonth(startDate.getMonth() - 1)
+          break
+        case "quarter":
+          startDate.setMonth(startDate.getMonth() - 3)
+          break
+        case "year":
+          startDate.setFullYear(startDate.getFullYear() - 1)
+          break
+        default:
+          startDate.setMonth(startDate.getMonth() - 1) // Default to month
+      }
+
+      // Get contacts by source
+      const contactsBySource = await prisma.contact.groupBy({
+        by: ["source"],
+        where: {
+          userId,
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _count: {
+          id: true,
+        },
+      })
+
+      // Get closed contacts by source (needed for conversion rate calculation only)
+      const closedContactsBySource = await prisma.contact.groupBy({
+        by: ["source"],
+        where: {
+          userId,
+          status: "Fechado",
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        _count: {
+          id: true,
+        },
+      })
+
+      // Get total contacts and closed contacts overall
+      const totalContacts = await prisma.contact.count({
+        where: {
+          userId,
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+      })
+
+      const closedContacts = await prisma.contact.count({
+        where: {
+          userId,
+          status: "Fechado",
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+      })
+
+      // Initialize source counts and conversion rates
+      const sourceCounts = {
+        WhatsApp: 0,
+        Instagram: 0,
+        Outro: 0,
+      }
+
+      const tempClosedCounts = {
+        WhatsApp: 0,
+        Instagram: 0,
+        Outro: 0,
+      }
+
+      const conversionRates = {
+        overall: totalContacts > 0 ? (closedContacts / totalContacts) * 100 : 0,
+        WhatsApp: 0,
+        Instagram: 0,
+        Outro: 0,
+      }
+
+      // Fill in the actual counts
+      contactsBySource.forEach((item) => {
+        if (item.source in sourceCounts) {
+          sourceCounts[item.source as keyof typeof sourceCounts] = item._count.id
+        }
+      })
+
+      // Fill in the closed counts (for calculation only, not returned)
+      closedContactsBySource.forEach((item) => {
+        if (item.source in tempClosedCounts) {
+          tempClosedCounts[item.source as keyof typeof tempClosedCounts] = item._count.id
+        }
+      })
+
+      // Calculate conversion rates
+      Object.keys(sourceCounts).forEach((source) => {
+        const totalForSource = sourceCounts[source as keyof typeof sourceCounts]
+        const closedForSource = tempClosedCounts[source as keyof typeof tempClosedCounts]
+
+        if (totalForSource > 0) {
+          conversionRates[source as keyof typeof conversionRates] = (closedForSource / totalForSource) * 100
+        }
+      })
+
+      console.log("[Service] getConversionData: Source counts:", sourceCounts)
+      console.log("[Service] getConversionData: Conversion rates:", conversionRates)
+
+      // Return only the requested data
+      return {
+        sourceCounts,
+        conversionRates,
+        totalContacts,
+      }
+    } catch (error) {
+      console.error("[Service] getConversionData: Error calculating conversion data:", error)
+      throw error
+    }
+  })
 }

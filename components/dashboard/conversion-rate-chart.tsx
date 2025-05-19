@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import type { ContactSource } from "./dashboard-filters"
 
 interface ConversionRateChartProps {
@@ -11,14 +11,16 @@ interface ConversionRateChartProps {
   source?: ContactSource
 }
 
-interface ConversionData {
+interface ChartData {
   name: string
-  value: number
+  total: number
+  rate: number
   color: string
 }
 
 export function ConversionRateChart({ startDate, endDate, source }: ConversionRateChartProps) {
-  const [data, setData] = useState<ConversionData[]>([])
+  const [data, setData] = useState<ChartData[]>([])
+  const [totalContacts, setTotalContacts] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [queryParams, setQueryParams] = useState<string>("")
@@ -61,30 +63,31 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
 
           const responseData = await response.json()
 
-          if (!responseData.conversionRates) {
+          if (!responseData.sourceCounts) {
             throw new Error("Invalid data format")
           }
 
+          // Set total contacts
+          setTotalContacts(responseData.totalContacts || 0)
+
           // Transform the data for the chart
-          const chartData: ConversionData[] = [
-            {
-              name: "Taxa de Conversão",
-              value: responseData.conversionRates.overall || 0,
-              color: "#22c55e", // green-500
-            },
+          const chartData: ChartData[] = [
             {
               name: "WhatsApp",
-              value: responseData.conversionRates.WhatsApp || 0,
+              total: responseData.sourceCounts.WhatsApp || 0,
+              rate: responseData.conversionRates.WhatsApp || 0,
               color: "#25D366", // WhatsApp green
             },
             {
               name: "Instagram",
-              value: responseData.conversionRates.Instagram || 0,
+              total: responseData.sourceCounts.Instagram || 0,
+              rate: responseData.conversionRates.Instagram || 0,
               color: "#E1306C", // Instagram pink
             },
             {
               name: "Outro",
-              value: responseData.conversionRates.Outro || 0,
+              total: responseData.sourceCounts.Outro || 0,
+              rate: responseData.conversionRates.Outro || 0,
               color: "#6b7280", // gray-500
             },
           ]
@@ -94,6 +97,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
           console.error("Error fetching conversion data:", err)
           setError("Failed to load conversion rate data")
           setData([])
+          setTotalContacts(0)
         } finally {
           setIsLoading(false)
         }
@@ -108,7 +112,8 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
       return (
         <div className="bg-background border rounded-md p-2 shadow-sm">
           <p className="font-medium">{label}</p>
-          <p style={{ color: payload[0].color }}>Taxa: {payload[0].value.toFixed(1)}%</p>
+          <p>Total: {payload[0].value} contatos</p>
+          <p>Taxa: {payload[1].value.toFixed(1)}%</p>
         </div>
       )
     }
@@ -119,7 +124,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
     return (
       <Card className="border shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Taxa de Conversão</CardTitle>
+          <CardTitle className="text-base font-medium">Contatos por Origem</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="h-32 w-32 rounded-full border-4 border-t-transparent border-blue-500 animate-spin"></div>
@@ -132,7 +137,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
     return (
       <Card className="border shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Taxa de Conversão</CardTitle>
+          <CardTitle className="text-base font-medium">Contatos por Origem</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="text-red-500">{error}</div>
@@ -145,7 +150,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
     return (
       <Card className="border shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Taxa de Conversão</CardTitle>
+          <CardTitle className="text-base font-medium">Contatos por Origem</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
           <div className="text-muted-foreground">Nenhum dado disponível para o período selecionado</div>
@@ -157,7 +162,10 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
   return (
     <Card className="border shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Taxa de Conversão</CardTitle>
+        <CardTitle className="text-base font-medium">
+          Contatos por Origem{" "}
+          <span className="text-sm font-normal text-muted-foreground ml-2">Total: {totalContacts}</span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -172,13 +180,12 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
           >
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
             <XAxis dataKey="name" />
-            <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+            <YAxis yAxisId="left" orientation="left" />
+            <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => `${value}%`} />
             <Tooltip content={customTooltip} />
-            <Bar dataKey="value" name="Taxa de Conversão">
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Bar>
+            <Legend />
+            <Bar yAxisId="left" dataKey="total" name="Total de Contatos" fill="#3b82f6" />
+            <Bar yAxisId="right" dataKey="rate" name="Taxa de Conversão (%)" fill="#f59e0b" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
