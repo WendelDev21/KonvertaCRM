@@ -15,6 +15,21 @@ export function DashboardHeader() {
   const pathname = usePathname()
   const { data: session } = useSession()
 
+  // Add this line to get the user's plan
+  const userPlan = session?.user ? (session.user as any).plan || "Starter" : "Starter"
+
+  // Add a function to get the badge color based on the plan
+  const getPlanBadgeColor = (plan: string) => {
+    switch (plan) {
+      case "Pro":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+      case "Business":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+      default: // Starter
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+    }
+  }
+
   // Verificar se o usuário é admin
   const isAdmin = session?.user && (session.user as any).role === "admin"
 
@@ -103,6 +118,11 @@ export function DashboardHeader() {
 
             {/* Avatar do usuário */}
             <UserAvatar />
+            <div className="hidden md:flex items-center ml-2">
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${getPlanBadgeColor(userPlan)}`}>
+                {userPlan}
+              </span>
+            </div>
 
             {/* Menu móvel */}
             <Sheet>
@@ -179,6 +199,11 @@ export function DashboardHeader() {
                             <div>
                               <p className="font-medium">{session.user.name}</p>
                               <p className="text-xs text-muted-foreground">{session.user.email}</p>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${getPlanBadgeColor(userPlan)}`}
+                              >
+                                {userPlan}
+                              </span>
                             </div>
                           </div>
                           <Button
