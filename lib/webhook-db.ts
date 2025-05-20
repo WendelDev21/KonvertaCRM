@@ -10,7 +10,7 @@ export interface Webhook {
   events: WebhookEvent[]
   secret?: string
   createdAt: string | Date
-  isActive: boolean
+  active: boolean // Alterado de isActive para active para corresponder ao schema
   lastTriggered?: string | Date
   lastStatus?: number
   userId: string
@@ -38,7 +38,7 @@ export async function getAllWebhooks(userId: string): Promise<Webhook[]> {
     events: JSON.parse(webhook.events) as WebhookEvent[],
     createdAt: webhook.createdAt.toISOString(),
     lastTriggered: webhook.lastTriggered?.toISOString(),
-    isActive: Boolean(webhook.isActive),
+    active: Boolean(webhook.active), // Alterado de isActive para active
   }))
 }
 
@@ -57,7 +57,7 @@ export async function getWebhookById(id: string, userId: string): Promise<Webhoo
     events: JSON.parse(webhook.events) as WebhookEvent[],
     createdAt: webhook.createdAt.toISOString(),
     lastTriggered: webhook.lastTriggered?.toISOString(),
-    isActive: Boolean(webhook.isActive),
+    active: Boolean(webhook.active), // Alterado de isActive para active
   }
 }
 
@@ -65,7 +65,7 @@ export async function getWebhooksByEvent(event: WebhookEvent, userId: string): P
   // Get all active webhooks for this user
   const webhooks = await prisma.webhook.findMany({
     where: {
-      isActive: true,
+      active: true, // Alterado de isActive para active
       userId,
     },
   })
@@ -77,32 +77,41 @@ export async function getWebhooksByEvent(event: WebhookEvent, userId: string): P
       events: JSON.parse(webhook.events) as WebhookEvent[],
       createdAt: webhook.createdAt.toISOString(),
       lastTriggered: webhook.lastTriggered?.toISOString(),
-      isActive: Boolean(webhook.isActive),
+      active: Boolean(webhook.active), // Alterado de isActive para active
     }))
     .filter((webhook) => webhook.events.includes(event) || webhook.events.includes("all"))
 }
 
 export async function createWebhook(
-  webhook: Omit<Webhook, "id" | "createdAt" | "isActive" | "lastTriggered" | "lastStatus">,
+  webhook: Omit<Webhook, "id" | "createdAt" | "active" | "lastTriggered" | "lastStatus">, // Alterado de isActive para active
   userId: string,
 ): Promise<Webhook> {
-  const newWebhook = await prisma.webhook.create({
-    data: {
-      name: webhook.name,
-      url: webhook.url,
-      events: JSON.stringify(webhook.events),
-      secret: webhook.secret || null,
-      isActive: true,
-      userId,
-    },
-  })
+  console.log("Criando webhook com dados:", webhook)
 
-  return {
-    ...newWebhook,
-    events: JSON.parse(newWebhook.events) as WebhookEvent[],
-    createdAt: newWebhook.createdAt.toISOString(),
-    lastTriggered: newWebhook.lastTriggered?.toISOString(),
-    isActive: Boolean(newWebhook.isActive),
+  try {
+    const newWebhook = await prisma.webhook.create({
+      data: {
+        name: webhook.name,
+        url: webhook.url,
+        events: JSON.stringify(webhook.events),
+        secret: webhook.secret || null,
+        active: true, // Alterado de isActive para active
+        userId,
+      },
+    })
+
+    console.log("Webhook criado com sucesso:", newWebhook)
+
+    return {
+      ...newWebhook,
+      events: JSON.parse(newWebhook.events) as WebhookEvent[],
+      createdAt: newWebhook.createdAt.toISOString(),
+      lastTriggered: newWebhook.lastTriggered?.toISOString(),
+      active: Boolean(newWebhook.active), // Alterado de isActive para active
+    }
+  } catch (error) {
+    console.error("Erro ao criar webhook no banco de dados:", error)
+    throw error
   }
 }
 
@@ -119,7 +128,7 @@ export async function updateWebhook(
     if (webhook.url !== undefined) updateData.url = webhook.url
     if (webhook.events !== undefined) updateData.events = JSON.stringify(webhook.events)
     if (webhook.secret !== undefined) updateData.secret = webhook.secret
-    if (webhook.isActive !== undefined) updateData.isActive = webhook.isActive
+    if (webhook.active !== undefined) updateData.active = webhook.active // Alterado de isActive para active
     if (webhook.lastTriggered !== undefined) updateData.lastTriggered = webhook.lastTriggered
     if (webhook.lastStatus !== undefined) updateData.lastStatus = webhook.lastStatus
 
@@ -136,7 +145,7 @@ export async function updateWebhook(
       events: JSON.parse(updatedWebhook.events) as WebhookEvent[],
       createdAt: updatedWebhook.createdAt.toISOString(),
       lastTriggered: updatedWebhook.lastTriggered?.toISOString(),
-      isActive: Boolean(updatedWebhook.isActive),
+      active: Boolean(updatedWebhook.active), // Alterado de isActive para active
     }
   } catch (error) {
     console.error("Error updating webhook:", error)

@@ -107,6 +107,7 @@ model Webhook {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   lastTriggered DateTime?
+  lastStatus    Int?
   userId        String
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

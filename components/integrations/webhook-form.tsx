@@ -19,7 +19,7 @@ interface WebhookFormProps {
     url: string
     events: WebhookEvent[]
     secret?: string
-    isActive: boolean
+    active: boolean // Alterado de isActive para active para corresponder ao schema
   }
   onCancel: () => void
   onSave: () => void
@@ -33,7 +33,7 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
     url: webhook?.url || "",
     events: webhook?.events || [],
     secret: webhook?.secret || "",
-    isActive: webhook?.isActive ?? true,
+    active: webhook?.active ?? true, // Alterado de isActive para active
   })
 
   const eventOptions: { id: WebhookEvent; label: string; description: string }[] = [
@@ -114,6 +114,8 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
         return
       }
 
+      console.log("Enviando dados do webhook:", formData)
+
       const endpoint = webhook?.id ? `/api/webhooks/${webhook.id}` : "/api/webhooks"
 
       const method = webhook?.id ? "PUT" : "POST"
@@ -126,10 +128,14 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
         body: JSON.stringify(formData),
       })
 
+      const responseData = await response.json()
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Erro ao salvar webhook")
+        console.error("Erro na resposta da API:", responseData)
+        throw new Error(responseData.error || "Erro ao salvar webhook")
       }
+
+      console.log("Resposta da API:", responseData)
 
       toast({
         title: webhook?.id ? "Webhook atualizado" : "Webhook criado",
@@ -292,12 +298,12 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
 
           <div className="flex items-center space-x-2 pt-2">
             <Checkbox
-              id="isActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: checked === true }))}
+              id="active"
+              checked={formData.active}
+              onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, active: checked === true }))}
             />
             <label
-              htmlFor="isActive"
+              htmlFor="active"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               Ativo

@@ -31,9 +31,11 @@ export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
       const body = await req.json()
+      console.log("Recebido POST /api/webhooks com body:", body)
 
       // Validate data
       if (!body.name || !body.url || !body.events || !Array.isArray(body.events)) {
+        console.log("Dados incompletos:", body)
         return NextResponse.json({ error: "Incomplete data. Name, URL, and events are required." }, { status: 400 })
       }
 
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
       try {
         new URL(body.url)
       } catch (e) {
+        console.log("URL inválida:", body.url)
         return NextResponse.json({ error: "Invalid URL. Provide a complete and valid URL." }, { status: 400 })
       }
 
@@ -55,6 +58,7 @@ export async function POST(request: NextRequest) {
 
       for (const event of body.events) {
         if (!validEvents.includes(event as WebhookEvent)) {
+          console.log("Evento inválido:", event)
           return NextResponse.json(
             { error: `Invalid event: ${event}. Valid events: ${validEvents.join(", ")}` },
             { status: 400 },
@@ -62,21 +66,39 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const newWebhook = await createWebhook(
-        {
-          name: body.name,
-          url: body.url,
-          events: body.events,
-          secret: body.secret,
+      try {
+        const newWebhook = await createWebhook(
+          {
+            name: body.name,
+            url: body.url,
+            events: body.events,
+            secret: body.secret,
+            userId,
+          },
           userId,
-        },
-        userId,
-      )
+        )
 
-      return NextResponse.json(newWebhook, { status: 201 })
+        console.log("Webhook criado com sucesso:", newWebhook)
+        return NextResponse.json(newWebhook, { status: 201 })
+      } catch (error) {
+        console.error("Erro ao criar webhook:", error)
+        return NextResponse.json(
+          {
+            error: "Error creating webhook",
+            details: error instanceof Error ? error.message : String(error),
+          },
+          { status: 500 },
+        )
+      }
     } catch (error) {
-      console.error("Error creating webhook:", error)
-      return NextResponse.json({ error: "Error creating webhook" }, { status: 500 })
+      console.error("Erro no handler POST /api/webhooks:", error)
+      return NextResponse.json(
+        {
+          error: "Error processing webhook request",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 500 },
+      )
     }
   })
 }
