@@ -26,6 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           name: true,
           email: true,
           role: true,
+          plan: true,
           createdAt: true,
           updatedAt: true,
           isActive: true,
@@ -64,6 +65,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       }
 
       const body = await req.json()
+      console.log(`Atualizando usuário ${params.id} com dados:`, body) // Log para debug
 
       // Prepare update data
       const updateData: any = {}
@@ -75,6 +77,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       if (body.bio !== undefined) updateData.bio = body.bio
       if (body.theme !== undefined) updateData.theme = body.theme
       if (body.image !== undefined) updateData.image = body.image
+      if (body.plan !== undefined) updateData.plan = body.plan
       if (body.notificationSettings !== undefined) {
         updateData.notificationSettings =
           typeof body.notificationSettings === "string"
@@ -87,6 +90,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         updateData.password = await hash(body.password, 10)
       }
 
+      console.log(`Dados preparados para atualização:`, updateData) // Log para debug
+
       const updatedUser = await prisma.user.update({
         where: {
           id: params.id,
@@ -97,6 +102,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           name: true,
           email: true,
           role: true,
+          plan: true, // Certifique-se de que o plano está sendo selecionado
           createdAt: true,
           updatedAt: true,
           isActive: true,
@@ -105,6 +111,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           // Exclude password
         },
       })
+
+      console.log(`Usuário atualizado com sucesso:`, updatedUser) // Log para debug
+
+      // Verificar se o plano foi atualizado corretamente
+      const verifiedUser = await prisma.user.findUnique({
+        where: { id: params.id },
+        select: { plan: true },
+      })
+
+      console.log(`Verificação pós-atualização do plano:`, verifiedUser) // Log para debug
 
       return NextResponse.json(updatedUser)
     } catch (error) {

@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
           name: true,
           email: true,
           role: true,
+          plan: true, // Garantir que o plano seja selecionado
           createdAt: true,
           updatedAt: true,
           isActive: true,
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
       }
 
       const body = await req.json()
+      console.log("Dados recebidos para criação de usuário:", body)
 
       // Validate data
       if (!body.name || !body.email || !body.password) {
@@ -97,12 +99,18 @@ export async function POST(request: NextRequest) {
 
       // Create user
       const hashedPassword = await hash(body.password, 10)
+
+      // Garantir que o plano seja definido corretamente
+      const plan = body.plan || "Starter"
+      console.log(`Criando usuário com plano: ${plan}`)
+
       const newUser = await prisma.user.create({
         data: {
           name: body.name,
           email: body.email,
           password: hashedPassword,
           role: body.role || "user", // Default to "user" if not specified
+          plan: plan, // Usar o plano fornecido ou "Starter" como padrão
           isActive: true,
         },
         select: {
@@ -110,6 +118,7 @@ export async function POST(request: NextRequest) {
           name: true,
           email: true,
           role: true,
+          plan: true, // Garantir que o plano seja retornado
           createdAt: true,
           updatedAt: true,
           isActive: true,
@@ -117,6 +126,7 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      console.log("Novo usuário criado:", newUser)
       return NextResponse.json(newUser, { status: 201 })
     } catch (error) {
       console.error("Error creating user:", error)
