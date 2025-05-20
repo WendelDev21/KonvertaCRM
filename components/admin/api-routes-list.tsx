@@ -18,6 +18,7 @@ interface ApiRoute {
   bodyParams?: { name: string; type: string; description: string; required: boolean }[]
   response: string
   example: string
+  responseExample?: string
 }
 
 const apiRoutes: Record<string, ApiRoute[]> = {
@@ -31,10 +32,35 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "status", type: "string", description: "Filtrar por status", required: false },
         { name: "source", type: "string", description: "Filtrar por origem", required: false },
         { name: "q", type: "string", description: "Busca por nome, contato ou notas", required: false },
+        { name: "page", type: "number", description: "Número da página para paginação", required: false },
+        { name: "limit", type: "number", description: "Quantidade de itens por página", required: false },
+        { name: "sortBy", type: "string", description: "Campo para ordenação", required: false },
+        { name: "sortOrder", type: "string", description: "Direção da ordenação (asc/desc)", required: false },
       ],
-      response: "Array de contatos",
+      response: "Array de contatos com metadados de paginação",
+      responseExample: `{
+  "data": [
+    {
+      "id": "8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f",
+      "name": "João Silva",
+      "contact": "joao@email.com",
+      "source": "site",
+      "status": "lead",
+      "notes": "Interessado em nossos serviços",
+      "createdAt": "2023-01-15T14:30:00.000Z",
+      "updatedAt": "2023-01-15T14:30:00.000Z"
+    },
+    // ...outros contatos
+  ],
+  "pagination": {
+    "total": 125,
+    "pages": 13,
+    "page": 1,
+    "limit": 10
+  }
+}`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/contacts?status=lead' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://seu-dominio.com/api/contacts?status=lead&limit=10&page=1&sortBy=createdAt&sortOrder=desc' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -43,7 +69,28 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       auth: "Usuário autenticado",
       params: [{ name: "id", type: "string", description: "ID do contato", required: true }],
       response: "Detalhes do contato",
-      example: "curl -X GET 'https://seu-dominio.com/api/contacts/123456' -H 'Authorization: Bearer seu_token_aqui'",
+      responseExample: `{
+  "id": "8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f",
+  "name": "João Silva",
+  "contact": "joao@email.com",
+  "source": "site",
+  "status": "lead",
+  "notes": "Interessado em nossos serviços",
+  "createdAt": "2023-01-15T14:30:00.000Z",
+  "updatedAt": "2023-01-15T14:30:00.000Z",
+  "history": [
+    {
+      "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "action": "status_changed",
+      "from": "prospect",
+      "to": "lead",
+      "createdAt": "2023-01-14T10:15:00.000Z",
+      "userId": "abc123"
+    }
+  ]
+}`,
+      example:
+        "curl -X GET 'https://seu-dominio.com/api/contacts/8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
@@ -56,10 +103,22 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "source", type: "string", description: "Origem do contato", required: true },
         { name: "status", type: "string", description: "Status do contato", required: true },
         { name: "notes", type: "string", description: "Observações", required: false },
+        { name: "tags", type: "string[]", description: "Tags para categorização", required: false },
+        { name: "customFields", type: "object", description: "Campos personalizados", required: false },
       ],
       response: "Contato criado",
+      responseExample: `{
+  "id": "8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f",
+  "name": "João Silva",
+  "contact": "joao@email.com",
+  "source": "site",
+  "status": "lead",
+  "notes": "Interessado em nossos serviços",
+  "createdAt": "2023-01-15T14:30:00.000Z",
+  "updatedAt": "2023-01-15T14:30:00.000Z"
+}`,
       example:
-        'curl -X POST \'https://seu-dominio.com/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"João Silva","contact":"joao@email.com","source":"site","status":"lead"}\'',
+        'curl -X POST \'https://seu-dominio.com/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "João Silva",\n    "contact": "joao@email.com",\n    "source": "site",\n    "status": "lead",\n    "notes": "Interessado em nossos serviços",\n    "tags": ["premium", "website"]\n  }\'',
     },
     {
       method: "PUT",
@@ -73,10 +132,21 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "source", type: "string", description: "Origem do contato", required: false },
         { name: "status", type: "string", description: "Status do contato", required: false },
         { name: "notes", type: "string", description: "Observações", required: false },
+        { name: "tags", type: "string[]", description: "Tags para categorização", required: false },
+        { name: "customFields", type: "object", description: "Campos personalizados", required: false },
       ],
       response: "Contato atualizado",
+      responseExample: `{
+  "id": "8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f",
+  "name": "João Silva",
+  "contact": "joao@email.com",
+  "source": "site",
+  "status": "cliente",
+  "notes": "Convertido em cliente",
+  "updatedAt": "2023-01-16T10:25:00.000Z"
+}`,
       example:
-        "curl -X PUT 'https://seu-dominio.com/api/contacts/123456' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"status\":\"cliente\"}'",
+        "curl -X PUT 'https://seu-dominio.com/api/contacts/8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"status\": \"cliente\",\n    \"notes\": \"Convertido em cliente\"\n  }'",
     },
     {
       method: "DELETE",
@@ -84,8 +154,28 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Remove um contato",
       auth: "Usuário autenticado",
       params: [{ name: "id", type: "string", description: "ID do contato", required: true }],
-      response: "{ success: true }",
-      example: "curl -X DELETE 'https://seu-dominio.com/api/contacts/123456' -H 'Authorization: Bearer seu_token_aqui'",
+      response: "{ success: true, id: string }",
+      responseExample: `{
+  "success": true,
+  "id": "8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f"
+}`,
+      example:
+        "curl -X DELETE 'https://seu-dominio.com/api/contacts/8f7d6c5e-4b3a-2c1d-0e9f-8a7b6c5d4e3f' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "GET",
+      path: "/api/contacts/sources",
+      description: "Lista todas as origens de contatos disponíveis",
+      auth: "Usuário autenticado",
+      response: "Array de origens",
+      responseExample: `[
+  "site",
+  "indicação",
+  "google",
+  "redes sociais",
+  "evento"
+]`,
+      example: "curl -X GET 'https://seu-dominio.com/api/contacts/sources' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ],
   webhooks: [
@@ -94,8 +184,36 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       path: "/api/webhooks",
       description: "Lista todos os webhooks configurados",
       auth: "Usuário autenticado",
+      queryParams: [
+        { name: "page", type: "number", description: "Número da página para paginação", required: false },
+        { name: "limit", type: "number", description: "Quantidade de itens por página", required: false },
+        { name: "active", type: "boolean", description: "Filtrar por status de ativação", required: false },
+        { name: "event", type: "string", description: "Filtrar por tipo de evento", required: false },
+      ],
       response: "Array de webhooks",
-      example: "curl -X GET 'https://seu-dominio.com/api/webhooks' -H 'Authorization: Bearer seu_token_aqui'",
+      responseExample: `{
+  "data": [
+    {
+      "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+      "name": "Meu Webhook",
+      "url": "https://meu-site.com/webhook",
+      "events": ["contact.created", "contact.updated"],
+      "secret": "sha256:abc123...",
+      "active": true,
+      "createdAt": "2023-01-10T09:20:00.000Z",
+      "lastTriggered": "2023-01-15T14:30:00.000Z"
+    },
+    // ...outros webhooks
+  ],
+  "pagination": {
+    "total": 8,
+    "pages": 1,
+    "page": 1,
+    "limit": 10
+  }
+}`,
+      example:
+        "curl -X GET 'https://seu-dominio.com/api/webhooks?active=true&event=contact.created' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -106,10 +224,39 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       queryParams: [
         { name: "logs", type: "boolean", description: "Incluir logs do webhook", required: false },
         { name: "limit", type: "number", description: "Limite de logs a retornar", required: false },
+        { name: "page", type: "number", description: "Página de logs a retornar", required: false },
       ],
       response: "Detalhes do webhook",
+      responseExample: `{
+  "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+  "name": "Meu Webhook",
+  "url": "https://meu-site.com/webhook",
+  "events": ["contact.created", "contact.updated"],
+  "secret": "sha256:abc123...",
+  "active": true,
+  "createdAt": "2023-01-10T09:20:00.000Z",
+  "lastTriggered": "2023-01-15T14:30:00.000Z",
+  "logs": [
+    {
+      "id": "9i8u7y6t-5r4e-3w2q-1p0o-9i8u7y6t5r4e",
+      "event": "contact.created",
+      "status": "success",
+      "statusCode": 200,
+      "requestBody": "{...}",
+      "responseBody": "{\"success\":true}",
+      "createdAt": "2023-01-15T14:30:00.000Z"
+    },
+    // ...outros logs
+  ],
+  "pagination": {
+    "total": 15,
+    "pages": 2,
+    "page": 1,
+    "limit": 10
+  }
+}`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/webhooks/123456?logs=true&limit=10' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://seu-dominio.com/api/webhooks/1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p?logs=true&limit=10&page=1' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
@@ -121,10 +268,21 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "url", type: "string", description: "URL do endpoint", required: true },
         { name: "events", type: "array", description: "Eventos a serem notificados", required: true },
         { name: "secret", type: "string", description: "Segredo para assinatura", required: false },
+        { name: "active", type: "boolean", description: "Status de ativação do webhook", required: false },
+        { name: "headers", type: "object", description: "Cabeçalhos HTTP personalizados", required: false },
       ],
       response: "Webhook criado",
+      responseExample: `{
+  "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+  "name": "Meu Webhook",
+  "url": "https://meu-site.com/webhook",
+  "events": ["contact.created", "contact.updated"],
+  "secret": "sha256:abc123...",
+  "active": true,
+  "createdAt": "2023-01-10T09:20:00.000Z"
+}`,
       example:
-        'curl -X POST \'https://seu-dominio.com/api/webhooks\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Meu Webhook","url":"https://meu-site.com/webhook","events":["contact.created","contact.updated"]}\'',
+        'curl -X POST \'https://seu-dominio.com/api/webhooks\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "Meu Webhook",\n    "url": "https://meu-site.com/webhook",\n    "events": ["contact.created", "contact.updated"],\n    "active": true,\n    "headers": {\n      "x-custom-header": "custom-value"\n    }\n  }\'',
     },
     {
       method: "PUT",
@@ -137,10 +295,21 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "url", type: "string", description: "URL do endpoint", required: false },
         { name: "events", type: "array", description: "Eventos a serem notificados", required: false },
         { name: "secret", type: "string", description: "Segredo para assinatura", required: false },
+        { name: "active", type: "boolean", description: "Status de ativação do webhook", required: false },
+        { name: "headers", type: "object", description: "Cabeçalhos HTTP personalizados", required: false },
       ],
       response: "Webhook atualizado",
+      responseExample: `{
+  "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+  "name": "Webhook Atualizado",
+  "url": "https://meu-site.com/webhook",
+  "events": ["contact.created", "all"],
+  "secret": "sha256:xyz789...",
+  "active": true,
+  "updatedAt": "2023-01-16T11:05:00.000Z"
+}`,
       example:
-        'curl -X PUT \'https://seu-dominio.com/api/webhooks/123456\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Webhook Atualizado","events":["contact.created","all"]}\'',
+        'curl -X PUT \'https://seu-dominio.com/api/webhooks/1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "Webhook Atualizado",\n    "events": ["contact.created", "all"],\n    "active": true\n  }\'',
     },
     {
       method: "DELETE",
@@ -148,8 +317,34 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Remove um webhook",
       auth: "Usuário autenticado",
       params: [{ name: "id", type: "string", description: "ID do webhook", required: true }],
-      response: "{ success: true }",
-      example: "curl -X DELETE 'https://seu-dominio.com/api/webhooks/123456' -H 'Authorization: Bearer seu_token_aqui'",
+      response: "{ success: true, id: string }",
+      responseExample: `{
+  "success": true,
+  "id": "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p"
+}`,
+      example:
+        "curl -X DELETE 'https://seu-dominio.com/api/webhooks/1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "POST",
+      path: "/api/webhooks/test/[id]",
+      description: "Testa um webhook enviando um evento simulado",
+      auth: "Usuário autenticado",
+      params: [{ name: "id", type: "string", description: "ID do webhook", required: true }],
+      bodyParams: [
+        { name: "event", type: "string", description: "Tipo de evento a simular", required: true },
+        { name: "payload", type: "object", description: "Dados do evento a enviar", required: false },
+      ],
+      response: "Resultado do teste",
+      responseExample: `{
+  "success": true,
+  "statusCode": 200,
+  "responseBody": "{\"received\":true}",
+  "duration": 280,
+  "timestamp": "2023-01-16T11:20:00.000Z"
+}`,
+      example:
+        'curl -X POST \'https://seu-dominio.com/api/webhooks/test/1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "event": "contact.created",\n    "payload": {\n      "id": "test-123",\n      "name": "Contato de Teste"\n    }\n  }\'',
     },
   ],
   admin: [
@@ -161,10 +356,47 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       queryParams: [
         { name: "includeInactive", type: "boolean", description: "Incluir usuários inativos", required: false },
         { name: "q", type: "string", description: "Busca por nome ou email", required: false },
+        { name: "role", type: "string", description: "Filtrar por função (user/admin)", required: false },
+        { name: "plan", type: "string", description: "Filtrar por plano (Starter/Pro/Business)", required: false },
+        { name: "page", type: "number", description: "Número da página para paginação", required: false },
+        { name: "limit", type: "number", description: "Quantidade de itens por página", required: false },
+        { name: "sortBy", type: "string", description: "Campo para ordenação", required: false },
+        { name: "sortOrder", type: "string", description: "Direção da ordenação (asc/desc)", required: false },
       ],
-      response: "Array de usuários",
+      response: "Array de usuários com metadados de paginação",
+      responseExample: `{
+  "data": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "Admin Teste",
+      "email": "admin@teste.com",
+      "role": "admin",
+      "isActive": true,
+      "plan": "Business",
+      "createdAt": "2023-01-01T10:00:00.000Z",
+      "lastLogin": "2023-01-15T08:30:00.000Z"
+    },
+    {
+      "id": "223e4567-e89b-12d3-a456-426614174001",
+      "name": "Usuário Regular",
+      "email": "usuario@teste.com",
+      "role": "user",
+      "isActive": true,
+      "plan": "Pro",
+      "createdAt": "2023-01-05T14:20:00.000Z",
+      "lastLogin": "2023-01-14T16:45:00.000Z"
+    },
+    // ...outros usuários
+  ],
+  "pagination": {
+    "total": 45,
+    "pages": 5,
+    "page": 1,
+    "limit": 10
+  }
+}`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/admin/users?includeInactive=true' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://seu-dominio.com/api/admin/users?includeInactive=true&plan=Pro&limit=10&page=1' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -172,18 +404,87 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Obtém detalhes de um usuário específico",
       auth: "Somente Admin",
       params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
+      queryParams: [
+        { name: "includeTokens", type: "boolean", description: "Incluir tokens do usuário", required: false },
+        { name: "includeActivity", type: "boolean", description: "Incluir histórico de atividades", required: false },
+      ],
       response: "Detalhes do usuário",
-      example: "curl -X GET 'https://seu-dominio.com/api/admin/users/123456' -H 'Authorization: Bearer seu_token_aqui'",
+      responseExample: `{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Usuário Teste",
+  "email": "usuario@teste.com",
+  "role": "user",
+  "isActive": true,
+  "plan": "Pro",
+  "createdAt": "2023-01-05T14:20:00.000Z",
+  "updatedAt": "2023-01-10T09:15:00.000Z",
+  "lastLogin": "2023-01-14T16:45:00.000Z",
+  "settings": {
+    "notifications": true,
+    "twoFactorEnabled": false
+  },
+  "tokens": [
+    {
+      "id": "abc123",
+      "name": "API Token",
+      "createdAt": "2023-01-10T09:20:00.000Z",
+      "lastUsed": "2023-01-14T10:30:00.000Z",
+      "isActive": true
+    }
+  ],
+  "activity": [
+    {
+      "action": "login",
+      "timestamp": "2023-01-14T16:45:00.000Z",
+      "ip": "192.168.1.1",
+      "userAgent": "Mozilla/5.0..."
+    }
+  ]
+}`,
+      example:
+        "curl -X GET 'https://seu-dominio.com/api/admin/users/123e4567-e89b-12d3-a456-426614174000?includeTokens=true&includeActivity=true' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
       path: "/api/admin/tokens",
       description: "Lista todos os tokens ativos por usuário",
       auth: "Somente Admin",
-      queryParams: [{ name: "userId", type: "string", description: "Filtrar por ID do usuário", required: false }],
-      response: "Array de tokens",
+      queryParams: [
+        { name: "userId", type: "string", description: "Filtrar por ID do usuário", required: false },
+        { name: "isActive", type: "boolean", description: "Filtrar por status de ativação", required: false },
+        { name: "page", type: "number", description: "Número da página para paginação", required: false },
+        { name: "limit", type: "number", description: "Quantidade de itens por página", required: false },
+        { name: "sortBy", type: "string", description: "Campo para ordenação", required: false },
+        { name: "sortOrder", type: "string", description: "Direção da ordenação (asc/desc)", required: false },
+      ],
+      response: "Array de tokens com metadados de paginação",
+      responseExample: `{
+  "data": [
+    {
+      "id": "abc123",
+      "name": "API Token",
+      "createdAt": "2023-01-10T09:20:00.000Z",
+      "lastUsed": "2023-01-14T10:30:00.000Z",
+      "expiresAt": null,
+      "isActive": true,
+      "userId": "123e4567-e89b-12d3-a456-426614174000",
+      "user": {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "name": "Usuário Teste",
+        "email": "usuario@teste.com"
+      }
+    },
+    // ...outros tokens
+  ],
+  "pagination": {
+    "total": 25,
+    "pages": 3,
+    "page": 1,
+    "limit": 10
+  }
+}`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/admin/tokens?userId=123456' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://seu-dominio.com/api/admin/tokens?userId=123e4567-e89b-12d3-a456-426614174000&isActive=true&limit=10' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
@@ -196,10 +497,21 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "password", type: "string", description: "Senha do usuário", required: true },
         { name: "role", type: "string", description: "Nível de acesso (user/admin)", required: false },
         { name: "isActive", type: "boolean", description: "Status do usuário", required: false },
+        { name: "plan", type: "string", description: "Plano do usuário (Starter/Pro/Business)", required: false },
+        { name: "settings", type: "object", description: "Configurações personalizadas", required: false },
       ],
       response: "Usuário criado",
+      responseExample: `{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Novo Usuário",
+  "email": "novo@teste.com",
+  "role": "user",
+  "isActive": true,
+  "plan": "Pro",
+  "createdAt": "2023-01-16T10:30:00.000Z"
+}`,
       example:
-        'curl -X POST \'https://seu-dominio.com/api/admin/users\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Admin Teste","email":"admin@teste.com","password":"senha123","role":"admin"}\'',
+        'curl -X POST \'https://seu-dominio.com/api/admin/users\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "Novo Usuário",\n    "email": "novo@teste.com",\n    "password": "senha123",\n    "role": "user",\n    "plan": "Pro",\n    "settings": {\n      "notifications": true\n    }\n  }\'',
     },
     {
       method: "PUT",
@@ -213,10 +525,21 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "password", type: "string", description: "Nova senha", required: false },
         { name: "role", type: "string", description: "Nível de acesso (user/admin)", required: false },
         { name: "isActive", type: "boolean", description: "Status do usuário", required: false },
+        { name: "plan", type: "string", description: "Plano do usuário (Starter/Pro/Business)", required: false },
+        { name: "settings", type: "object", description: "Configurações personalizadas", required: false },
       ],
       response: "Usuário atualizado",
+      responseExample: `{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Usuário Atualizado",
+  "email": "usuario@teste.com",
+  "role": "user",
+  "isActive": true,
+  "plan": "Business",
+  "updatedAt": "2023-01-16T11:45:00.000Z"
+}`,
       example:
-        "curl -X PUT 'https://seu-dominio.com/api/admin/users/123456' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"role\":\"user\",\"isActive\":true}'",
+        'curl -X PUT \'https://seu-dominio.com/api/admin/users/123e4567-e89b-12d3-a456-426614174000\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "role": "user",\n    "isActive": true,\n    "plan": "Business"\n  }\'',
     },
     {
       method: "DELETE",
@@ -232,9 +555,14 @@ const apiRoutes: Record<string, ApiRoute[]> = {
           required: false,
         },
       ],
-      response: "{ success: true, revokedCount: number }",
+      response: "Resultado da operação",
+      responseExample: `{
+  "success": true,
+  "revokedCount": 3,
+  "message": "3 tokens foram revogados com sucesso"
+}`,
       example:
-        "curl -X DELETE 'https://seu-dominio.com/api/admin/tokens?userId=123456' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X DELETE 'https://seu-dominio.com/api/admin/tokens?userId=123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "DELETE",
@@ -242,9 +570,15 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Desativa um usuário (não remove do banco de dados)",
       auth: "Somente Admin",
       params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
-      response: "{ success: true, id: string, isActive: false }",
+      response: "Resultado da operação",
+      responseExample: `{
+  "success": true,
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "isActive": false,
+  "message": "Usuário desativado com sucesso"
+}`,
       example:
-        "curl -X DELETE 'https://seu-dominio.com/api/admin/users/123456' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X DELETE 'https://seu-dominio.com/api/admin/users/123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "DELETE",
@@ -252,9 +586,46 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Remove um usuário permanentemente (remove do banco de dados)",
       auth: "Somente Admin",
       params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
-      response: "{ success: true, id: string, isActive: false }",
+      response: "Resultado da operação",
+      responseExample: `{
+  "success": true,
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "message": "Usuário removido permanentemente"
+}`,
       example:
-        "curl -X DELETE 'https://seu-dominio.com/api/admin/users/delete/123456' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X DELETE 'https://seu-dominio.com/api/admin/users/delete/123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "GET",
+      path: "/api/admin/stats/users",
+      description: "Obtém estatísticas sobre usuários",
+      auth: "Somente Admin",
+      queryParams: [
+        { name: "period", type: "string", description: "Período (day/week/month/year)", required: false },
+        { name: "groupBy", type: "string", description: "Agrupar por (role/plan/status)", required: false },
+      ],
+      response: "Estatísticas de usuários",
+      responseExample: `{
+  "total": 45,
+  "active": 42,
+  "inactive": 3,
+  "byRole": {
+    "admin": 5,
+    "user": 40
+  },
+  "byPlan": {
+    "Starter": 25,
+    "Pro": 15,
+    "Business": 5
+  },
+  "newUsers": {
+    "today": 2,
+    "thisWeek": 8,
+    "thisMonth": 15
+  }
+}`,
+      example:
+        "curl -X GET 'https://seu-dominio.com/api/admin/stats/users?period=month&groupBy=plan' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ],
   tokens: [
@@ -263,16 +634,283 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       path: "/api/tokens",
       description: "Lista tokens de API do usuário atual",
       auth: "Usuário autenticado",
+      queryParams: [
+        { name: "isActive", type: "boolean", description: "Filtrar por status de ativação", required: false },
+        { name: "page", type: "number", description: "Número da página para paginação", required: false },
+        { name: "limit", type: "number", description: "Quantidade de itens por página", required: false },
+      ],
       response: "Array de tokens",
-      example: "curl -X GET 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+      responseExample: `{
+  "data": [
+    {
+      "id": "abc123",
+      "name": "Meu API Token",
+      "createdAt": "2023-01-10T09:20:00.000Z",
+      "lastUsed": "2023-01-14T10:30:00.000Z",
+      "expiresAt": null,
+      "isActive": true
+    },
+    // ...outros tokens
+  ],
+  "pagination": {
+    "total": 3,
+    "pages": 1,
+    "page": 1,
+    "limit": 10
+  }
+}`,
+      example:
+        "curl -X GET 'https://seu-dominio.com/api/tokens?isActive=true' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
       path: "/api/tokens",
       description: "Gera um novo token de API para o usuário atual",
       auth: "Usuário autenticado",
-      response: "{ success: true, token: string }",
-      example: "curl -X POST 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+      bodyParams: [
+        { name: "name", type: "string", description: "Nome do token", required: true },
+        { name: "expiresAt", type: "string", description: "Data de expiração (ISO format)", required: false },
+        { name: "permissions", type: "string", description: "Permissões do token", required: false },
+      ],
+      response: "Token criado",
+      responseExample: `{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "id": "abc123",
+  "name": "Meu API Token",
+  "createdAt": "2023-01-16T12:30:00.000Z",
+  "expiresAt": "2024-01-16T12:30:00.000Z",
+  "isActive": true
+}`,
+      example:
+        "curl -X POST 'https://seu-dominio.com/api/tokens' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"name\": \"Meu API Token\",\n    \"expiresAt\": \"2024-01-16T12:30:00.000Z\"\n  }'",
+    },
+    {
+      method: "DELETE",
+      path: "/api/tokens/[id]",
+      description: "Revoga um token específico do usuário atual",
+      auth: "Usuário autenticado",
+      params: [{ name: "id", type: "string", description: "ID do token", required: true }],
+      response: "Resultado da operação",
+      responseExample: `{
+  "success": true,
+  "id": "abc123",
+  "message": "Token revogado com sucesso"
+}`,
+      example: "curl -X DELETE 'https://seu-dominio.com/api/tokens/abc123' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "PUT",
+      path: "/api/tokens/[id]",
+      description: "Atualiza um token existente do usuário atual",
+      auth: "Usuário autenticado",
+      params: [{ name: "id", type: "string", description: "ID do token", required: true }],
+      bodyParams: [
+        { name: "name", type: "string", description: "Nome do token", required: false },
+        { name: "isActive", type: "boolean", description: "Status de ativação do token", required: false },
+        { name: "expiresAt", type: "string", description: "Nova data de expiração (ISO format)", required: false },
+      ],
+      response: "Token atualizado",
+      responseExample: `{
+  "id": "abc123",
+  "name": "Token Renomeado",
+  "isActive": true,
+  "expiresAt": "2024-06-16T12:30:00.000Z",
+  "updatedAt": "2023-01-16T14:15:00.000Z"
+}`,
+      example:
+        "curl -X PUT 'https://seu-dominio.com/api/tokens/abc123' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"name\": \"Token Renomeado\",\n    \"expiresAt\": \"2024-06-16T12:30:00.000Z\"\n  }'",
+    },
+  ],
+  users: [
+    {
+      method: "GET",
+      path: "/api/users/me",
+      description: "Obtém os dados do usuário atual",
+      auth: "Usuário autenticado",
+      queryParams: [
+        { name: "includeSettings", type: "boolean", description: "Incluir configurações do usuário", required: false },
+      ],
+      response: "Dados do usuário atual",
+      responseExample: `{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Usuário Atual",
+  "email": "usuario@teste.com",
+  "role": "user",
+  "plan": "Pro",
+  "createdAt": "2023-01-05T14:20:00.000Z",
+  "lastLogin": "2023-01-16T09:45:00.000Z",
+  "settings": {
+    "notifications": true,
+    "theme": "dark"
+  },
+  "limits": {
+    "contacts": 5000,
+    "webhooks": 10,
+    "apiRequests": {
+      "daily": 10000,
+      "remaining": 9850
+    }
+  }
+}`,
+      example:
+        "curl -X GET 'https://seu-dominio.com/api/users/me?includeSettings=true' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "PUT",
+      path: "/api/users/me",
+      description: "Atualiza os dados do usuário atual",
+      auth: "Usuário autenticado",
+      bodyParams: [
+        { name: "name", type: "string", description: "Nome do usuário", required: false },
+        { name: "email", type: "string", description: "Email do usuário", required: false },
+        { name: "password", type: "string", description: "Nova senha", required: false },
+        {
+          name: "currentPassword",
+          type: "string",
+          description: "Senha atual (necessária para alterar senha ou email)",
+          required: false,
+        },
+        { name: "settings", type: "object", description: "Configurações personalizadas", required: false },
+      ],
+      response: "Usuário atualizado",
+      responseExample: `{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Nome Atualizado",
+  "email": "usuario@teste.com",
+  "updatedAt": "2023-01-16T15:20:00.000Z"
+}`,
+      example:
+        'curl -X PUT \'https://seu-dominio.com/api/users/me\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "Nome Atualizado",\n    "settings": {\n      "theme": "light"\n    }\n  }\'',
+    },
+    {
+      method: "GET",
+      path: "/api/users/me/limits",
+      description: "Obtém os limites do plano atual do usuário",
+      auth: "Usuário autenticado",
+      response: "Limites do plano",
+      responseExample: `{
+  "plan": "Pro",
+  "limits": {
+    "contacts": {
+      "max": 5000,
+      "used": 1250,
+      "remaining": 3750,
+      "percentUsed": 25
+    },
+    "webhooks": {
+      "max": 10,
+      "used": 3,
+      "remaining": 7
+    },
+    "apiRequests": {
+      "daily": 10000,
+      "used": 150,
+      "remaining": 9850,
+      "reset": "2023-01-17T00:00:00.000Z"
+    },
+    "features": {
+      "bulkImport": true,
+      "exportData": true,
+      "advancedReports": true,
+      "customDomain": false
+    }
+  }
+}`,
+      example: "curl -X GET 'https://seu-dominio.com/api/users/me/limits' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+  ],
+  plans: [
+    {
+      method: "GET",
+      path: "/api/plans",
+      description: "Lista todos os planos disponíveis",
+      auth: "Usuário autenticado",
+      response: "Array de planos",
+      responseExample: `[
+  {
+    "id": "starter",
+    "name": "Starter",
+    "description": "Ideal para iniciantes",
+    "price": {
+      "monthly": 0,
+      "yearly": 0
+    },
+    "limits": {
+      "contacts": 500,
+      "webhooks": 2,
+      "apiRequests": 1000
+    },
+    "features": {
+      "bulkImport": false,
+      "exportData": false,
+      "advancedReports": false,
+      "customDomain": false
+    }
+  },
+  {
+    "id": "pro",
+    "name": "Pro",
+    "description": "Para profissionais",
+    "price": {
+      "monthly": 29,
+      "yearly": 290
+    },
+    "limits": {
+      "contacts": 5000,
+      "webhooks": 10,
+      "apiRequests": 10000
+    },
+    "features": {
+      "bulkImport": true,
+      "exportData": true,
+      "advancedReports": true,
+      "customDomain": false
+    }
+  },
+  {
+    "id": "business",
+    "name": "Business",
+    "description": "Para empresas",
+    "price": {
+      "monthly": 99,
+      "yearly": 990
+    },
+    "limits": {
+      "contacts": 50000,
+      "webhooks": 50,
+      "apiRequests": 100000
+    },
+    "features": {
+      "bulkImport": true,
+      "exportData": true,
+      "advancedReports": true,
+      "customDomain": true
+    }
+  }
+]`,
+      example: "curl -X GET 'https://seu-dominio.com/api/plans' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "POST",
+      path: "/api/plans/request-upgrade",
+      description: "Solicita upgrade de plano",
+      auth: "Usuário autenticado",
+      bodyParams: [
+        { name: "targetPlan", type: "string", description: "ID do plano desejado", required: true },
+        { name: "reason", type: "string", description: "Razão para o upgrade", required: false },
+        { name: "contactMethod", type: "string", description: "Método de contato preferido", required: false },
+      ],
+      response: "Confirmação da solicitação",
+      responseExample: `{
+  "success": true,
+  "requestId": "req_123456",
+  "currentPlan": "Starter",
+  "targetPlan": "Business",
+  "message": "Sua solicitação de upgrade foi recebida. Nossa equipe entrará em contato em breve."
+}`,
+      example:
+        'curl -X POST \'https://seu-dominio.com/api/plans/request-upgrade\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "targetPlan": "business",\n    "reason": "Precisamos de mais contatos",\n    "contactMethod": "email"\n  }\'',
     },
   ],
 }
@@ -340,6 +978,8 @@ export function AdminApiRoutesList() {
             <TabsTrigger value="contacts">Contatos</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="plans">Planos</TabsTrigger>
           </TabsList>
 
           {Object.entries(apiRoutes).map(([key, routes]) => (
@@ -375,7 +1015,7 @@ export function AdminApiRoutesList() {
                           </div>
                         )}
 
-                        {route.queryParams && (
+                        {route.queryParams && route.queryParams.length > 0 && (
                           <div>
                             <h4 className="font-medium mb-2">Parâmetros de Query</h4>
                             <ul className="space-y-2">
@@ -391,7 +1031,7 @@ export function AdminApiRoutesList() {
                           </div>
                         )}
 
-                        {route.bodyParams && (
+                        {route.bodyParams && route.bodyParams.length > 0 && (
                           <div>
                             <h4 className="font-medium mb-2">Parâmetros do Body</h4>
                             <ul className="space-y-2">
@@ -410,6 +1050,14 @@ export function AdminApiRoutesList() {
                         <div>
                           <h4 className="font-medium mb-2">Resposta</h4>
                           <p className="text-sm text-muted-foreground">{route.response}</p>
+
+                          {route.responseExample && (
+                            <div className="relative mt-2">
+                              <pre className="bg-muted p-3 rounded-md overflow-x-auto text-xs">
+                                <code>{route.responseExample}</code>
+                              </pre>
+                            </div>
+                          )}
                         </div>
 
                         <div>

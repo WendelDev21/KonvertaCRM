@@ -21,14 +21,47 @@ export async function GET(request: NextRequest) {
       const userIdParam = searchParams.get("userId")
 
       // Construir filtro
-      const filter: any = {
-        isActive: true,
-      }
+      const filter: any = {}
 
       // Se o userId foi fornecido, filtrar por ele
       if (userIdParam) {
         filter.userId = userIdParam
       }
+
+      // Verificar se o campo isActive existe no modelo ApiToken
+      let hasIsActiveField = false
+      try {
+        // Tentar obter um token para verificar a estrutura
+        const testToken = await prisma.apiToken.findFirst({
+          select: { id: true },
+          take: 1,
+        })
+
+        // Se chegou aqui, a tabela existe
+        // Agora verificamos se o campo isActive existe usando uma consulta raw
+        const tableInfo = await prisma.$queryRaw`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'ApiToken' 
+          AND column_name = 'isActive'
+        `
+
+        // Se a consulta retornar resultados, o campo existe
+        hasIsActiveField = Array.isArray(tableInfo) && (tableInfo as any[]).length > 0
+
+        console.log("Campo isActive existe:", hasIsActiveField)
+
+        // Adicionar isActive ao filtro apenas se o campo existir
+        if (hasIsActiveField) {
+          filter.isActive = true
+        }
+      } catch (error) {
+        console.error("Erro ao verificar campo isActive:", error)
+        // Se ocorrer um erro, assumimos que o campo não existe
+        // e continuamos sem adicionar isActive ao filtro
+      }
+
+      console.log("Filtro aplicado:", filter)
 
       // Buscar tokens com informações do usuário
       const tokens = await prisma.apiToken.findMany({
@@ -39,7 +72,7 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           lastUsed: true,
           expiresAt: true,
-          isActive: true,
+          ...(hasIsActiveField ? { isActive: true } : {}),
           userId: true,
           user: {
             select: {
@@ -57,7 +90,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(tokens)
     } catch (error) {
       console.error("Error fetching tokens:", error)
-      return NextResponse.json({ error: "Erro ao buscar tokens" }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: "Erro ao buscar tokens",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 500 },
+      )
     }
   })
 }
@@ -82,9 +121,7 @@ export async function DELETE(request: NextRequest) {
       const userIdParam = searchParams.get("userId")
 
       // Construir filtro
-      const filter: any = {
-        isActive: true,
-      }
+      const filter: any = {}
 
       // Se o tokenId foi fornecido, filtrar por ele
       if (tokenId) {
@@ -96,26 +133,72 @@ export async function DELETE(request: NextRequest) {
         filter.userId = userIdParam
       }
 
-      // Revogar tokens (marcar como inativos)
-      const result = await prisma.apiToken.updateMany({
-        where: filter,
-        data: {
-          isActive: false,
-        },
-      })
+      // Verificar se o campo isActive existe no modelo ApiToken
+      let hasIsActiveField = false
+      try {
+        const tableInfo = await prisma.$queryRaw`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = 'ApiToken' 
+          AND column_name = 'isActive'
+        `
 
-      return NextResponse.json({
-        success: true,
-        revokedCount: result.count,
-        message: tokenId
-          ? "Token revogado com sucesso"
-          : userIdParam
-            ? "Todos os tokens do usuário foram revogados"
-            : "Todos os tokens foram revogados",
-      })
+        hasIsActiveField = Array.isArray(tableInfo) && (tableInfo as any[]).length > 0
+        console.log("Campo isActive existe para DELETE:", hasIsActiveField)
+      } catch (error) {
+        console.error("Erro ao verificar campo isActive para DELETE:", error)
+      }
+
+      // Se o campo isActive existir, usamos updateMany para marcar como inativo
+      // Caso contrário, usamos deleteMany para remover os tokens
+      let result
+
+      if (hasIsActiveField) {
+        // Adicionar isActive ao filtro apenas se estivermos atualizando
+        filter.isActive = true
+
+        // Revogar tokens (marcar como inativos)
+        result = await prisma.apiToken.updateMany({
+          where: filter,
+          data: {
+            isActive: false,
+          },
+        })
+
+        return NextResponse.json({
+          success: true,
+          revokedCount: result.count,
+          message: tokenId
+            ? "Token revogado com sucesso"
+            : userIdParam
+              ? "Todos os tokens do usuário foram revogados"
+              : "Todos os tokens foram revogados",
+        })
+      } else {
+        // Se o campo isActive não existir, excluímos os tokens
+        result = await prisma.apiToken.deleteMany({
+          where: filter,
+        })
+
+        return NextResponse.json({
+          success: true,
+          deletedCount: result.count,
+          message: tokenId
+            ? "Token excluído com sucesso"
+            : userIdParam
+              ? "Todos os tokens do usuário foram excluídos"
+              : "Todos os tokens foram excluídos",
+        })
+      }
     } catch (error) {
       console.error("Error revoking tokens:", error)
-      return NextResponse.json({ error: "Erro ao revogar tokens" }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: "Erro ao revogar tokens",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        { status: 500 },
+      )
     }
   })
 }

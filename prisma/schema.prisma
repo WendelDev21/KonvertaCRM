@@ -84,28 +84,29 @@ model Contact {
 }
 
 model ApiToken {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
-  token       String   @unique
+  token       String    @unique
   permissions String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   lastUsed    DateTime?
   expiresAt   DateTime?
+  isActive    Boolean   @default(true)
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Webhook {
-  id          String   @id @default(uuid())
-  name        String
-  url         String
-  events      String
-  active      Boolean  @default(true)
-  secret      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String       @id @default(uuid())
+  name          String
+  url           String
+  events        String
+  active        Boolean      @default(true)
+  secret        String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   lastTriggered DateTime?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

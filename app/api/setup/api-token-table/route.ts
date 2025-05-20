@@ -1,59 +1,83 @@
 import { NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import prisma from "@/lib/prisma"
 
 export async function GET() {
   try {
-    // Verificar autenticação
-    const session = await getServerSession(authOptions)
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    // Verificar se o usuário é admin
-    if (session.user.role !== "ADMIN") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
-    }
-
-    const prisma = new PrismaClient()
-
     // Verificar se a tabela ApiToken existe
+    let tableExists = false
     try {
-      await prisma.apiToken.findFirst()
-      await prisma.$disconnect()
-      return NextResponse.json({ message: "A tabela ApiToken já existe." })
+      await prisma.$queryRaw`SELECT 1 FROM "ApiToken" LIMIT 1`
+      tableExists = true
     } catch (error) {
-      // A tabela não existe, vamos criá-la
+      console.log("Tabela ApiToken não existe, será criada")
     }
 
-    // Criar a tabela ApiToken
-    const sql = `
-      CREATE TABLE IF NOT EXISTS "ApiToken" (
-        "id" TEXT NOT NULL,
-        "token" TEXT NOT NULL,
-        "name" TEXT,
-        "lastUsed" TIMESTAMP(3),
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "expiresAt" TIMESTAMP(3),
-        "isActive" BOOLEAN NOT NULL DEFAULT true,
-        "userId" TEXT NOT NULL,
-        
-        CONSTRAINT "ApiToken_pkey" PRIMARY KEY ("id"),
-        CONSTRAINT "ApiToken_token_key" UNIQUE ("token"),
-        CONSTRAINT "ApiToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-      );
-      
-      CREATE INDEX "ApiToken_userId_idx" ON "ApiToken"("userId");
-      CREATE INDEX "ApiToken_token_idx" ON "ApiToken"("token");
-    `
+    if (!tableExists) {
+      // Criar a tabela ApiToken usando SQL raw
+      await prisma.$executeRaw`
+        CREATE TABLE IF NOT EXISTS "ApiToken" (
+          "id" TEXT NOT NULL,
+          "name" TEXT NOT NULL,
+          "token" TEXT NOT NULL,
+          "permissions" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL,
+          "lastUsed" TIMESTAMP(3),
+          "expiresAt" TIMESTAMP(3),
+          "isActive" BOOLEAN NOT NULL DEFAULT true,
+          "userId" TEXT NOT NULL,
+          
+          CONSTRAINT "ApiToken_pkey" PRIMARY KEY ("id"),
+          CONSTRAINT "ApiToken_token_key" UNIQUE ("token"),
+          CONSTRAINT "ApiToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+        )
+      `
 
-    await prisma.$executeRawUnsafe(sql)
-    await prisma.$disconnect()
+      return NextResponse.json({
+        success: true,
+        message: "Tabela ApiToken criada com sucesso",
+      })
+    }
 
-    return NextResponse.json({ message: "Tabela ApiToken criada com sucesso!" })
+    // Verificar se o campo isActive existe
+    let hasIsActiveField = false
+    try {
+      const tableInfo = await prisma.$queryRaw`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'ApiToken' 
+        AND column_name = 'isActive'
+      `
+
+      hasIsActiveField = Array.isArray(tableInfo) && (tableInfo as any[]).length > 0
+    } catch (error) {
+      console.error("Erro ao verificar campo isActive:", error)
+    }
+
+    // Se o campo isActive não existir, adicioná-lo
+    if (!hasIsActiveField) {
+      await prisma.$executeRaw`
+        ALTER TABLE "ApiToken" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true
+      `
+
+      return NextResponse.json({
+        success: true,
+        message: "Campo isActive adicionado à tabela ApiToken",
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Tabela ApiToken já existe e possui o campo isActive",
+    })
   } catch (error) {
-    console.error("Erro ao criar tabela ApiToken:", error)
-    return NextResponse.json({ error: "Erro ao criar tabela ApiToken" }, { status: 500 })
+    console.error("Erro ao configurar tabela ApiToken:", error)
+    return NextResponse.json(
+      {
+        error: "Erro ao configurar tabela ApiToken",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    )
   }
 }
