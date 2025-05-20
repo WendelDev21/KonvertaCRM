@@ -71,7 +71,7 @@ model VerificationToken {
 model Contact {
   id          String   @id @default(uuid())
   name        String
-  email       String
+  contact     String
   phone       String?
   company     String?
   status      String   @default("lead")

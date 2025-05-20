@@ -782,137 +782,8 @@ const apiRoutes: Record<string, ApiRoute[]> = {
 }`,
       example:
         'curl -X PUT \'https://seu-dominio.com/api/users/me\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "Nome Atualizado",\n    "settings": {\n      "theme": "light"\n    }\n  }\'',
-    },
-    {
-      method: "GET",
-      path: "/api/users/me/limits",
-      description: "Obtém os limites do plano atual do usuário",
-      auth: "Usuário autenticado",
-      response: "Limites do plano",
-      responseExample: `{
-  "plan": "Pro",
-  "limits": {
-    "contacts": {
-      "max": 5000,
-      "used": 1250,
-      "remaining": 3750,
-      "percentUsed": 25
-    },
-    "webhooks": {
-      "max": 10,
-      "used": 3,
-      "remaining": 7
-    },
-    "apiRequests": {
-      "daily": 10000,
-      "used": 150,
-      "remaining": 9850,
-      "reset": "2023-01-17T00:00:00.000Z"
-    },
-    "features": {
-      "bulkImport": true,
-      "exportData": true,
-      "advancedReports": true,
-      "customDomain": false
     }
-  }
-}`,
-      example: "curl -X GET 'https://seu-dominio.com/api/users/me/limits' -H 'Authorization: Bearer seu_token_aqui'",
-    },
-  ],
-  plans: [
-    {
-      method: "GET",
-      path: "/api/plans",
-      description: "Lista todos os planos disponíveis",
-      auth: "Usuário autenticado",
-      response: "Array de planos",
-      responseExample: `[
-  {
-    "id": "starter",
-    "name": "Starter",
-    "description": "Ideal para iniciantes",
-    "price": {
-      "monthly": 0,
-      "yearly": 0
-    },
-    "limits": {
-      "contacts": 500,
-      "webhooks": 2,
-      "apiRequests": 1000
-    },
-    "features": {
-      "bulkImport": false,
-      "exportData": false,
-      "advancedReports": false,
-      "customDomain": false
-    }
-  },
-  {
-    "id": "pro",
-    "name": "Pro",
-    "description": "Para profissionais",
-    "price": {
-      "monthly": 29,
-      "yearly": 290
-    },
-    "limits": {
-      "contacts": 5000,
-      "webhooks": 10,
-      "apiRequests": 10000
-    },
-    "features": {
-      "bulkImport": true,
-      "exportData": true,
-      "advancedReports": true,
-      "customDomain": false
-    }
-  },
-  {
-    "id": "business",
-    "name": "Business",
-    "description": "Para empresas",
-    "price": {
-      "monthly": 99,
-      "yearly": 990
-    },
-    "limits": {
-      "contacts": 50000,
-      "webhooks": 50,
-      "apiRequests": 100000
-    },
-    "features": {
-      "bulkImport": true,
-      "exportData": true,
-      "advancedReports": true,
-      "customDomain": true
-    }
-  }
-]`,
-      example: "curl -X GET 'https://seu-dominio.com/api/plans' -H 'Authorization: Bearer seu_token_aqui'",
-    },
-    {
-      method: "POST",
-      path: "/api/plans/request-upgrade",
-      description: "Solicita upgrade de plano",
-      auth: "Usuário autenticado",
-      bodyParams: [
-        { name: "targetPlan", type: "string", description: "ID do plano desejado", required: true },
-        { name: "reason", type: "string", description: "Razão para o upgrade", required: false },
-        { name: "contactMethod", type: "string", description: "Método de contato preferido", required: false },
-      ],
-      response: "Confirmação da solicitação",
-      responseExample: `{
-  "success": true,
-  "requestId": "req_123456",
-  "currentPlan": "Starter",
-  "targetPlan": "Business",
-  "message": "Sua solicitação de upgrade foi recebida. Nossa equipe entrará em contato em breve."
-}`,
-      example:
-        'curl -X POST \'https://seu-dominio.com/api/plans/request-upgrade\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "targetPlan": "business",\n    "reason": "Precisamos de mais contatos",\n    "contactMethod": "email"\n  }\'',
-    },
-  ],
+  ]
 }
 
 export function AdminApiRoutesList() {
@@ -977,9 +848,8 @@ export function AdminApiRoutesList() {
             <TabsTrigger value="admin">Admin</TabsTrigger>
             <TabsTrigger value="contacts">Contatos</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-            <TabsTrigger value="tokens">Tokens</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="plans">Planos</TabsTrigger>
+            <TabsTrigger value="tokens">Tokens</TabsTrigger>
           </TabsList>
 
           {Object.entries(apiRoutes).map(([key, routes]) => (
