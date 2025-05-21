@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAllWebhooks, getWebhookById, createWebhook, type WebhookEvent } from "@/lib/webhook-db"
 import { apiAuthMiddleware } from "@/middleware/api-auth"
+import prisma from "@/lib/prisma"
 
 // GET /api/webhooks - Lista todos os webhooks configurados
 export async function GET(request: NextRequest) {
@@ -66,7 +67,54 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Verificar o plano do usuário e o limite de webhooks
       try {
+        // Obter o usuário para verificar o plano
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { plan: true },
+        })
+
+        if (!user) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 })
+        }
+
+        // Contar webhooks existentes
+        const existingWebhooks = await prisma.webhook.count({
+          where: { userId },
+        })
+
+        // Verificar limites baseados no plano
+        if (user.plan === "Starter" && existingWebhooks >= 1) {
+          return NextResponse.json(
+            {
+              error: "Webhook limit reached",
+              message:
+                "Your Starter plan allows only 1 webhook. Please upgrade to Pro or Business plan for more webhooks.",
+              plan: user.plan,
+              limit: 1,
+              current: existingWebhooks,
+            },
+            { status: 403 },
+          )
+        }
+
+        if (user.plan === "Pro" && existingWebhooks >= 5) {
+          return NextResponse.json(
+            {
+              error: "Webhook limit reached",
+              message: "Your Pro plan allows up to 5 webhooks. Please upgrade to Business plan for unlimited webhooks.",
+              plan: user.plan,
+              limit: 5,
+              current: existingWebhooks,
+            },
+            { status: 403 },
+          )
+        }
+
+        // Business plan não tem limite (ou qualquer outro plano não especificado)
+
+        // Se passou pelas verificações, cria o webhook
         const newWebhook = await createWebhook(
           {
             name: body.name,
