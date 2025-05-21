@@ -19,7 +19,7 @@ interface WebhookFormProps {
     url: string
     events: WebhookEvent[]
     secret?: string
-    active: boolean // Alterado de isActive para active para corresponder ao schema
+    isActive?: boolean // Usar isActive em vez de active
   }
   onCancel: () => void
   onSave: () => void
@@ -33,7 +33,7 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
     url: webhook?.url || "",
     events: webhook?.events || [],
     secret: webhook?.secret || "",
-    active: webhook?.active ?? true, // Alterado de isActive para active
+    active: webhook?.isActive ?? true, // Usar isActive do webhook, mas manter active no formData
   })
 
   const eventOptions: { id: WebhookEvent; label: string; description: string }[] = [

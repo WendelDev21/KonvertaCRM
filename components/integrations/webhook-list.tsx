@@ -40,6 +40,7 @@ export function WebhookList() {
   const [webhookToDelete, setWebhookToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null)
+  const [errorDetails, setErrorDetails] = useState<string | null>(null)
 
   const fetchWebhooks = async () => {
     setIsLoading(true)
@@ -99,29 +100,59 @@ export function WebhookList() {
     if (!webhookToDelete) return
 
     setIsDeleting(true)
+    setErrorDetails(null)
+
     try {
+      console.log(`Iniciando exclusão do webhook: ${webhookToDelete}`)
+
       const response = await fetch(`/api/webhooks/${webhookToDelete}`, {
         method: "DELETE",
       })
 
-      if (!response.ok) throw new Error("Erro ao excluir webhook")
+      console.log(`Resposta da API: Status ${response.status}`)
 
+      // Tentar obter detalhes do erro, se houver
+      let errorMessage = "Não foi possível excluir o webhook."
+      let responseData = null
+
+      try {
+        responseData = await response.json()
+        console.log("Dados da resposta:", responseData)
+
+        if (responseData && responseData.error) {
+          errorMessage = responseData.error
+          if (responseData.details) {
+            setErrorDetails(responseData.details)
+          }
+        }
+      } catch (jsonError) {
+        console.error("Erro ao processar resposta JSON:", jsonError)
+      }
+
+      if (!response.ok) {
+        throw new Error(errorMessage)
+      }
+
+      // Se chegou aqui, a exclusão foi bem-sucedida
       setWebhooks(webhooks.filter((webhook) => webhook.id !== webhookToDelete))
 
       toast({
         title: "Webhook excluído",
         description: "O webhook foi excluído com sucesso.",
       })
+
+      // Fechar o diálogo de confirmação
+      setWebhookToDelete(null)
     } catch (error) {
       console.error("Erro ao excluir webhook:", error)
+
       toast({
-        title: "Erro",
-        description: "Não foi possível excluir o webhook.",
+        title: "Erro ao excluir webhook",
+        description: error instanceof Error ? error.message : "Ocorreu um erro desconhecido",
         variant: "destructive",
       })
     } finally {
       setIsDeleting(false)
-      setWebhookToDelete(null)
     }
   }
 
@@ -309,16 +340,25 @@ export function WebhookList() {
         </div>
       )}
 
-      <AlertDialog open={!!webhookToDelete} onOpenChange={() => setWebhookToDelete(null)}>
+      <AlertDialog
+        open={!!webhookToDelete}
+        onOpenChange={(open) => !isDeleting && setWebhookToDelete(open ? webhookToDelete : null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir webhook</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir este webhook? Esta ação não pode ser desfeita.
+              {errorDetails && (
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-800 text-sm">
+                  <p className="font-semibold">Detalhes do erro:</p>
+                  <p className="mt-1">{errorDetails}</p>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteWebhook}
               className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
