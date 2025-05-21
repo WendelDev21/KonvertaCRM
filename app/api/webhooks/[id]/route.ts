@@ -46,6 +46,12 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       const body = await clonedReq.json()
       console.log("[API] Webhooks: Request body:", body)
 
+      // Mapear isActive para active se estiver presente
+      if (body.isActive !== undefined) {
+        body.active = body.isActive
+        console.log(`[API] Webhooks: Mapped isActive (${body.isActive}) to active (${body.active})`)
+      }
+
       // Validate URL if provided
       if (body.url) {
         try {

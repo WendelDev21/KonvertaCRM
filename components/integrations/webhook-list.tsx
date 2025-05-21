@@ -68,6 +68,8 @@ export function WebhookList() {
   const handleToggleActive = async (id: string, isActive: boolean) => {
     setIsUpdatingStatus(id)
     try {
+      console.log(`Atualizando status do webhook ${id} para ${isActive ? "ativo" : "inativo"}`)
+
       const response = await fetch(`/api/webhooks/${id}`, {
         method: "PUT",
         headers: {
@@ -76,8 +78,14 @@ export function WebhookList() {
         body: JSON.stringify({ isActive }),
       })
 
-      if (!response.ok) throw new Error("Erro ao atualizar status")
+      const responseData = await response.json()
+      console.log("Resposta da API:", responseData)
 
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar status")
+      }
+
+      // Atualizar o estado local
       setWebhooks(webhooks.map((webhook) => (webhook.id === id ? { ...webhook, isActive } : webhook)))
 
       toast({
@@ -88,9 +96,12 @@ export function WebhookList() {
       console.error("Erro ao atualizar status:", error)
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar o status do webhook.",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o status do webhook.",
         variant: "destructive",
       })
+
+      // Reverter a alteração no estado local em caso de erro
+      fetchWebhooks()
     } finally {
       setIsUpdatingStatus(null)
     }

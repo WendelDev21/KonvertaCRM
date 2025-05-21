@@ -126,6 +126,8 @@ export async function updateWebhook(
   userId: string,
 ): Promise<Webhook | null> {
   try {
+    console.log(`[Webhook DB] Updating webhook ID: ${id}, data:`, webhook)
+
     // Prepare update data
     const updateData: any = {}
 
@@ -133,9 +135,19 @@ export async function updateWebhook(
     if (webhook.url !== undefined) updateData.url = webhook.url
     if (webhook.events !== undefined) updateData.events = JSON.stringify(webhook.events)
     if (webhook.secret !== undefined) updateData.secret = webhook.secret
-    if (webhook.active !== undefined) updateData.active = webhook.active // Alterado de isActive para active
+
+    // Mapear isActive para active se estiver presente
+    if (webhook.isActive !== undefined) {
+      updateData.active = webhook.isActive
+      console.log(`[Webhook DB] Mapped isActive (${webhook.isActive}) to active (${updateData.active})`)
+    } else if (webhook.active !== undefined) {
+      updateData.active = webhook.active
+    }
+
     if (webhook.lastTriggered !== undefined) updateData.lastTriggered = webhook.lastTriggered
     if (webhook.lastStatus !== undefined) updateData.lastStatus = webhook.lastStatus
+
+    console.log(`[Webhook DB] Final update data:`, updateData)
 
     const updatedWebhook = await prisma.webhook.update({
       where: {
@@ -144,6 +156,8 @@ export async function updateWebhook(
       },
       data: updateData,
     })
+
+    console.log(`[Webhook DB] Webhook updated successfully:`, updatedWebhook)
 
     return {
       ...updatedWebhook,
