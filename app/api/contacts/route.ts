@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
   })
 }
 
-// POST /api/contacts - Cria um novo contato
+// Modificar a função POST para verificar o limite de contatos baseado no plano do usuário
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
@@ -104,6 +104,37 @@ export async function POST(request: NextRequest) {
           { error: "Incomplete data. Name, contact, source, and status are required." },
           { status: 400 },
         )
+      }
+
+      // Verificar o plano do usuário e aplicar limites
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { plan: true },
+      })
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
+
+      // Verificar limite de contatos para o plano Starter
+      if (user.plan === "Starter") {
+        const contactCount = await prisma.contact.count({
+          where: { userId },
+        })
+
+        if (contactCount >= 100) {
+          return NextResponse.json(
+            {
+              error: "Limite de contatos atingido",
+              message:
+                "Você atingiu o limite de 100 contatos do plano Starter. Faça upgrade para o plano Pro ou Business para adicionar mais contatos.",
+              limit: 100,
+              current: contactCount,
+              plan: "Starter",
+            },
+            { status: 403 },
+          )
+        }
       }
 
       const contactData: ContactInput = {
