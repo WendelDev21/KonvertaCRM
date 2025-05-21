@@ -1,125 +1,257 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useToast } from "@/components/ui/use-toast"
 
-type ContactFormProps = {}
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ArrowLeft, Save, Loader2, User, Phone, Tag, MessageSquare } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
 
-const ContactForm: React.FC<ContactFormProps> = () => {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [message, setMessage] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+// Tipos
+type ContactStatus = "Novo" | "Conversando" | "Interessado" | "Fechado" | "Perdido"
+type ContactSource = "WhatsApp" | "Instagram" | "Outro"
+
+interface ContactFormProps {
+  contactId?: string
+}
+
+interface ContactFormData {
+  name: string
+  contact: string
+  source: ContactSource
+  status: ContactStatus
+  notes: string
+}
+
+export function ContactForm({ contactId }: ContactFormProps) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(false)
+
+  const [formData, setFormData] = useState<ContactFormData>({
+    name: "",
+    contact: "",
+    source: "WhatsApp",
+    status: "Novo",
+    notes: "",
+  })
+
+  // Buscar dados do contato se estiver editando
+  useEffect(() => {
+    if (contactId) {
+      const fetchContact = async () => {
+        setIsFetching(true)
+        try {
+          const response = await fetch(`/api/contacts/${contactId}`)
+          if (!response.ok) throw new Error("Erro ao buscar contato")
+
+          const data = await response.json()
+          setFormData({
+            name: data.name,
+            contact: data.contact,
+            source: data.source,
+            status: data.status,
+            notes: data.notes || "",
+          })
+        } catch (error) {
+          console.error("Erro ao buscar contato:", error)
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os dados do contato.",
+            variant: "destructive",
+          })
+        } finally {
+          setIsFetching(false)
+        }
+      }
+
+      fetchContact()
+    }
+  }, [contactId])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    setIsLoading(true)
 
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
+      // Validar dados
+      if (!formData.name.trim() || !formData.contact.trim()) {
+        toast({
+          title: "Erro",
+          description: "Nome e contato são obrigatórios.",
+          variant: "destructive",
+        })
+        setIsLoading(false)
+        return
+      }
+
+      // Determinar se é criação ou atualização
+      const url = contactId ? `/api/contacts/${contactId}` : "/api/contacts"
+      const method = contactId ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify(formData),
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      if (!response.ok) throw new Error("Erro ao salvar contato")
 
-      const data = await response.json()
-      console.log("Success:", data)
       toast({
-        title: "Mensagem enviada!",
-        description: "Sua mensagem foi enviada com sucesso.",
+        title: contactId ? "Contato atualizado" : "Contato criado",
+        description: contactId ? "O contato foi atualizado com sucesso." : "O novo contato foi criado com sucesso.",
+        variant: "success",
       })
-      setName("")
-      setEmail("")
-      setMessage("")
-    } catch (error: any) {
-      console.error("Error:", error)
-      if (error.response && error.response.status === 403) {
-        try {
-          const errorData = await error.response.json()
-          toast({
-            title: "Limite de contatos atingido",
-            description: errorData.message || "Você atingiu o limite de contatos do seu plano atual.",
-            variant: "destructive",
-          })
-        } catch (jsonError) {
-          toast({
-            title: "Erro",
-            description: "Ocorreu um erro ao processar a resposta do servidor.",
-            variant: "destructive",
-          })
-        }
-        return
-      }
+
+      // Redirecionar para o dashboard
+      router.push("/contacts")
+      router.refresh()
+    } catch (error) {
+      console.error("Erro ao salvar contato:", error)
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao enviar a mensagem.",
+        description: "Não foi possível salvar o contato. Tente novamente.",
         variant: "destructive",
       })
     } finally {
-      setIsSubmitting(false)
+      setIsLoading(false)
     }
   }
 
+  if (isFetching) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Carregando dados do contato...</span>
+      </div>
+    )
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Nome
-        </label>
-        <input
-          type="text"
-          id="name"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+    <form onSubmit={handleSubmit} className="form-container">
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome</Label>
+          <div className="relative">
+            <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Nome do contato"
+              className="pl-10"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="contact">Telefone ou @Instagram</Label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="contact"
+              name="contact"
+              value={formData.contact}
+              onChange={handleChange}
+              placeholder="+55 00 00000-0000 ou @usuario"
+              className="pl-10"
+              required
+            />
+          </div>
+        </div>
       </div>
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
-          type="email"
-          id="email"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="source">Origem</Label>
+          <div className="relative">
+            <Tag className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
+            <Select value={formData.source} onValueChange={(value) => handleSelectChange("source", value)}>
+              <SelectTrigger id="source" className="pl-10">
+                <SelectValue placeholder="Selecione a origem" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                <SelectItem value="Instagram">Instagram</SelectItem>
+                <SelectItem value="Outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <div className="relative">
+            <Tag className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground z-10" />
+            <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
+              <SelectTrigger id="status" className="pl-10">
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Novo">Novo</SelectItem>
+                <SelectItem value="Conversando">Conversando</SelectItem>
+                <SelectItem value="Interessado">Interessado</SelectItem>
+                <SelectItem value="Fechado">Fechado</SelectItem>
+                <SelectItem value="Perdido">Perdido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
-      <div>
-        <label htmlFor="message" className="block text-sm font-medium text-gray-700">
-          Mensagem
-        </label>
-        <textarea
-          id="message"
-          rows={4}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          required
-        />
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Observações</Label>
+        <div className="relative">
+          <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Textarea
+            id="notes"
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="Adicione informações relevantes sobre o contato"
+            className="min-h-[120px] pl-10"
+          />
+        </div> 
       </div>
-      <div>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-gray-400"
-        >
-          {isSubmitting ? "Enviando..." : "Enviar"}
-        </button>
+
+      <div className="flex justify-between pt-4">
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Voltar
+        </Button>
+
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Salvar
+            </>
+          )}
+        </Button>
       </div>
     </form>
   )
 }
-
-export default ContactForm
