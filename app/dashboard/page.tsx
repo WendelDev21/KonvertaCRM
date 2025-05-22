@@ -60,7 +60,7 @@ export default function DashboardPage() {
           startDate = new Date(today.getFullYear(), 0, 1) // Primeiro dia do ano
           break
         default:
-          startDate = subDays(today, 30) // Padrão: 30 dias
+          startDate = subDays(today, 7) // Padrão: 7 dias
       }
     }
 

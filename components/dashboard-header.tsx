@@ -105,24 +105,23 @@ export function DashboardHeader() {
 
           {/* Ações e perfil */}
           <div className="flex items-center gap-2">
-            {/* Botão de novo contato */}
-            <Button variant="outline" size="sm" className="hidden sm:flex" asChild>
-              <Link href="/contacts/new">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                <span>Novo Contato</span>
-              </Link>
-            </Button>
-
-            {/* Alternador de tema */}
-            <ThemeToggle />
-
-            {/* Avatar do usuário */}
-            <UserAvatar />
             <div className="hidden md:flex items-center ml-2">
               <span className={`text-xs px-2 py-1 rounded-full font-medium ${getPlanBadgeColor(userPlan)}`}>
                 {userPlan}
               </span>
             </div>
+            {/* Botão de novo contato */}
+              <Button variant="outline" size="sm" className="hidden sm:flex" asChild>
+                <Link href="/contacts/new">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  <span>Novo Contato</span>
+                </Link>
+              </Button>
+            {/* Alternador de tema */}
+            <ThemeToggle />
+
+            {/* Avatar do usuário */}
+            <UserAvatar />           
 
             {/* Menu móvel */}
             <Sheet>
