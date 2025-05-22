@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -91,6 +91,7 @@ export function WebhookList() {
       toast({
         title: "Status atualizado",
         description: `Webhook ${isActive ? "ativado" : "desativado"} com sucesso.`,
+        variant: "success",
       })
     } catch (error) {
       console.error("Erro ao atualizar status:", error)
@@ -150,6 +151,7 @@ export function WebhookList() {
       toast({
         title: "Webhook excluído",
         description: "O webhook foi excluído com sucesso.",
+        variant: "success",
       })
 
       // Fechar o diálogo de confirmação

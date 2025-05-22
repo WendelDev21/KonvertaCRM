@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Save, X } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import type { WebhookEvent } from "@/lib/webhook-db"
 
 interface WebhookFormProps {
@@ -200,6 +200,7 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
         toast({
           title: "Teste bem-sucedido",
           description: `O webhook respondeu com status ${result.status}`,
+          variant: "success",
         })
       } else {
         toast({
