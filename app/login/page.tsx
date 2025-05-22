@@ -24,7 +24,7 @@ function LoginPageContent() {
   return (
     <div className="h-screen flex items-stretch overflow-hidden">
       {/* Left side - Decorative with updated gradient colors as requested */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-[#0F172A] to-[#1E293B] flex-col justify-center items-center p-6 relative">
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-[#3365d8] to-[#060d18] flex-col justify-center items-center p-6 relative">
         <div className="max-w-md text-center">
           <Image src="/icon.png" alt="Konverta Logo" width={120} height={120} className="mx-auto mb-6" />
           <h1 className="text-4xl font-bold text-white mb-4">Konverta</h1>
