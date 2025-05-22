@@ -140,6 +140,7 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
       toast({
         title: webhook?.id ? "Webhook atualizado" : "Webhook criado",
         description: webhook?.id ? "O webhook foi atualizado com sucesso." : "O novo webhook foi criado com sucesso.",
+        variant: "success",
       })
 
       onSave()

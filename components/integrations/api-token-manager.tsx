@@ -104,6 +104,7 @@ export function ApiTokenManager() {
       toast({
         title: "Token gerado com sucesso",
         description: "Um novo token de API foi gerado. Copie-o agora, pois ele não será mostrado novamente.",
+        variant: "success",
       })
     } catch (error) {
       console.error("Erro ao gerar token:", error)
@@ -126,6 +127,7 @@ export function ApiTokenManager() {
       toast({
         title: "Token copiado",
         description: "O token foi copiado para a área de transferência.",
+        variant: "success",
       })
 
       setTimeout(() => setCopied(false), 3000)
