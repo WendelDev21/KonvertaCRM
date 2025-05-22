@@ -83,6 +83,7 @@ export const authOptions: NextAuthOptions = {
           theme: user.theme,
           image: user.image,
           isActive: user.isActive,
+          plan: user.plan,
         }
       },
     }),

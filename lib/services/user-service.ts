@@ -59,6 +59,20 @@ export async function getUserByEmail(email: string) {
   return dbAction(() =>
     prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        role: true,
+        plan: true,
+        bio: true,
+        theme: true,
+        image: true,
+        isActive: true,
+        notificationSettings: true,
+        createdAt: true,
+      },
     }),
   )
 }
