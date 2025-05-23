@@ -275,7 +275,7 @@ export function ApiRoutesList() {
           <TabsList className="mb-4">
             <TabsTrigger value="contacts">Contatos</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger> 
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
           </TabsList>
