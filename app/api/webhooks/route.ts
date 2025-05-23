@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         if (user.plan === "Starter" && existingWebhooks >= 1) {
           return NextResponse.json(
             {
-              error: "Webhook limit reached",
+              error: "Limite de 1 webhook atingido! Faça o upgrade para mais webhooks",
               message:
                 "Your Starter plan allows only 1 webhook. Please upgrade to Pro or Business plan for more webhooks.",
               plan: user.plan,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         if (user.plan === "Pro" && existingWebhooks >= 5) {
           return NextResponse.json(
             {
-              error: "Webhook limit reached",
+              error: "Limite de 5 webhooks atingido! Faça o upgrade para mais webhooks",
               message: "Your Pro plan allows up to 5 webhooks. Please upgrade to Business plan for unlimited webhooks.",
               plan: user.plan,
               limit: 5,

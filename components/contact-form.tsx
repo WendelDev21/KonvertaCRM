@@ -126,7 +126,7 @@ export function ContactForm({ contactId }: ContactFormProps) {
       console.error("Erro ao salvar contato:", error)
       toast({
         title: "Erro",
-        description: "Não foi possível salvar o contato. Tente novamente.",
+        description: "Você atingiu seu limite de 100 contatos! Faça o upgrade para adicionar mais contatos.",
         variant: "destructive",
       })
     } finally {

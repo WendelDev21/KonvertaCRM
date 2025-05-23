@@ -147,7 +147,7 @@ export function WebhookForm({ webhook, onCancel, onSave }: WebhookFormProps) {
     } catch (error) {
       console.error("Erro ao salvar webhook:", error)
       toast({
-        title: "Erro",
+        title: "Erro ao salvar webhook:",
         description: error instanceof Error ? error.message : "Erro ao salvar webhook",
         variant: "destructive",
       })
