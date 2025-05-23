@@ -113,6 +113,7 @@ export function LoginForm() {
               id="password"
               name="password"
               type="password"
+              placeholder="sua-senha"
               value={loginData.password}
               onChange={handleLoginChange}
               className="pl-10"
