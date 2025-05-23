@@ -45,11 +45,11 @@ export async function GET(request: NextRequest) {
   })
 }
 
-// POST /api/tokens - Gerar novo token
+// POST /api/tokens - Gerar um ou múltiplos tokens
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
-      console.log("[API] Gerando novo token para usuário:", userId)
+      console.log("[API] Gerando token(s) para usuário:", userId)
 
       // Verificar se o usuário existe
       const user = await prisma.user.findUnique({
@@ -62,37 +62,93 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: "Usuário não encontrado" }, { status: 404 })
       }
 
-      // Gerar token aleatório
-      const tokenValue = randomBytes(32).toString("hex")
-      const hashedToken = createHash("sha256").update(tokenValue).digest("hex")
+      // Tratar o corpo da requisição com segurança
+      let body = {}
+      try {
+        // Verificar se o corpo da requisição não está vazio
+        const text = await req.text()
+        if (text && text.trim()) {
+          body = JSON.parse(text)
+        }
+      } catch (error) {
+        console.warn("[API] Erro ao fazer parse do JSON:", error)
+        // Continuar com objeto vazio se o parse falhar
+      }
 
-      // Desativar tokens anteriores
-      await prisma.apiToken.updateMany({
-        where: {
-          userId,
-          isActive: true,
-        },
-        data: {
-          isActive: false,
-        },
-      })
+      // Detectar se é operação em lote ou individual
+      const isBatch = Array.isArray(body)
+      const tokenRequests = isBatch ? body : [body || {}]
 
-      // Criar novo token
-      const newToken = await prisma.apiToken.create({
-        data: {
-          token: hashedToken,
-          name: "API Token",
-          userId,
-          isActive: true,
-        },
-      })
+      // Se não houver requisições válidas, criar pelo menos uma com valores padrão
+      if (tokenRequests.length === 0) {
+        tokenRequests.push({})
+      }
 
-      console.log("[API] Token gerado com sucesso, ID:", newToken.id)
+      const results = []
+      const errors = []
 
-      return NextResponse.json({ success: true, token: tokenValue })
+      for (let i = 0; i < tokenRequests.length; i++) {
+        const tokenData = tokenRequests[i] || {}
+
+        try {
+          // Gerar token aleatório
+          const tokenValue = randomBytes(32).toString("hex")
+          const hashedToken = createHash("sha256").update(tokenValue).digest("hex")
+
+          // Para operações em lote, não desativar tokens anteriores automaticamente
+          if (!isBatch) {
+            // Desativar tokens anteriores apenas para operação individual
+            await prisma.apiToken.updateMany({
+              where: {
+                userId,
+                isActive: true,
+              },
+              data: {
+                isActive: false,
+              },
+            })
+          }
+
+          // Criar novo token
+          const newToken = await prisma.apiToken.create({
+            data: {
+              token: hashedToken,
+              name: tokenData.name || "API Token",
+              userId,
+              isActive: true,
+            },
+          })
+
+          console.log("[API] Token gerado com sucesso, ID:", newToken.id)
+          results.push({ success: true, token: tokenValue, id: newToken.id, name: newToken.name })
+        } catch (error) {
+          console.error(`[API] Erro ao gerar token ${i + 1}:`, error)
+          errors.push({ index: i, error: "Erro ao gerar token" })
+        }
+      }
+
+      // Retornar resultado apropriado
+      if (isBatch) {
+        return NextResponse.json({
+          success: results.length > 0,
+          created: results.length,
+          total: tokenRequests.length,
+          results,
+          errors: errors.length > 0 ? errors : undefined,
+        })
+      } else {
+        if (results.length > 0) {
+          return NextResponse.json(results[0])
+        } else {
+          return NextResponse.json(
+            { success: false, error: errors[0]?.error || "Erro ao gerar token" },
+            { status: 500 },
+          )
+        }
+      }
     } catch (error) {
-      console.error("[API] Erro ao gerar token:", error)
-      return NextResponse.json({ success: false, error: "Erro ao gerar token" }, { status: 500 })
+      console.error("[API] Erro ao gerar token(s):", error)
+      return NextResponse.json({ success: false, error: "Erro ao gerar token(s)" }, { status: 500 })
     }
   })
 }

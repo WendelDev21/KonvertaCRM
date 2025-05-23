@@ -1,3 +1,4 @@
+// Corrigir as importações incorretas
 import { type NextRequest, NextResponse } from "next/server"
 import { getContactById, createContact, type ContactInput } from "@/lib/services/contact-service"
 import prisma from "@/lib/prisma"
@@ -92,19 +93,15 @@ export async function GET(request: NextRequest) {
   })
 }
 
-// Modificar a função POST para verificar o limite de contatos baseado no plano do usuário
+// POST /api/contacts - Cria um ou múltiplos contatos
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
       const body = await req.json()
 
-      // Validate data
-      if (!body.name || !body.contact || !body.source || !body.status) {
-        return NextResponse.json(
-          { error: "Incomplete data. Name, contact, source, and status are required." },
-          { status: 400 },
-        )
-      }
+      // Detectar se é operação em lote ou individual
+      const isBatch = Array.isArray(body)
+      const contacts = isBatch ? body : [body]
 
       // Verificar o plano do usuário e aplicar limites
       const user = await prisma.user.findUnique({
@@ -117,47 +114,101 @@ export async function POST(request: NextRequest) {
       }
 
       // Verificar limite de contatos para o plano Starter
-      if (user.plan === "Starter") {
-        const contactCount = await prisma.contact.count({
-          where: { userId },
-        })
+      const currentContactCount = await prisma.contact.count({
+        where: { userId },
+      })
 
-        if (contactCount >= 100) {
-          return NextResponse.json(
-            {
-              error: "Limite de contatos atingido",
-              message:
-                "Você atingiu o limite de 100 contatos do plano Starter. Faça upgrade para o plano Pro ou Business para adicionar mais contatos.",
-              limit: 100,
-              current: contactCount,
-              plan: "Starter",
-            },
-            { status: 403 },
-          )
+      const results = []
+      const errors = []
+
+      for (let i = 0; i < contacts.length; i++) {
+        const contactData = contacts[i]
+
+        try {
+          // Validate data
+          if (!contactData.name || !contactData.contact || !contactData.source || !contactData.status) {
+            errors.push({
+              index: i,
+              error: "Incomplete data. Name, contact, source, and status are required.",
+            })
+            continue
+          }
+
+          // Verificar limite para plano Starter
+          if (user.plan === "Starter") {
+            const totalContactsAfterCreation = currentContactCount + results.length + 1
+
+            if (totalContactsAfterCreation > 100) {
+              errors.push({
+                index: i,
+                error: "Limite de contatos atingido",
+                message:
+                  "Você atingiu o limite de 100 contatos do plano Starter. Faça upgrade para o plano Pro ou Business para adicionar mais contatos.",
+                limit: 100,
+                current: currentContactCount + results.length,
+                plan: "Starter",
+              })
+              continue
+            }
+          }
+
+          const contactInput: ContactInput = {
+            name: contactData.name,
+            contact: contactData.contact,
+            source: contactData.source,
+            status: contactData.status,
+            notes: contactData.notes || null,
+          }
+
+          const [newContact, error] = await createContact(contactInput, userId)
+
+          if (error) {
+            errors.push({ index: i, error: error.message })
+            continue
+          }
+
+          // Disparar o webhook para o evento contact.created
+          await triggerWebhooks("contact.created", newContact, userId)
+
+          results.push(newContact)
+        } catch (error) {
+          console.error(`Error creating contact ${i + 1}:`, error)
+          errors.push({ index: i, error: "Error creating contact" })
         }
       }
 
-      const contactData: ContactInput = {
-        name: body.name,
-        contact: body.contact,
-        source: body.source,
-        status: body.status,
-        notes: body.notes || null,
+      // Retornar resultado apropriado
+      if (isBatch) {
+        return NextResponse.json(
+          {
+            success: results.length > 0,
+            created: results.length,
+            total: contacts.length,
+            results,
+            errors: errors.length > 0 ? errors : undefined,
+          },
+          { status: results.length > 0 ? 201 : 400 },
+        )
+      } else {
+        if (results.length > 0) {
+          return NextResponse.json(results[0], { status: 201 })
+        } else {
+          const error = errors[0]
+          return NextResponse.json(
+            {
+              error: error?.error || "Error creating contact",
+              message: error?.message,
+              limit: error?.limit,
+              current: error?.current,
+              plan: error?.plan,
+            },
+            { status: error?.plan ? 403 : 400 },
+          )
+        }
       }
-
-      const [newContact, error] = await createContact(contactData, userId)
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
-
-      // Disparar o webhook para o evento contact.created
-      await triggerWebhooks("contact.created", newContact, userId)
-
-      return NextResponse.json(newContact, { status: 201 })
     } catch (error) {
-      console.error("Error creating contact:", error)
-      return NextResponse.json({ error: "Error creating contact" }, { status: 500 })
+      console.error("Error creating contact(s):", error)
+      return NextResponse.json({ error: "Error creating contact(s)" }, { status: 500 })
     }
   })
 }

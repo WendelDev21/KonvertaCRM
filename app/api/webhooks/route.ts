@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAllWebhooks, getWebhookById, createWebhook, type WebhookEvent } from "@/lib/webhook-db"
 import { apiAuthMiddleware } from "@/middleware/api-auth"
-import prisma from "@/lib/prisma"
+import { createWebhook, getAllWebhooks, getWebhookById } from "@/lib/webhook-db"
+import { prisma } from "@/lib/prisma"
 
 // GET /api/webhooks - Lista todos os webhooks configurados
 export async function GET(request: NextRequest) {
@@ -27,116 +27,153 @@ export async function GET(request: NextRequest) {
   })
 }
 
-// POST /api/webhooks - Cria um novo webhook
+// POST /api/webhooks - Cria um ou múltiplos webhooks
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
       const body = await req.json()
       console.log("Recebido POST /api/webhooks com body:", body)
 
-      // Validate data
-      if (!body.name || !body.url || !body.events || !Array.isArray(body.events)) {
-        console.log("Dados incompletos:", body)
-        return NextResponse.json({ error: "Incomplete data. Name, URL, and events are required." }, { status: 400 })
+      // Detectar se é operação em lote ou individual
+      const isBatch = Array.isArray(body)
+      const webhooks = isBatch ? body : [body]
+
+      // Obter o usuário para verificar o plano
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { plan: true },
+      })
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
       }
 
-      // Validate URL
-      try {
-        new URL(body.url)
-      } catch (e) {
-        console.log("URL inválida:", body.url)
-        return NextResponse.json({ error: "Invalid URL. Provide a complete and valid URL." }, { status: 400 })
-      }
+      // Contar webhooks existentes
+      const existingWebhooks = await prisma.webhook.count({
+        where: { userId },
+      })
 
-      // Validate events
-      const validEvents: WebhookEvent[] = [
-        "contact.created",
-        "contact.updated",
-        "contact.deleted",
-        "contact.status_changed",
-        "all",
-      ]
+      const results = []
+      const errors = []
 
-      for (const event of body.events) {
-        if (!validEvents.includes(event as WebhookEvent)) {
-          console.log("Evento inválido:", event)
-          return NextResponse.json(
-            { error: `Invalid event: ${event}. Valid events: ${validEvents.join(", ")}` },
-            { status: 400 },
-          )
-        }
-      }
+      for (let i = 0; i < webhooks.length; i++) {
+        const webhookData = webhooks[i]
 
-      // Verificar o plano do usuário e o limite de webhooks
-      try {
-        // Obter o usuário para verificar o plano
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { plan: true },
-        })
+        try {
+          // Validate data
+          if (!webhookData.name || !webhookData.url || !webhookData.events || !Array.isArray(webhookData.events)) {
+            console.log("Dados incompletos:", webhookData)
+            errors.push({ index: i, error: "Incomplete data. Name, URL, and events are required." })
+            continue
+          }
 
-        if (!user) {
-          return NextResponse.json({ error: "User not found" }, { status: 404 })
-        }
+          // Validate URL
+          try {
+            new URL(webhookData.url)
+          } catch (e) {
+            console.log("URL inválida:", webhookData.url)
+            errors.push({ index: i, error: "Invalid URL. Provide a complete and valid URL." })
+            continue
+          }
 
-        // Contar webhooks existentes
-        const existingWebhooks = await prisma.webhook.count({
-          where: { userId },
-        })
+          // Validate events
+          const validEvents: WebhookEvent[] = [
+            "contact.created",
+            "contact.updated",
+            "contact.deleted",
+            "contact.status_changed",
+            "all",
+          ]
 
-        // Verificar limites baseados no plano
-        if (user.plan === "Starter" && existingWebhooks >= 1) {
-          return NextResponse.json(
-            {
+          let hasInvalidEvent = false
+          for (const event of webhookData.events) {
+            if (!validEvents.includes(event as WebhookEvent)) {
+              console.log("Evento inválido:", event)
+              errors.push({ index: i, error: `Invalid event: ${event}. Valid events: ${validEvents.join(", ")}` })
+              hasInvalidEvent = true
+              break
+            }
+          }
+
+          if (hasInvalidEvent) continue
+
+          // Verificar limites baseados no plano (considerando webhooks já criados + os que serão criados)
+          const totalWebhooksAfterCreation = existingWebhooks + results.length + 1
+
+          if (user.plan === "Starter" && totalWebhooksAfterCreation > 1) {
+            errors.push({
+              index: i,
               error: "Limite de 1 webhook atingido! Faça o upgrade para mais webhooks",
-              message:
-                "Your Starter plan allows only 1 webhook. Please upgrade to Pro or Business plan for more webhooks.",
               plan: user.plan,
               limit: 1,
-              current: existingWebhooks,
-            },
-            { status: 403 },
-          )
-        }
+              current: existingWebhooks + results.length,
+            })
+            continue
+          }
 
-        if (user.plan === "Pro" && existingWebhooks >= 5) {
-          return NextResponse.json(
-            {
+          if (user.plan === "Pro" && totalWebhooksAfterCreation > 5) {
+            errors.push({
+              index: i,
               error: "Limite de 5 webhooks atingido! Faça o upgrade para mais webhooks",
-              message: "Your Pro plan allows up to 5 webhooks. Please upgrade to Business plan for unlimited webhooks.",
               plan: user.plan,
               limit: 5,
-              current: existingWebhooks,
+              current: existingWebhooks + results.length,
+            })
+            continue
+          }
+
+          // Se passou pelas verificações, cria o webhook
+          const newWebhook = await createWebhook(
+            {
+              name: webhookData.name,
+              url: webhookData.url,
+              events: webhookData.events,
+              secret: webhookData.secret,
+              userId,
             },
-            { status: 403 },
-          )
-        }
-
-        // Business plan não tem limite (ou qualquer outro plano não especificado)
-
-        // Se passou pelas verificações, cria o webhook
-        const newWebhook = await createWebhook(
-          {
-            name: body.name,
-            url: body.url,
-            events: body.events,
-            secret: body.secret,
             userId,
-          },
-          userId,
-        )
+          )
 
-        console.log("Webhook criado com sucesso:", newWebhook)
-        return NextResponse.json(newWebhook, { status: 201 })
-      } catch (error) {
-        console.error("Erro ao criar webhook:", error)
-        return NextResponse.json(
-          {
+          console.log("Webhook criado com sucesso:", newWebhook)
+          results.push(newWebhook)
+        } catch (error) {
+          console.error(`Erro ao criar webhook ${i + 1}:`, error)
+          errors.push({
+            index: i,
             error: "Error creating webhook",
             details: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+
+      // Retornar resultado apropriado
+      if (isBatch) {
+        return NextResponse.json(
+          {
+            success: results.length > 0,
+            created: results.length,
+            total: webhooks.length,
+            results,
+            errors: errors.length > 0 ? errors : undefined,
           },
-          { status: 500 },
+          { status: results.length > 0 ? 201 : 400 },
         )
+      } else {
+        if (results.length > 0) {
+          return NextResponse.json(results[0], { status: 201 })
+        } else {
+          const error = errors[0]
+          return NextResponse.json(
+            {
+              error: error?.error || "Error creating webhook",
+              details: error?.details,
+              plan: error?.plan,
+              limit: error?.limit,
+              current: error?.current,
+            },
+            { status: error?.plan ? 403 : 400 },
+          )
+        }
       }
     } catch (error) {
       console.error("Erro no handler POST /api/webhooks:", error)
