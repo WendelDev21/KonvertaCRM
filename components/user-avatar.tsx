@@ -19,6 +19,13 @@ export function UserAvatar() {
   const { data: session } = useSession()
   const router = useRouter()
 
+  // Get user data from session
+  const userData = {
+    name: session?.user?.name || "Usuário",
+    email: session?.user?.email || "usuario@exemplo.com",
+    role: (session?.user as any)?.role || "user",
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -29,8 +36,14 @@ export function UserAvatar() {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{userData.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">{userData.email}</p>
+            {userData.role === "admin" && <p className="text-xs font-medium text-primary">Administrador</p>}
+          </div>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/settings")}>
           <Settings className="mr-2 h-4 w-4" />
