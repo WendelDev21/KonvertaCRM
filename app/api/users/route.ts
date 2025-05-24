@@ -2,7 +2,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
-import { apiAuthMiddleware } from "@/lib/api-auth-middleware"
+import { apiAuthMiddleware } from "@/middleware/api-auth"
 
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
