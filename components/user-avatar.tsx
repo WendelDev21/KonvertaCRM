@@ -1,6 +1,6 @@
 "use client"
 
-import { LogOut, Settings, CreditCard } from "lucide-react"
+import { LogOut, Settings, Wallet } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -50,13 +50,13 @@ export function UserAvatar() {
           <span>Configurações</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/settings/upgrades")}>
-          <CreditCard className="mr-2 h-4 w-4" />
+          <Wallet className="mr-2 h-4 w-4" />
           <span>Upgrades</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Sair</span>
+          <LogOut className="mr-2 h-4 w-full justify-start text-destructive" />
+          <span className="justify-start text-destructive">Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -323,7 +323,7 @@ export function SettingsForm() {
             <Key className="h-4 w-4" />
             <span className="hidden sm:inline">Segurança</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger value="notifications" className="flex items-center gap-2" disabled>
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Notificações</span>
           </TabsTrigger>
