@@ -94,18 +94,19 @@ export function KanbanColumn({
     <div
       ref={setNodeRef}
       className={`
+        touch-none
         flex flex-col h-[calc(100vh-12rem)] min-h-[500px] rounded-lg border bg-card 
         transition-all duration-200 ${isColumnOver ? `${getColumnClass(status, true)} scale-[1.02]` : ""}
         snap-center
       `}
       style={{
-        // Aumentar a largura da coluna e adicionar padding quando estiver arrastando
         padding: isColumnOver ? "4px" : "0px",
         minWidth: "280px",
         width: "min(100vw - 2rem, 350px)",
         flexShrink: 0,
       }}
     >
+
       <div className={`p-3 border-b rounded-t-lg ${getHeaderClass(status)}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

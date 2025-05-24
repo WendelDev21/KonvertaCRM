@@ -24,6 +24,8 @@ import { AddContactDialog } from "./add-contact-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Plus, RefreshCw } from "lucide-react"
+import { TouchSensor } from "@dnd-kit/core"
+
 
 export type ContactStatus = "Novo" | "Conversando" | "Interessado" | "Fechado" | "Perdido"
 
@@ -53,15 +55,21 @@ export function KanbanBoard() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      // Reduzir a distância de ativação para facilitar o arrasto
       activationConstraint: {
         distance: 5,
       },
     }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // tempo em ms antes de ativar (ajuda a evitar conflitos com scroll)
+        tolerance: 5, // tolerância de movimento em px
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   )
+
 
   const fetchContacts = useCallback(async (isRefreshing = false) => {
     if (isRefreshing) {
