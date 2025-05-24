@@ -272,7 +272,7 @@ export function ApiRoutesList() {
 
       <CardContent>
         <Tabs defaultValue="contacts" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 overflow-x-auto whitespace-nowrap max-w-full scrollbar-hide">
             <TabsTrigger value="contacts">Contatos</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger> 

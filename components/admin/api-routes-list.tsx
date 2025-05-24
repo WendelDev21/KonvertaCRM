@@ -350,9 +350,9 @@ export function AdminApiRoutesList() {
   }
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <Server className="h-5 w-5" />
           Documentação da API
         </CardTitle>
@@ -363,8 +363,8 @@ export function AdminApiRoutesList() {
 
       <CardContent>
         <Tabs defaultValue="admin">
-          <TabsList className="mb-4">
-            <TabsTrigger value="admin">Admin</TabsTrigger>
+          <TabsList className="mb-4 overflow-x-auto">
+            <TabsTrigger value="admin" className="whitespace-nowrap">Admin</TabsTrigger>
           </TabsList>
 
           {Object.entries(apiRoutes).map(([key, routes]) => (
@@ -374,22 +374,22 @@ export function AdminApiRoutesList() {
                   <AccordionItem key={index} value={`${key}-${index}`}>
                     <AccordionTrigger className="flex items-start gap-2">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-left">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap sm:flex-nowrap items-start gap-2">
                           <Badge className={getMethodColor(route.method)}>{route.method}</Badge>
-                          <span className="font-mono text-sm">{route.path}</span>
+                          <span className="font-mono text-sm break-all">{route.path}</span>
                           {getAuthBadge(route.auth)}
                         </div>
                         <span className="text-muted-foreground text-sm">{route.description}</span>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="space-y-4 p-4">
+                      <div className="space-y-4 p-2 sm:p-4">
                         {route.params && (
                           <div>
                             <h4 className="font-medium mb-2">Parâmetros de URL</h4>
                             <ul className="space-y-2">
                               {route.params.map((param, i) => (
-                                <li key={i} className="text-sm">
+                                <li key={i} className="text-sm break-words">
                                   <span className="font-mono">{param.name}</span>
                                   <span className="text-muted-foreground"> ({param.type})</span>
                                   {param.required && <span className="text-red-500 ml-1">*</span>}
@@ -400,12 +400,12 @@ export function AdminApiRoutesList() {
                           </div>
                         )}
 
-                        {route.queryParams && route.queryParams.length > 0 && (
+                        {route.queryParams?.length > 0 && (
                           <div>
                             <h4 className="font-medium mb-2">Parâmetros de Query</h4>
                             <ul className="space-y-2">
                               {route.queryParams.map((param, i) => (
-                                <li key={i} className="text-sm">
+                                <li key={i} className="text-sm break-words">
                                   <span className="font-mono">{param.name}</span>
                                   <span className="text-muted-foreground"> ({param.type})</span>
                                   {param.required && <span className="text-red-500 ml-1">*</span>}
@@ -416,12 +416,12 @@ export function AdminApiRoutesList() {
                           </div>
                         )}
 
-                        {route.bodyParams && route.bodyParams.length > 0 && (
+                        {route.bodyParams?.length > 0 && (
                           <div>
                             <h4 className="font-medium mb-2">Parâmetros do Body</h4>
                             <ul className="space-y-2">
                               {route.bodyParams.map((param, i) => (
-                                <li key={i} className="text-sm">
+                                <li key={i} className="text-sm break-words">
                                   <span className="font-mono">{param.name}</span>
                                   <span className="text-muted-foreground"> ({param.type})</span>
                                   {param.required && <span className="text-red-500 ml-1">*</span>}
@@ -471,5 +471,6 @@ export function AdminApiRoutesList() {
         </Tabs>
       </CardContent>
     </Card>
+
   )
 }
