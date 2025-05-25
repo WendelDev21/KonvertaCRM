@@ -62,7 +62,7 @@ export function KanbanBoard() {
     useSensor(TouchSensor, {
       activationConstraint: {
         delay: 250, // tempo em ms antes de ativar (ajuda a evitar conflitos com scroll)
-        tolerance: 5, // tolerância de movimento em px
+        tolerance: 2, // tolerância de movimento em px
       },
     }),
     useSensor(KeyboardSensor, {
