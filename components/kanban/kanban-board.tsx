@@ -24,7 +24,6 @@ import { AddContactDialog } from "./add-contact-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Plus, RefreshCw } from "lucide-react"
-import { TouchSensor } from "@dnd-kit/core"
 
 
 export type ContactStatus = "Novo" | "Conversando" | "Interessado" | "Fechado" | "Perdido"
@@ -56,13 +55,7 @@ export function KanbanBoard() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250, // tempo em ms antes de ativar (ajuda a evitar conflitos com scroll)
-        tolerance: 2, // tolerância de movimento em px
+        distance: 10,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -391,7 +384,7 @@ export function KanbanBoard() {
           <DragOverlay>
             {activeId && activeContact ? (
               <div className="transform-gpu scale-105 opacity-90 shadow-lg rotate-1 w-[280px]">
-                <ContactCard contact={activeContact} onClick={() => {}} isDragging={true} />
+                <ContactCard className="touch-none" contact={activeContact} onClick={() => {}} isDragging={true}  />
               </div>
             ) : null}
           </DragOverlay>
