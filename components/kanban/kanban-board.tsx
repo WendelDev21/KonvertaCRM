@@ -50,13 +50,14 @@ export function KanbanBoard() {
   const [activeContact, setActiveContact] = useState<Contact | null>(null)
   const [columnOver, setColumnOver] = useState<ContactStatus | null>(null)
   const [updatingContactId, setUpdatingContactId] = useState<string | null>(null)
+  const [scrollLocked, setScrollLocked] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 10,
-        delay: 100,
-        tolerance: 5,
+        distance: 15,
+        delay: 200,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -115,7 +116,26 @@ export function KanbanBoard() {
   }
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { over } = event
+    const { over, activatorEvent } = event
+
+    // Detectar se está próximo às bordas para travar o scroll
+    if (activatorEvent && "clientX" in activatorEvent) {
+      const containerElement = document.querySelector("[data-kanban-container]")
+      if (containerElement) {
+        const containerRect = containerElement.getBoundingClientRect()
+        const pointerX = activatorEvent.clientX
+        const edgeThreshold = 100 // pixels da borda
+
+        const isNearLeftEdge = pointerX - containerRect.left < edgeThreshold
+        const isNearRightEdge = containerRect.right - pointerX < edgeThreshold
+
+        if (isNearLeftEdge || isNearRightEdge) {
+          setScrollLocked(true)
+        } else {
+          setScrollLocked(false)
+        }
+      }
+    }
 
     // Limpar o estado se não estiver sobre nada
     if (!over) {
@@ -146,6 +166,7 @@ export function KanbanBoard() {
     setActiveId(null)
     setActiveContact(null)
     setColumnOver(null)
+    setScrollLocked(false) // Adicionar esta linha
 
     // Se não houver destino, não fazer nada
     if (!over) {
@@ -327,15 +348,19 @@ export function KanbanBoard() {
 
         <DndContext
           sensors={sensors}
-          autoScroll={{
-            enabled: true,
-            threshold: {
-              x: 0.2,
-              y: 0.2,
-            },
-            acceleration: 0.5,
-            interval: 5,
-          }}
+          autoScroll={
+            scrollLocked
+              ? false
+              : {
+                  enabled: true,
+                  threshold: {
+                    x: 0.1,
+                    y: 0.1,
+                  },
+                  acceleration: 0.2,
+                  interval: 10,
+                }
+          }
           collisionDetection={(args) => {
             // Usar uma combinação de estratégias para melhor precisão
             const pointerCollisions = pointerWithin({
@@ -375,7 +400,13 @@ export function KanbanBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex overflow-x-auto pb-8 gap-6 snap-x snap-mandatory touch-pan-x overscroll-x-contain">
+          <div
+            data-kanban-container
+            className="flex overflow-x-auto pb-8 gap-6 snap-x snap-mandatory touch-pan-x overscroll-x-contain"
+            style={{
+              scrollBehavior: scrollLocked ? "auto" : "smooth",
+            }}
+          >
             {Object.entries(contactsByStatus).map(([status, statusContacts]) => (
               <KanbanColumn
                 key={status}
