@@ -25,7 +25,6 @@ import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import { Plus, RefreshCw } from "lucide-react"
 
-
 export type ContactStatus = "Novo" | "Conversando" | "Interessado" | "Fechado" | "Perdido"
 
 export interface Contact {
@@ -56,13 +55,14 @@ export function KanbanBoard() {
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 10,
+        delay: 100,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   )
-
 
   const fetchContacts = useCallback(async (isRefreshing = false) => {
     if (isRefreshing) {
@@ -327,6 +327,15 @@ export function KanbanBoard() {
 
         <DndContext
           sensors={sensors}
+          autoScroll={{
+            enabled: true,
+            threshold: {
+              x: 0.2,
+              y: 0.2,
+            },
+            acceleration: 0.5,
+            interval: 5,
+          }}
           collisionDetection={(args) => {
             // Usar uma combinação de estratégias para melhor precisão
             const pointerCollisions = pointerWithin({
@@ -366,7 +375,7 @@ export function KanbanBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex overflow-x-auto pb-8 gap-6 snap-x snap-mandatory">
+          <div className="flex overflow-x-auto pb-8 gap-6 snap-x snap-mandatory touch-pan-x overscroll-x-contain">
             {Object.entries(contactsByStatus).map(([status, statusContacts]) => (
               <KanbanColumn
                 key={status}
@@ -384,7 +393,7 @@ export function KanbanBoard() {
           <DragOverlay>
             {activeId && activeContact ? (
               <div className="transform-gpu scale-105 opacity-90 shadow-lg rotate-1 w-[280px]">
-                <ContactCard className="touch-none" contact={activeContact} onClick={() => {}} isDragging={true}  />
+                <ContactCard className="touch-none" contact={activeContact} onClick={() => {}} isDragging={true} />
               </div>
             ) : null}
           </DragOverlay>
