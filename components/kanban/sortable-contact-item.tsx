@@ -40,7 +40,7 @@ export function SortableContactItem({ contact, isUpdating = false, onClick }: So
       <ContactCard
         contact={contact}
         className={`${
-          isDragging ? "shadow-lg" : "shadow-sm hover:shadow-md"
+          isDragging ? "shadow-lg" : "shadow-lg hover:shadow-md"
         } transition-all duration-200 transform ${isDragging ? "" : "hover:-translate-y-0.5"}`}
       />
       {isUpdating && (

@@ -16,7 +16,7 @@ const ContactsTable = dynamic(
 
 export function ContactsClientWrapper() {
   return (
-    <div className="shadow-sm rounded-lg border bg-card text-card-foreground">
+    <div className="shadow-lg rounded-lg border bg-card text-card-foreground">
       <div className="p-6">
         <Suspense fallback={<div className="h-16 flex items-center justify-center">Carregando filtros...</div>}>
           <ContactFilters />

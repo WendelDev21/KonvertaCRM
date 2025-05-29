@@ -490,7 +490,7 @@ export function ActivityTimelineChart({
 
   if (isLoading) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base font-medium">Atividade ao Longo do Tempo</CardTitle>
@@ -509,7 +509,7 @@ export function ActivityTimelineChart({
 
   if (error) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base font-medium">Atividade ao Longo do Tempo</CardTitle>
@@ -531,7 +531,7 @@ export function ActivityTimelineChart({
 
   if (!hasValidData) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-base font-medium">Atividade ao Longo do Tempo</CardTitle>
@@ -557,7 +557,7 @@ export function ActivityTimelineChart({
 
   return (
     <>
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <div>

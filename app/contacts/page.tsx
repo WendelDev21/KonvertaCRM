@@ -15,7 +15,7 @@ export default function ContactsPage() {
             </div>
           </div>
 
-          <Card className="shadow-sm">
+          <Card className="shadow-lg">
             <CardContent className="pt-6">
               <Suspense fallback={<div className="py-10 text-center">Carregando filtros...</div>}>
                 <ContactFilters />

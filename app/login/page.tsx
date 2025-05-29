@@ -26,7 +26,7 @@ function LoginPageContent() {
       {/* Left side - Decorative with updated gradient colors as requested */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-[#1e3c72] to-[#2a5298] flex-col justify-center items-center p-6 relative">
         <div className="max-w-md text-center">
-          <Image src="/icon.png" alt="Konverta Logo" width={120} height={120} className="mx-auto mb-6" />
+          <Image src="/favicon.png" alt="Konverta Logo" width={120} height={120} className="mx-auto mb-6" />
           <h1 className="text-4xl font-bold text-white mb-4">Konverta</h1>
           <p className="text-white/90 text-lg mb-6">Plataforma completa para gestão de leads e oportunidades</p>
           <div className="grid grid-cols-2 gap-4 mt-8">
@@ -55,7 +55,7 @@ function LoginPageContent() {
         </div>
 
         <div className="w-full max-w-md">
-          <Card className="border shadow-sm bg-card/50 backdrop-blur-sm">
+          <Card className="border shadow-lg bg-card/50 backdrop-blur-sm">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center">Bem-vindo de volta</CardTitle>
               <CardDescription className="text-center">

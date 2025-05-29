@@ -47,7 +47,7 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
   const customTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background border rounded-md p-2 shadow-sm">
+        <div className="bg-background border rounded-md p-2 shadow-lg">
           <p className="font-medium">{payload[0].name}</p>
           <p style={{ color: payload[0].fill }}>{payload[0].value} contatos</p>
           <p className="text-xs text-muted-foreground mt-1">Clique para ver detalhes</p>
@@ -93,7 +93,7 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-base font-medium">Distribuição por Origem</CardTitle>
         </CardHeader>
@@ -106,7 +106,7 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
 
   return (
     <>
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Distribuição por Origem</CardTitle>
         </CardHeader>

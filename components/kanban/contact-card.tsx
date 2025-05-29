@@ -43,7 +43,7 @@ export function ContactCard({ contact, onClick, isDragging, isUpdating }: Contac
   }
 
   return (
-    <div className="w-full p-2 mb-2 bg-background rounded-md border shadow-sm hover:shadow transition-all duration-200 touch-none">
+    <div className="w-full p-2 mb-2 bg-background rounded-md border shadow-lg hover:shadow transition-all duration-200 touch-none">
       <Card
         className={`
         ${getCardClass(contact.status)}

@@ -62,7 +62,7 @@ export function SortableContactCard({
       <ContactCard
         contact={contact}
         className={`${
-          isBeingDragged ? "shadow-lg" : "shadow-sm hover:shadow-md"
+          isBeingDragged ? "shadow-lg" : "shadow-lg hover:shadow-md"
         } transition-all duration-200 transform ${isBeingDragged ? "" : "hover:-translate-y-0.5"}`}
       />
       {isUpdating && (

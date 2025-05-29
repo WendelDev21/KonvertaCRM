@@ -173,7 +173,7 @@ export function StatusCards({ startDate, endDate, source }: StatusCardsProps) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {[...Array(5)].map((_, index) => (
-          <Card key={index} className="border shadow-sm">
+          <Card key={index} className="border shadow-lg">
             <CardHeader className="py-3 px-4">
               <CardTitle className="text-sm font-medium h-5 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></CardTitle>
             </CardHeader>
@@ -193,7 +193,7 @@ export function StatusCards({ startDate, endDate, source }: StatusCardsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {statusCounts.map((item) => (
-        <Card key={item.status} className="border shadow-sm">
+        <Card key={item.status} className="border shadow-lg">
           <CardHeader className="py-3 px-4">
             <CardTitle className="text-sm font-medium">{item.status}</CardTitle>
           </CardHeader>

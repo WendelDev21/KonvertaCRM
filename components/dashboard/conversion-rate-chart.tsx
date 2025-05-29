@@ -110,7 +110,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
   const customTooltip = useCallback(({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background border rounded-md p-2 shadow-sm">
+        <div className="bg-background border rounded-md p-2 shadow-lg">
           <p className="font-medium">{label}</p>
           <p>Total: {payload[0].value} contatos</p>
           <p>Taxa: {payload[1].value.toFixed(1)}%</p>
@@ -122,7 +122,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
 
   if (isLoading) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Contatos por Origem</CardTitle>
         </CardHeader>
@@ -135,7 +135,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
 
   if (error) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Contatos por Origem</CardTitle>
         </CardHeader>
@@ -148,7 +148,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
 
   if (data.length === 0) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Contatos por Origem</CardTitle>
         </CardHeader>
@@ -160,7 +160,7 @@ export function ConversionRateChart({ startDate, endDate, source }: ConversionRa
   }
 
   return (
-    <Card className="border shadow-sm">
+    <Card className="border shadow-lg">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">
           Contatos por Origem{" "}

@@ -85,14 +85,14 @@ export function DashboardHeader() {
   ]
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-lg">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo e navegação principal */}
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <img src="/icon.png" alt="Konverta Logo" className="w-10 h-10" />
-              <span className="font-bold text-xl hidden sm:inline-block"></span>
+              <img src="/favicon.png" alt="Konverta Logo" className="w-10 h-10" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Konverta</span>
             </Link>
 
             {/* Menu para desktop */}
@@ -121,7 +121,7 @@ export function DashboardHeader() {
               </span>
             </div>
             {/* Botão de novo contato */}
-              <Button variant="outline" size="sm" className="hidden sm:flex" asChild>
+              <Button variant="default" size="sm" className="hidden sm:flex" asChild>
                 <Link href="/contacts/new">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   <span>Novo Contato</span>
@@ -143,8 +143,8 @@ export function DashboardHeader() {
               <SheetContent side="left">
                 <div className="py-4">
                   <div className="flex items-center gap-2 mb-6">
-                    <img src="/icon.png" alt="Konverta Logo" className="w-10 h-10" />
-                    <span className="font-bold text-xl">Konverta</span>
+                    <img src="/favicon.png" alt="Konverta Logo" className="w-10 h-10" />
+                    <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Konverta</span>
                   </div>
 
                   <nav className="flex flex-col gap-2">

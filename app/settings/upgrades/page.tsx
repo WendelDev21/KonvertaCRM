@@ -170,9 +170,11 @@ export default async function UpgradesPage() {
                 </CardContent>
 
                 <CardFooter>
-                  <Button className="w-full" variant={getButtonVariant(plan.id)} disabled={isCurrentPlan(plan.id)}>
+                  <a href="https://wa.me/5579991190534?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20os%20planos." target="_blank" rel="noopener noreferrer" className="w-full">
+                  <Button className="w-full" variant="default">
                     {getButtonText(plan.id)}
                   </Button>
+                  </a>
                 </CardFooter>
               </Card>
             ))}

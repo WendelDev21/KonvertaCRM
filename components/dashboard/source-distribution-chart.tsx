@@ -125,7 +125,7 @@ export function SourceDistributionChart({ startDate, endDate }: SourceDistributi
 
   if (isLoading) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Distribuição por Origem</CardTitle>
         </CardHeader>
@@ -138,7 +138,7 @@ export function SourceDistributionChart({ startDate, endDate }: SourceDistributi
 
   if (error) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Distribuição por Origem</CardTitle>
         </CardHeader>
@@ -151,7 +151,7 @@ export function SourceDistributionChart({ startDate, endDate }: SourceDistributi
 
   if (data.length === 0) {
     return (
-      <Card className="border shadow-sm">
+      <Card className="border shadow-lg">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Distribuição por Origem</CardTitle>
         </CardHeader>
@@ -164,7 +164,7 @@ export function SourceDistributionChart({ startDate, endDate }: SourceDistributi
 
   return (
     <>
-      <Card className="border shadow-sm cursor-pointer" onClick={handleChartClick}>
+      <Card className="border shadow-lg cursor-pointer" onClick={handleChartClick}>
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Distribuição por Origem</CardTitle>
         </CardHeader>

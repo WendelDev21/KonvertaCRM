@@ -236,7 +236,7 @@
 
 /* Melhorias para tabelas */
 .table-container {
-  @apply rounded-lg border shadow-sm overflow-hidden;
+  @apply rounded-lg border shadow-lg overflow-hidden;
 }
 
 .table-row-hover {
@@ -283,7 +283,7 @@
 
 /* Melhorias para o dashboard */
 .dashboard-card {
-  @apply p-6 rounded-lg border bg-card shadow-sm hover:shadow-md transition-all;
+  @apply p-6 rounded-lg border bg-card shadow-lg hover:shadow-md transition-all;
 }
 
 .dashboard-stat {
