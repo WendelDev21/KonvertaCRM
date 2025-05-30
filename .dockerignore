@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+.nyc_output
+
+# Next.js
+.next
+out
+
+# Production
+build
+dist
+
+# Misc
+.DS_Store
+*.pem
+.idea
+.vscode
+.github
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+
+# Vercel
+.vercel
+
+# Turborepo
+.turbo
+
+# Docker
+Dockerfile
+Dockerfile.migrate
+docker-compose.yml
+.dockerignore
+
+# Git
+.git
+.gitignore
+
+# Uploads
+uploads/*

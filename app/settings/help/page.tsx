@@ -18,7 +18,7 @@ export default async function SuportPage() {
                             <ul className="list-disc pl-5 text-muted-foreground">
                                 <li>Email: <a href="mailto:konvertacrm@gmail.com" className="text-blue-600 hover:underline">konvertacrm@gmail.com</a></li>
                                 <li>WhatsApp: <a href="https://wa.me/5579991190534" target="_blank" className="text-blue-600 hover:underline">+55 (79) 9 9119-0534</a></li>
-                                <li>Horário de atendimento: Segunda à sexta, das 9h às 17h</li>
+                                <li>Horário de atendimento: Segunda à sexta, das 9h às 18h</li>
                             </ul>
                         </div>
 
@@ -26,7 +26,7 @@ export default async function SuportPage() {
                             <h2 className="text-xl font-bold">Redes sociais</h2>
                             <div className="flex gap-4 text-white text-2xl">
                                 <a
-                                    href="https://wa.me/5579991190534"
+                                    href="https://wa.me/5579991190534?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20o%20suporte."
                                     target="_blank"
                                     className="bg-green-500 hover:bg-green-600 p-3 rounded-full"
                                 >
@@ -40,7 +40,7 @@ export default async function SuportPage() {
                                     <FaInstagram />
                                 </a>
                                 <a
-                                    href="https://linkedin.com/in/seu_linkedin"
+                                    href="https://linkedin.com/company/konvertacrm"
                                     target="_blank"
                                     className="bg-blue-700 hover:bg-blue-800 p-3 rounded-full"
                                 >

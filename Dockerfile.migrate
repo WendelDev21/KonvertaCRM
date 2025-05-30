@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy prisma files
+COPY prisma ./prisma
+
+# Copy migration script
+COPY scripts/docker-migrate.sh ./
+
+# Make script executable
+RUN chmod +x ./docker-migrate.sh
+
+# Run migrations
+CMD ["./docker-migrate.sh"]

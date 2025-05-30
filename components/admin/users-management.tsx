@@ -312,6 +312,7 @@ export function AdminUsersManagement() {
         toast({
           title: "Sucesso",
           description: "Usuário atualizado com sucesso",
+          variant: "success",
         })
 
         // Reativar a busca automática após um tempo
@@ -379,6 +380,7 @@ export function AdminUsersManagement() {
         toast({
           title: "Sucesso",
           description: "Usuário criado com sucesso",
+          variant: "success",
         })
 
         // Reativar a busca automática após um tempo
@@ -450,6 +452,7 @@ export function AdminUsersManagement() {
       toast({
         title: "Sucesso",
         description: "Usuário desativado com sucesso",
+        variant: "success",
       })
 
       // Fechar o diálogo

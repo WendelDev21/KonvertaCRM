@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -9,12 +10,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Corrigido: outputFileTracingExcludes está na raiz agora
-  outputFileTracingExcludes: {
-    '/api/debug/**': ['**/node_modules/**'],
-    '/api/debug-token/**': ['**/node_modules/**']
-  },
-  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
 }
 
 export default nextConfig
