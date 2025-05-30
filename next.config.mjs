@@ -9,19 +9,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Fix the outputFileTracingExcludes configuration
-  experimental: {
-    // Change from boolean values to arrays of patterns
-    outputFileTracingExcludes: {
-      '/api/debug/**': ['**/node_modules/**'],
-      '/api/debug-token/**': ['**/node_modules/**']
-    },
+  // Corrigido: outputFileTracingExcludes está na raiz agora
+  outputFileTracingExcludes: {
+    '/api/debug/**': ['**/node_modules/**'],
+    '/api/debug-token/**': ['**/node_modules/**']
   },
-  // Exclude specific pages from the build
-  pageExtensions: ['tsx', 'ts', 'jsx', 'js'].filter(ext => {
-    // This is a workaround to exclude specific problematic files
-    return true;
-  }),
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
 }
 
 export default nextConfig
