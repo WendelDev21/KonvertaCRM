@@ -5,8 +5,8 @@ services:
     container_name: crm_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: users_db_kv
-      POSTGRES_USER: wendeladminn
+      POSTGRES_DB: konverta_db
+      POSTGRES_USER: wendeladmin
       POSTGRES_PASSWORD: "@wendelAdmin2003"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -31,7 +31,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://wendeladminn:@wendelAdmin2003@postgres:5432/users_db_kv
+      - DATABASE_URL=postgres://wendeladmin:@wendelAdmin2003@konvertacrm_crm_db:5432/konverta_db?sslmode=disable
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=@wendelAdmin2003
     depends_on:
