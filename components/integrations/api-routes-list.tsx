@@ -33,7 +33,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Array de contatos",
       example:
-        "curl -X GET 'https://seu-dominio.com/api/contacts?status=lead' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/contacts?status=lead' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -41,7 +41,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Obtém detalhes de um contato específico",
       params: [{ name: "id", type: "string", description: "ID do contato", required: true }],
       response: "Detalhes do contato",
-      example: "curl -X GET 'https://seu-dominio.com/api/contacts/123456' -H 'Authorization: Bearer seu_token_aqui'",
+      example: "curl -X GET 'https://konvertaleads.com.br/api/contacts/123456' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
@@ -56,7 +56,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Contato criado",
       example:
-        'curl -X POST \'https://seu-dominio.com/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"João Silva","contact":"joao@email.com","source":"site","status":"lead"}\'',
+        'curl -X POST \'https://konvertaleads.com.br/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"João Silva","contact":"joao@email.com","source":"Outro","status":"Novo"}\'',
     },
     {
       method: "PUT",
@@ -72,7 +72,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Contato atualizado",
       example:
-        "curl -X PUT 'https://seu-dominio.com/api/contacts/123456' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"status\":\"cliente\"}'",
+        "curl -X PUT 'https://konvertaleads.com.br/api/contacts/123456' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"status\":\"cliente\"}'",
     },
     {
       method: "DELETE",
@@ -80,7 +80,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Remove um contato",
       params: [{ name: "id", type: "string", description: "ID do contato", required: true }],
       response: "{ success: true }",
-      example: "curl -X DELETE 'https://seu-dominio.com/api/contacts/123456' -H 'Authorization: Bearer seu_token_aqui'",
+      example: "curl -X DELETE 'https://konvertaleads.com.br/api/contacts/123456' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ],
   webhooks: [
@@ -89,7 +89,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       path: "/api/webhooks",
       description: "Lista todos os webhooks configurados",
       response: "Array de webhooks",
-      example: "curl -X GET 'https://seu-dominio.com/api/webhooks' -H 'Authorization: Bearer seu_token_aqui'",
+      example: "curl -X GET 'https://konvertaleads.com.br/api/webhooks' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -102,7 +102,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Detalhes do webhook",
       example:
-        "curl -X GET 'https://seu-dominio.com/api/webhooks/123456?logs=true&limit=10' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/webhooks/123456?logs=true&limit=10' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
@@ -116,7 +116,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Webhook criado",
       example:
-        'curl -X POST \'https://seu-dominio.com/api/webhooks\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Meu Webhook","url":"https://meu-site.com/webhook","events":["contact.created","contact.updated"]}\'',
+        'curl -X POST \'https://konvertaleads.com.br/api/webhooks\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Meu Webhook","url":"https://meu-site.com/webhook","events":["contact.created","contact.updated"]}\'',
     },
     {
       method: "PUT",
@@ -131,7 +131,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Webhook atualizado",
       example:
-        'curl -X PUT \'https://seu-dominio.com/api/webhooks/123456\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Webhook Atualizado","events":["contact.created","all"]}\'',
+        'curl -X PUT \'https://konvertaleads.com.br/api/webhooks/123456\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Webhook Atualizado","events":["contact.created","all"]}\'',
     },
     {
       method: "DELETE",
@@ -139,7 +139,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Remove um webhook",
       params: [{ name: "id", type: "string", description: "ID do webhook", required: true }],
       response: "{ success: true }",
-      example: "curl -X DELETE 'https://seu-dominio.com/api/webhooks/123456' -H 'Authorization: Bearer seu_token_aqui'",
+      example: "curl -X DELETE 'https://konvertaleads.com.br/api/webhooks/123456' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
@@ -151,7 +151,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Resultado do teste",
       example:
-        "curl -X POST 'https://seu-dominio.com/api/webhooks/test' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"url\":\"https://meu-site.com/webhook\"}'",
+        "curl -X POST 'https://konvertaleads.com.br/api/webhooks/test' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"url\":\"https://meu-site.com/webhook\"}'",
     },
   ],
   dashboard: [
@@ -164,7 +164,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Dados do dashboard",
       example:
-        "curl -X GET 'https://seu-dominio.com/api/dashboard?period=month' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/dashboard?period=month' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -176,7 +176,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Dados de timeline",
       example:
-        "curl -X GET 'https://seu-dominio.com/api/dashboard/timeline?period=month&groupBy=day' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/dashboard/timeline?period=month&groupBy=day' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -187,7 +187,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Dados de conversão",
       example:
-        "curl -X GET 'https://seu-dominio.com/api/dashboard/conversion?period=month' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/dashboard/conversion?period=month' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ],
   users: [
@@ -196,7 +196,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       path: "/api/users/me",
       description: "Obtém informações do usuário atual",
       response: "Dados do usuário",
-      example: "curl -X GET 'https://seu-dominio.com/api/users/me' -H 'Authorization: Bearer seu_token_aqui'",
+      example: "curl -X GET 'https://konvertaleads.com.br/api/users/me' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "PUT",
@@ -212,7 +212,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Usuário atualizado",
       example:
-        "curl -X PUT 'https://seu-dominio.com/api/users/me' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"Novo Nome\"}'",
+        "curl -X PUT 'https://konvertaleads.com.br/api/users/me' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"Novo Nome\"}'",
     },
   ],
   tokens: [
@@ -221,14 +221,14 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       path: "/api/tokens",
       description: "Lista tokens de API do usuário",
       response: "Array de tokens",
-      example: "curl -X GET 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+      example: "curl -X GET 'https://konvertaleads.com.br/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
       path: "/api/tokens",
       description: "Gera um novo token de API",
       response: "{ token: string }",
-      example: "curl -X POST 'https://seu-dominio.com/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+      example: "curl -X POST 'https://konvertaleads.com.br/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ],
 }

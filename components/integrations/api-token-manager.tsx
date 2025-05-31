@@ -287,7 +287,7 @@ export function ApiTokenManager() {
           <div className="rounded-md bg-muted p-4">
             <pre className="text-xs overflow-x-auto">
               <code>
-                curl -X GET https://seu-dominio.com/api/contacts \<br />
+                curl -X GET https://konvertaleads.com.br/api/contacts \<br />
                 -H "Authorization: Bearer seu_token_aqui"
               </code>
             </pre>

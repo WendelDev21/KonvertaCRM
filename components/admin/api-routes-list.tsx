@@ -71,7 +71,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   }
 }`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/admin/users?includeInactive=true&plan=Pro&limit=10&page=1' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/admin/users?includeInactive=true&plan=Pro&limit=10&page=1' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -117,7 +117,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   ]
 }`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/admin/users/123e4567-e89b-12d3-a456-426614174000?includeTokens=true&includeActivity=true' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/admin/users/123e4567-e89b-12d3-a456-426614174000?includeTokens=true&includeActivity=true' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -159,7 +159,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   }
 }`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/admin/tokens?userId=123e4567-e89b-12d3-a456-426614174000&isActive=true&limit=10' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/admin/tokens?userId=123e4567-e89b-12d3-a456-426614174000&isActive=true&limit=10' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "POST",
@@ -186,7 +186,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   "createdAt": "2023-01-16T10:30:00.000Z"
 }`,
       example:
-        'curl -X POST \'https://seu-dominio.com/api/admin/users\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "Novo Usuário",\n    "email": "novo@teste.com",\n    "password": "senha123",\n    "role": "user",\n    "plan": "Pro",\n    "settings": {\n      "notifications": true\n    }\n  }\'',
+        'curl -X POST \'https://konvertaleads.com.br/api/admin/users\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "name": "Novo Usuário",\n    "email": "novo@teste.com",\n    "password": "senha123",\n    "role": "user",\n    "plan": "Pro",\n    "settings": {\n      "notifications": true\n    }\n  }\'',
     },
     {
       method: "PUT",
@@ -214,7 +214,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   "updatedAt": "2023-01-16T11:45:00.000Z"
 }`,
       example:
-        'curl -X PUT \'https://seu-dominio.com/api/admin/users/123e4567-e89b-12d3-a456-426614174000\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "role": "user",\n    "isActive": true,\n    "plan": "Business"\n  }\'',
+        'curl -X PUT \'https://konvertaleads.com.br/api/admin/users/123e4567-e89b-12d3-a456-426614174000\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "role": "user",\n    "isActive": true,\n    "plan": "Business"\n  }\'',
     },
     {
       method: "DELETE",
@@ -237,7 +237,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   "message": "3 tokens foram revogados com sucesso"
 }`,
       example:
-        "curl -X DELETE 'https://seu-dominio.com/api/admin/tokens?userId=123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X DELETE 'https://konvertaleads.com.br/api/admin/tokens?userId=123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "DELETE",
@@ -253,7 +253,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   "message": "Usuário desativado com sucesso"
 }`,
       example:
-        "curl -X DELETE 'https://seu-dominio.com/api/admin/users/123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X DELETE 'https://konvertaleads.com.br/api/admin/users/123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "DELETE",
@@ -268,7 +268,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   "message": "Usuário removido permanentemente"
 }`,
       example:
-        "curl -X DELETE 'https://seu-dominio.com/api/admin/users/delete/123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X DELETE 'https://konvertaleads.com.br/api/admin/users/delete/123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -300,7 +300,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
   }
 }`,
       example:
-        "curl -X GET 'https://seu-dominio.com/api/admin/stats/users?period=month&groupBy=plan' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/admin/stats/users?period=month&groupBy=plan' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ]
 }
