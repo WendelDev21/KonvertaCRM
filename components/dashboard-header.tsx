@@ -218,7 +218,7 @@ export function DashboardHeader() {
                           <Button
                             variant="outline"
                             className="w-full justify-start text-destructive"
-                            onClick={() => signOut({ callbackUrl: "/login" })}
+                            onClick={() => signOut()}
                           >
                             <span>Sair</span>
                           </Button>
