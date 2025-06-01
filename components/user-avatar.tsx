@@ -58,7 +58,7 @@ export function UserAvatar() {
           <span>Suporte</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut({ callbackUrl: 'https://konvertaleads.com.br/login' })}>
+        <DropdownMenuItem onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}>
           <LogOut className="mr-2 h-4 w-full justify-start text-destructive" />
           <span className="justify-start text-destructive">Sair</span>
         </DropdownMenuItem>

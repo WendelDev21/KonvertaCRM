@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: users_db_kv
-      POSTGRES_USER: wendeladminn
+      POSTGRES_USER: wendel_admin
       POSTGRES_PASSWORD: "@wendelAdmin2003"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
