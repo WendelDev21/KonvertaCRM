@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, FilterIcon, X } from 'lucide-react'
+import { CalendarIcon, FilterIcon, X } from "lucide-react"
 import { format, subDays, startOfYear, isValid } from "date-fns"
-import { Badge } from "@/components/ui/badge"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 // Tipos
 export type ContactSource = "WhatsApp" | "Instagram" | "Outro" | "Todos"
@@ -18,7 +18,6 @@ export interface DashboardFilters {
   dateRange: DateRange
   startDate: Date | null
   endDate: Date | null
-  source: ContactSource
 }
 
 interface DashboardFiltersProps {
@@ -30,6 +29,7 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const today = new Date()
+  const isMobile = useIsMobile()
 
   // Obter valores iniciais dos parâmetros de URL
   const getInitialDateRange = (): DateRange => {
@@ -64,7 +64,6 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
     dateRange: getInitialDateRange(),
     startDate: getInitialStartDate(),
     endDate: getInitialEndDate(),
-    source: getInitialSource(),
   })
 
   const [showCustomDateRange, setShowCustomDateRange] = useState(filters.dateRange === "personalizado")
@@ -76,7 +75,6 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
       dateRange: getInitialDateRange(),
       startDate: getInitialStartDate(),
       endDate: getInitialEndDate(),
-      source: getInitialSource(),
     }
 
     setFilters(newFilters)
@@ -96,7 +94,6 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
       // Verificar se realmente houve mudanças antes de atualizar
       if (
         updatedFilters.dateRange === filters.dateRange &&
-        updatedFilters.source === filters.source &&
         (updatedFilters.startDate?.getTime() === filters.startDate?.getTime() ||
           (!updatedFilters.startDate && !filters.startDate)) &&
         (updatedFilters.endDate?.getTime() === filters.endDate?.getTime() ||
@@ -122,12 +119,6 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
         params.set("endDate", updatedFilters.endDate.toISOString())
       } else {
         params.delete("endDate")
-      }
-
-      if (updatedFilters.source !== "Todos") {
-        params.set("source", updatedFilters.source)
-      } else {
-        params.delete("source")
       }
 
       router.push(`${pathname}?${params.toString()}`)
@@ -195,9 +186,8 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
   const clearFilters = useCallback(() => {
     const defaultFilters = {
       dateRange: "30dias" as DateRange,
-      startDate: subDays(today, 29), // Mudança: era 30, agora é 29
+      startDate: subDays(today, 29),
       endDate: today,
-      source: "Todos" as ContactSource,
     }
     setFilters(defaultFilters)
     setShowCustomDateRange(false)
@@ -210,105 +200,72 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
     }
   }, [router, pathname, onFilterChange, today])
 
-  // Verificar se há filtros ativos
-  const hasActiveFilters = filters.dateRange !== "30dias" || filters.source !== "Todos"
+  // Verificar se há filtros ativos (apenas para personalizado com datas selecionadas)
+  const hasActiveFilters = filters.dateRange === "personalizado" && filters.startDate && filters.endDate
 
   return (
-    <Card className="p-4 mb-6 animate-slide-in">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+    <Card className={`p-2 mb-4 animate-slide-in ${isMobile ? "px-2" : "p-3"}`}>
+      <div className={`flex ${isMobile ? "flex-col gap-2" : "flex-row gap-2 items-center justify-between"}`}>
         <div className="flex items-center gap-2">
           <FilterIcon className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Filtros:</span>
+          <span className="text-sm font-medium">Período:</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
-          {/* Filtro de Período - Implementação simplificada */}
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Período:</span>
-            <div className="flex-1 flex gap-2">
-              <select
-                className="w-full sm:w-[180px] h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                value={filters.dateRange}
-                onChange={(e) => handleDateRangeChange(e.target.value as DateRange)}
-              >
-                <option value="7dias">Últimos 7 dias</option>
-                <option value="30dias">Últimos 30 dias</option>
-                <option value="90dias">Últimos 90 dias</option>
-                <option value="ano">Este ano</option>
-                <option value="personalizado">Personalizado</option>
-              </select>
+        <div className={`flex flex-row gap-2 items-center ${isMobile ? "w-full" : "flex-1 justify-end"}`}>
+          <select
+            className={`${isMobile ? "flex-1" : ""} h-9 rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2`}
+            value={filters.dateRange}
+            onChange={(e) => handleDateRangeChange(e.target.value as DateRange)}
+          >
+            <option value="7dias">Últimos 7 dias</option>
+            <option value="30dias">Últimos 30 dias</option>
+            <option value="90dias">Últimos 90 dias</option>
+            <option value="ano">Este ano</option>
+            <option value="personalizado">Personalizado</option>
+          </select>
 
-              {showCustomDateRange && (
-                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-auto justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formatDateRange()}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="range"
-                      selected={{
-                        from: filters.startDate || undefined,
-                        to: filters.endDate || undefined,
-                      }}
-                      onSelect={(range) => {
-                        updateFilters({
-                          startDate: range?.from || null,
-                          endDate: range?.to || null,
-                        })
-                        if (range?.from && range?.to) {
-                          setDatePickerOpen(false)
-                        }
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-          </div>
-
-          {/* Filtro de Origem - Implementação simplificada */}
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Origem:</span>
-            <select
-              className="w-full sm:w-[180px] h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              value={filters.source}
-              onChange={(e) => updateFilters({ source: e.target.value as ContactSource })}
-            >
-              <option value="Todos">Todas as origens</option>
-              <option value="WhatsApp">WhatsApp</option>
-              <option value="Instagram">Instagram</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </div>
+          {showCustomDateRange && (
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`h-9 justify-start text-left font-normal border-dashed hover:border-solid ${isMobile ? "flex-1" : ""}`}
+                >
+                  <CalendarIcon className="mr-1 h-4 w-4" />
+                  {isMobile ? <span className="truncate max-w-[120px]">{formatDateRange()}</span> : formatDateRange()}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{
+                    from: filters.startDate || undefined,
+                    to: filters.endDate || undefined,
+                  }}
+                  onSelect={(range) => {
+                    updateFilters({
+                      startDate: range?.from || null,
+                      endDate: range?.to || null,
+                    })
+                    if (range?.from && range?.to) {
+                      setDatePickerOpen(false)
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Botão para limpar filtros */}
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="ml-auto">
-            <X className="h-4 w-4 mr-1" />
-            Limpar filtros
+          <Button variant="ghost" size="sm" onClick={clearFilters} className={isMobile ? "self-end" : ""}>
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>
-
-      {/* Badges para mostrar filtros ativos */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 mt-3">
-          <Badge variant="secondary" className="text-xs">
-            Período: {formatDateRange()}
-          </Badge>
-
-          {filters.source !== "Todos" && (
-            <Badge variant="secondary" className="text-xs">
-              Origem: {filters.source}
-            </Badge>
-          )}
-        </div>
-      )}
     </Card>
   )
 }
