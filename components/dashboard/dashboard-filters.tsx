@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, FilterIcon, X } from "lucide-react"
+import { CalendarIcon, FilterIcon, X } from 'lucide-react'
 import { format, subDays, startOfYear, isValid } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
@@ -41,9 +41,9 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
     const startDateStr = searchParams.get("startDate")
     if (startDateStr) {
       const date = new Date(startDateStr)
-      return isValid(date) ? date : subDays(today, 30)
+      return isValid(date) ? date : subDays(today, 29) // Mudança: era 30, agora é 29
     }
-    return subDays(today, 30)
+    return subDays(today, 29) // Mudança: era 30, agora é 29
   }
 
   const getInitialEndDate = (): Date | null => {
@@ -146,13 +146,13 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
 
       switch (range) {
         case "7dias":
-          startDate = subDays(today, 7)
+          startDate = subDays(today, 6) // Mudança: era 7, agora é 6
           break
         case "30dias":
-          startDate = subDays(today, 30)
+          startDate = subDays(today, 29) // Mudança: era 30, agora é 29
           break
         case "90dias":
-          startDate = subDays(today, 90)
+          startDate = subDays(today, 89) // Mudança: era 90, agora é 89
           break
         case "ano":
           startDate = startOfYear(today)
@@ -195,7 +195,7 @@ export function DashboardFilters({ onFilterChange }: DashboardFiltersProps) {
   const clearFilters = useCallback(() => {
     const defaultFilters = {
       dateRange: "30dias" as DateRange,
-      startDate: subDays(today, 30),
+      startDate: subDays(today, 29), // Mudança: era 30, agora é 29
       endDate: today,
       source: "Todos" as ContactSource,
     }

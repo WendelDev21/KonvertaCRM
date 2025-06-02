@@ -27,7 +27,7 @@ function LoginPageContent() {
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-[#1e3c72] to-[#2a5298] flex-col justify-center items-center p-6 relative">
         <div className="max-w-md text-center">
           <Image src="/favicon.png" alt="Konverta Logo" width={120} height={120} className="mx-auto mb-6" />
-          <h1 className="text-4xl font-bold text-white mb-4">Konverta</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Konverta</h1>
           <p className="text-white/90 text-lg mb-6">Plataforma completa para gestão de leads e oportunidades</p>
           <div className="grid grid-cols-2 gap-4 mt-8">
             <div className="bg-white/10 p-4 rounded-lg backdrop-blur-sm">
@@ -68,7 +68,7 @@ function LoginPageContent() {
             <CardFooter className="flex flex-col space-y-4 border-t pt-4">
               <div className="text-center text-sm">
                 Não tem uma conta?{" "}
-                <Link href="https://wa.me/5579991190534?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20os%20planos." className="text-primary font-medium hover:underline">
+                <Link href="https://wa.me/5579991190534?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20os%20planos." target="_blank" className="text-primary font-medium hover:underline">
                   Fale Conosco
                 </Link>
               </div>
