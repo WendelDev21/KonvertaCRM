@@ -68,7 +68,7 @@ function LoginPageContent() {
             <CardFooter className="flex flex-col space-y-4 border-t pt-4">
               <div className="text-center text-sm">
                 Não tem uma conta?{" "}
-                <Link href="#" className="text-primary font-medium hover:underline">
+                <Link href="https://wa.me/5579991190534?text=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20os%20planos." className="text-primary font-medium hover:underline">
                   Fale Conosco
                 </Link>
               </div>
