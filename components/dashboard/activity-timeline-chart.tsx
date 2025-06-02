@@ -412,7 +412,7 @@ export function ActivityTimelineChart({
       const { payload } = props
 
       return (
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-4 px-2">
           {payload.map((entry: any, index: number) => {
             const isActive = visibleStatuses[entry.dataKey]
             const statusInfo = statusColors[entry.dataKey as keyof typeof statusColors]
@@ -420,7 +420,7 @@ export function ActivityTimelineChart({
             return (
               <div
                 key={`item-${index}`}
-                className={`flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 border ${
+                className={`flex items-center gap-2 cursor-pointer px-2 sm:px-3 py-1 sm:py-2 rounded-lg transition-all duration-200 hover:scale-105 border ${
                   isActive
                     ? "opacity-100 shadow-md bg-background/80 dark:bg-muted/20 border-border/50"
                     : "opacity-40 hover:opacity-70 bg-transparent border-transparent"
@@ -433,7 +433,7 @@ export function ActivityTimelineChart({
                     background: statusInfo?.gradient || entry.color,
                   }}
                 />
-                <span className="text-sm font-medium text-foreground">{entry.value}</span>
+                <span className="text-xs sm:text-sm font-medium text-foreground">{entry.value}</span>
                 <Badge
                   variant="secondary"
                   className={`text-xs ${
@@ -451,7 +451,7 @@ export function ActivityTimelineChart({
               variant="ghost"
               size="sm"
               onClick={resetVisibleStatuses}
-              className="h-8 text-xs flex items-center gap-1 hover:bg-primary/10"
+              className="h-7 text-xs px-2 flex items-center gap-1 hover:bg-primary/10"
             >
               <RefreshCw className="h-3 w-3" />
               Mostrar todos
@@ -482,7 +482,7 @@ export function ActivityTimelineChart({
         }, 0)
 
         return (
-          <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-xl">
+          <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-xl min-w-[6rem] max-w-[90vw]">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="h-4 w-4 text-primary" />
               <p className="font-semibold text-sm">{formattedDate}</p>
@@ -563,24 +563,26 @@ export function ActivityTimelineChart({
     return (
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
         <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <Activity className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardTitle className="text-base sm:text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-muted-foreground">
                   Evolução de contatos por status
                 </CardDescription>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={refreshData} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            </Button>
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              <Button variant="ghost" size="icon" onClick={refreshData} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
+        <CardContent className="h-[300px] sm:h-[400px] flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="relative">
               <div className="h-16 w-16 rounded-full border-4 border-t-transparent border-primary animate-spin mx-auto"></div>
@@ -600,24 +602,26 @@ export function ActivityTimelineChart({
     return (
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
         <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-destructive/10">
                 <Activity className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardTitle className="text-base sm:text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-muted-foreground">
                   Evolução de contatos por status
                 </CardDescription>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={refreshData}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              <Button variant="ghost" size="icon" onClick={refreshData}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="h-[400px] flex flex-col items-center justify-center gap-4">
+        <CardContent className="h-[300px] sm:h-[400px] flex flex-col items-center justify-center gap-4">
           <div className="text-center space-y-3">
             <div className="p-4 rounded-full bg-destructive/10 w-fit mx-auto">
               <Activity className="h-8 w-8 text-destructive" />
@@ -638,24 +642,26 @@ export function ActivityTimelineChart({
     return (
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
         <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-muted">
                 <Activity className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardTitle className="text-base sm:text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-muted-foreground">
                   Evolução de contatos por status
                 </CardDescription>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={refreshData}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              <Button variant="ghost" size="icon" onClick={refreshData}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
+        <CardContent className="h-[300px] sm:h-[400px] flex items-center justify-center">
           <div className="text-center space-y-3">
             <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto">
               <Activity className="h-8 w-8 text-muted-foreground" />
@@ -679,14 +685,14 @@ export function ActivityTimelineChart({
     <>
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden">
         <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <Activity className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
+                <CardTitle className="text-base sm:text-lg font-semibold">Atividade ao Longo do Tempo</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-muted-foreground">
                   Evolução de {totalContacts} contatos por status
                 </CardDescription>
               </div>
@@ -705,20 +711,20 @@ export function ActivityTimelineChart({
                 </UITooltip>
               </TooltipProvider>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 {data.length} dias
               </Badge>
               <Tabs defaultValue="area" value={viewType} onValueChange={(v) => setViewType(v as any)}>
-                <TabsList className="h-9 bg-muted/50">
-                  <TabsTrigger value="area" className="h-7 w-8 p-0">
+                <TabsList className="h-8 sm:h-9 bg-muted/50">
+                  <TabsTrigger value="area" className="h-6 sm:h-7 w-7 sm:w-8 p-0">
                     <AreaChartIcon className="h-4 w-4" />
                   </TabsTrigger>
-                  <TabsTrigger value="line" className="h-7 w-8 p-0">
+                  <TabsTrigger value="line" className="h-6 sm:h-7 w-7 sm:w-8 p-0">
                     <LineChartIcon className="h-4 w-4" />
                   </TabsTrigger>
-                  <TabsTrigger value="bar" className="h-7 w-8 p-0">
+                  <TabsTrigger value="bar" className="h-6 sm:h-7 w-7 sm:w-8 p-0">
                     <BarChart3 className="h-4 w-4" />
                   </TabsTrigger>
                 </TabsList>
@@ -729,17 +735,12 @@ export function ActivityTimelineChart({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="h-[400px] pt-4">
+        <CardContent className="h-[300px] sm:h-[400px] pt-4">
           <ResponsiveContainer width="100%" height="100%">
             {viewType === "area" ? (
               <AreaChart
                 data={data}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 20,
-                }}
+                margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
                 stackOffset="expand"
                 onClick={handleChartClick}
               >
@@ -755,14 +756,14 @@ export function ActivityTimelineChart({
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatXAxis}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                  tickMargin={8}
+                  tick={{ fontSize: 10, fill: "#64748b" }}
+                  tickMargin={4}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(value) => `${Math.round(value * 100)}%`}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
+                  tick={{ fontSize: 10, fill: "#64748b" }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -820,28 +821,19 @@ export function ActivityTimelineChart({
                 )}
               </AreaChart>
             ) : viewType === "line" ? (
-              <LineChart
-                data={data}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 20,
-                }}
-                onClick={handleChartClick}
-              >
+              <LineChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }} onClick={handleChartClick}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} stroke="#94a3b8" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatXAxis}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                  tickMargin={8}
+                  tick={{ fontSize: 10, fill: "#64748b" }}
+                  tickMargin={4}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   allowDecimals={false}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
+                  tick={{ fontSize: 10, fill: "#64748b" }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -904,16 +896,7 @@ export function ActivityTimelineChart({
                 )}
               </LineChart>
             ) : (
-              <BarChart
-                data={data}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 20,
-                }}
-                onClick={handleChartClick}
-              >
+              <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }} onClick={handleChartClick}>
                 <defs>
                   {Object.entries(statusColors).map(([status, colors]) => (
                     <linearGradient key={status} id={`bar-gradient-${status}`} x1="0" y1="0" x2="0" y2="1">
@@ -926,14 +909,14 @@ export function ActivityTimelineChart({
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatXAxis}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                  tickMargin={8}
+                  tick={{ fontSize: 10, fill: "#64748b" }}
+                  tickMargin={4}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   allowDecimals={false}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
+                  tick={{ fontSize: 10, fill: "#64748b" }}
                   axisLine={false}
                   tickLine={false}
                 />

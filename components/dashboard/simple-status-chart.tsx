@@ -60,7 +60,7 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
       const data = payload[0].payload
       const percentage = ((data.value / total) * 100).toFixed(1)
       return (
-        <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-lg p-3 shadow-xl">
+        <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-lg p-3 shadow-xl min-w-[6rem] max-w-[90vw]">
           <div className="flex items-center gap-2 mb-2">
             <div
               className="w-3 h-3 rounded-full"
@@ -110,12 +110,12 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
             <CardTitle className="text-lg font-semibold">Distribuição por Status</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="h-[400px] flex items-center justify-center">
+        <CardContent className="h-[300px] sm:h-[400px] flex items-center justify-center">
           <div className="text-center space-y-3">
             <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto">
               <Users className="h-8 w-8 text-muted-foreground" />
             </div>
-            <div className="text-muted-foreground font-medium">Nenhum dado disponível</div>
+            <div className="text-xs sm:text-sm font-medium text-muted-foreground">Nenhum dado disponível</div>
             <p className="text-sm text-muted-foreground/70">Os dados aparecerão aqui quando disponíveis</p>
           </div>
         </CardContent>
@@ -126,33 +126,26 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
   return (
     <>
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden">
-        <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BarChart3 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-semibold">Distribuição por Status</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Total de {total} contatos distribuídos</p>
-              </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <BarChart3 className="h-5 w-5 text-primary" />
             </div>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {chartData.length} status
-            </Badge>
+            <div>
+              <CardTitle className="text-base sm:text-lg font-semibold">Distribuição por Status</CardTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Total de {total} contatos distribuídos</p>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="h-[400px] pt-4">
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            {chartData.length} status
+          </Badge>
+        </div>
+        <CardContent className="h-[300px] sm:h-[400px] pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{
-                top: 20,
-                right: 30,
-                left: 20,
-                bottom: 20,
-              }}
+              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
               onClick={(data) => data && handleBarClick(data.activePayload?.[0]?.payload)}
             >
               <defs>
@@ -164,26 +157,20 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
                 ))}
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} horizontal={true} opacity={0.1} stroke="#94a3b8" />
-              <XAxis
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 10, fill: "#64748b" }}
-                dy={10}
-              />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: "#64748b" }} dy={5} />
               <YAxis
                 tickCount={tickCount}
                 domain={[0, maxValue]}
                 allowDecimals={false}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 12, fill: "#64748b" }}
-                dx={-10}
+                tick={{ fontSize: 10, fill: "#64748b" }}
+                dx={-5}
               />
               <Tooltip content={customTooltip} />
               <Bar
                 dataKey="value"
-                radius={[8, 8, 0, 0]}
+                radius={[4, 4, 0, 0]}
                 cursor="pointer"
                 className="transition-all duration-200 hover:opacity-80"
               >

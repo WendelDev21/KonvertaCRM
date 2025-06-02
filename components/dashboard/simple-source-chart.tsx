@@ -55,6 +55,8 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
     const x = cx + radius * Math.cos(-midAngle * RADIAN)
     const y = cy + radius * Math.sin(-midAngle * RADIAN)
 
+    if (percent < 0.08) return null // Don't show label for small slices on mobile
+
     if (percent < 0.05) return null // Don't show label for very small slices
 
     return (
@@ -64,7 +66,7 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
         fill="white"
         textAnchor={x > cx ? "start" : "end"}
         dominantBaseline="central"
-        className="font-bold text-sm drop-shadow-lg"
+        className="font-bold text-xs sm:text-sm drop-shadow-lg"
         style={{ filter: "drop-shadow(1px 1px 2px rgba(0,0,0,0.8))" }}
       >
         {`${(percent * 100).toFixed(0)}%`}
@@ -79,7 +81,7 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
       const sourceInfo = sourceColors[data.name]
 
       return (
-        <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-lg p-4 shadow-xl">
+        <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-lg p-3 shadow-xl min-w-[6rem] max-w-[90vw]">
           <div className="flex items-center gap-3 mb-3">
             <div
               className="w-4 h-4 rounded-full shadow-lg"
@@ -157,14 +159,14 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
   const customLegend = (props: any) => {
     const { payload } = props
     return (
-      <div className="flex flex-wrap justify-center gap-4 mt-4">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mt-4 sm:mt-6 px-2 pb-2">
         {payload.map((entry: any, index: number) => {
           const sourceInfo = sourceColors[entry.value]
           const isSelected = selectedSource === entry.value
           return (
             <div
               key={`legend-${index}`}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105 ${
+              className={`flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105 ${
                 isSelected ? "bg-muted/50 shadow-md" : "hover:bg-muted/30"
               }`}
               onClick={() => handlePieClick({ name: entry.value })}
@@ -178,7 +180,7 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
                   background: sourceInfo?.gradient || entry.color,
                 }}
               />
-              <span className="text-sm font-medium">{entry.value}</span>
+              <span className="text-xs sm:text-sm font-medium">{entry.value}</span>
               <Badge variant="secondary" className="text-xs">
                 {chartData.find((item) => item.name === entry.value)?.value || 0}
               </Badge>
@@ -213,29 +215,31 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
     )
   }
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640
+
   return (
     <>
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden">
         <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <PieChartIcon className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold">Distribuição por Origem</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Total de {total} contatos por canal</p>
+                <CardTitle className="text-base sm:text-lg font-semibold">Distribuição por Origem</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Total de {total} contatos por canal</p>
               </div>
             </div>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm">
               <TrendingUp className="h-3 w-3 mr-1" />
               {chartData.length} origens
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="h-[400px] pt-4">
+        <CardContent className="h-[350px] sm:h-[400px] pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart cy="40%">
               <defs>
                 <linearGradient id="activeGradient" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
@@ -251,11 +255,11 @@ export function SimpleSourceChart({ data }: SimpleSourceChartProps) {
               <Pie
                 data={chartData}
                 cx="50%"
-                cy="45%"
+                cy="50%"
                 labelLine={false}
                 label={renderCustomizedLabel}
-                outerRadius={90}
-                innerRadius={30}
+                outerRadius={isMobile ? 60 : 90}
+                innerRadius={isMobile ? 20 : 30}
                 fill="#8884d8"
                 dataKey="value"
                 activeIndex={activeIndex}
