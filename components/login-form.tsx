@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
 import { Loader2, Mail, Lock } from "lucide-react"
 import { signIn } from "next-auth/react"
-import Link from "next/link"
 import { Checkbox } from "@/components/ui/checkbox"
 
 export function LoginForm() {
@@ -63,14 +62,16 @@ export function LoginForm() {
         return
       }
 
+      // Show success toast but don't wait for it
       toast({
         title: "Login realizado com sucesso",
         description: "Redirecionando para o dashboard...",
         variant: "success",
       })
 
-      router.push(callbackUrl)
-      router.refresh()
+      // Use replace instead of push for cleaner navigation history
+      // and don't call router.refresh() which might be causing the delay
+      window.location.href = callbackUrl
     } catch (error) {
       console.error("Erro ao fazer login:", error)
       setFormError("Ocorreu um erro ao tentar fazer login. Tente novamente.")
@@ -79,6 +80,7 @@ export function LoginForm() {
         description: "Ocorreu um erro ao tentar fazer login. Tente novamente.",
         variant: "destructive",
       })
+      setIsLoading(false)
     } finally {
       setIsLoading(false)
     }

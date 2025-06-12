@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Loader2, User, Phone, Tag, MessageSquare } from "lucide-react"
+import { ArrowLeft, Save, Loader2, User, Phone, Tag, MessageSquare, DollarSign } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 // Tipos
@@ -26,6 +26,7 @@ interface ContactFormData {
   source: ContactSource
   status: ContactStatus
   notes: string
+  value: string
 }
 
 export function ContactForm({ contactId }: ContactFormProps) {
@@ -39,6 +40,7 @@ export function ContactForm({ contactId }: ContactFormProps) {
     source: "WhatsApp",
     status: "Novo",
     notes: "",
+    value: "0",
   })
 
   // Buscar dados do contato se estiver editando
@@ -57,6 +59,7 @@ export function ContactForm({ contactId }: ContactFormProps) {
             source: data.source,
             status: data.status,
             notes: data.notes || "",
+            value: data.value?.toString() || "0",
           })
         } catch (error) {
           console.error("Erro ao buscar contato:", error)
@@ -99,6 +102,9 @@ export function ContactForm({ contactId }: ContactFormProps) {
         return
       }
 
+      // Converter valor para número
+      const valueAsNumber = Number.parseFloat(formData.value) || 0
+
       // Determinar se é criação ou atualização
       const url = contactId ? `/api/contacts/${contactId}` : "/api/contacts"
       const method = contactId ? "PUT" : "POST"
@@ -108,7 +114,10 @@ export function ContactForm({ contactId }: ContactFormProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          value: valueAsNumber,
+        }),
       })
 
       if (!response.ok) throw new Error("Erro ao salvar contato")
@@ -179,7 +188,7 @@ export function ContactForm({ contactId }: ContactFormProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="source">Origem</Label>
           <div className="relative">
@@ -215,6 +224,24 @@ export function ContactForm({ contactId }: ContactFormProps) {
             </Select>
           </div>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="value">Valor (R$)</Label>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="value"
+              name="value"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.value}
+              onChange={handleChange}
+              placeholder="0,00"
+              className="pl-10"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -229,7 +256,7 @@ export function ContactForm({ contactId }: ContactFormProps) {
             placeholder="Adicione informações relevantes sobre o contato"
             className="min-h-[120px] pl-10"
           />
-        </div> 
+        </div>
       </div>
 
       <div className="flex justify-between pt-4">

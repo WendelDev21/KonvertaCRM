@@ -57,6 +57,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       if (body.status !== undefined) updateData.status = body.status
       if (body.notes !== undefined) updateData.notes = body.notes
 
+      // Processar o campo value corretamente
+      if (body.value !== undefined) {
+        // Garantir que o valor seja um número
+        let valueAsNumber = 0
+        if (body.value !== null) {
+          valueAsNumber = typeof body.value === "string" ? Number.parseFloat(body.value) : Number(body.value)
+
+          // Se não for um número válido, definir como 0
+          if (isNaN(valueAsNumber)) {
+            valueAsNumber = 0
+          }
+        }
+        updateData.value = valueAsNumber
+      }
+
       console.log("[API] Contacts: Update data:", updateData)
 
       const [updatedContact, updateError] = await updateContact(params.id, updateData, userId)

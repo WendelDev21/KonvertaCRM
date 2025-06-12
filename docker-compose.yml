@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: users_db_kv
-      POSTGRES_USER: wendeladminn
+      POSTGRES_USER: wendel_admin
       POSTGRES_PASSWORD: "@wendelAdmin2003"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -15,7 +15,7 @@ services:
     networks:
       - crm_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wendeladminn -d users_db_kv"]
+      test: ["CMD-SHELL", "pg_isready -U wendel_admin -d users_db_kv"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +31,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://wendeladminn:@wendelAdmin2003@postgres:5432/users_db_kv
+      - DATABASE_URL=postgresql://wendel_admin:@wendelAdmin2003@postgres:5432/users_db_kv
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=@wendelAdmin2003
     depends_on:

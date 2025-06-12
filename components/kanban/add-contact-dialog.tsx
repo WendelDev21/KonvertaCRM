@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
+import { DollarSign } from "lucide-react"
 import type { ContactStatus } from "./kanban-board"
 
 interface AddContactDialogProps {
@@ -24,9 +25,10 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
   const [formData, setFormData] = useState({
     name: "",
     contact: "",
-    source: "Email",
+    source: "WhatsApp",
     status: initialStatus,
     notes: "",
+    value: "0",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -53,12 +55,18 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
     setIsSubmitting(true)
 
     try {
+      // Converter valor para número
+      const valueAsNumber = Number.parseFloat(formData.value) || 0
+
       const response = await fetch("/api/contacts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          value: valueAsNumber,
+        }),
       })
 
       if (!response.ok) {
@@ -73,9 +81,10 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
       setFormData({
         name: "",
         contact: "",
-        source: "Email",
+        source: "WhatsApp",
         status: initialStatus,
         notes: "",
+        value: "0",
       })
 
       onContactAdded()
@@ -154,6 +163,24 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
                 <SelectItem value="Perdido">Perdido</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="value">Valor (R$)</Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="value"
+                name="value"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.value}
+                onChange={handleChange}
+                placeholder="0,00"
+                className="pl-10"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

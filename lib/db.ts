@@ -13,6 +13,7 @@ export interface Contact {
   createdAt: string | Date
   notes?: string
   userId: string
+  value?: number
 }
 
 // Functions to access the database
@@ -68,6 +69,7 @@ export async function createContact(
       source: contact.source,
       status: contact.status,
       notes: contact.notes || null,
+      value: contact.value || 0,
       userId,
     },
   })
@@ -91,6 +93,7 @@ export async function updateContact(
         source: contact.source as ContactSource | undefined,
         status: contact.status as ContactStatus | undefined,
         notes: contact.notes,
+        value: contact.value,
       },
     })
     return formatContact(updatedContact)
@@ -219,4 +222,68 @@ function formatContact(contact: any): Contact {
     ...contact,
     createdAt: contact.createdAt instanceof Date ? contact.createdAt.toISOString() : contact.createdAt,
   }
+}
+
+// Funções para dados financials
+export async function getFinancialDataByStatus(userId: string): Promise<Record<ContactStatus, number>> {
+  const contacts = await prisma.contact.findMany({
+    where: { userId },
+    select: {
+      status: true,
+      value: true,
+    },
+  })
+
+  // Initialize with zeros
+  const result: Record<ContactStatus, number> = {
+    Novo: 0,
+    Conversando: 0,
+    Interessado: 0,
+    Fechado: 0,
+    Perdido: 0,
+  }
+
+  // Sum values by status
+  contacts.forEach((contact) => {
+    const status = contact.status as ContactStatus
+    result[status] += contact.value || 0
+  })
+
+  return result
+}
+
+export async function getFinancialDataBySource(userId: string): Promise<Record<ContactSource, number>> {
+  const contacts = await prisma.contact.findMany({
+    where: { userId },
+    select: {
+      source: true,
+      value: true,
+    },
+  })
+
+  // Initialize with zeros
+  const result: Record<ContactSource, number> = {
+    WhatsApp: 0,
+    Instagram: 0,
+    Outro: 0,
+  }
+
+  // Sum values by source
+  contacts.forEach((contact) => {
+    const source = contact.source as ContactSource
+    result[source] += contact.value || 0
+  })
+
+  return result
+}
+
+export async function getTotalFinancialValue(userId: string): Promise<number> {
+  const result = await prisma.contact.aggregate({
+    where: { userId },
+    _sum: {
+      value: true,
+    },
+  })
+
+  return result._sum.value || 0
 }

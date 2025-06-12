@@ -77,6 +77,7 @@ model Contact {
   status      String   @default("lead")
   source      String   @default("website")
   notes       String?
+  value       Float?   @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
