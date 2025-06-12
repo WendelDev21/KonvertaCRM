@@ -33,6 +33,7 @@ interface Contact {
   status: ContactStatus
   createdAt: string
   notes?: string
+  value?: number
 }
 
 // Função para obter a cor do badge de status
@@ -63,6 +64,12 @@ function getSourceBadgeColor(source: ContactSource) {
     default:
       return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
   }
+}
+
+// Função para formatar valor em reais
+function formatCurrency(value: number | undefined): string {
+  if (value === undefined || value === 0) return "R$ 0,00"
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 }
 
 export function ContactsTable() {
@@ -221,6 +228,7 @@ export function ContactsTable() {
               <TableHead>Contato</TableHead>
               <TableHead>Origem</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Valor</TableHead>
               <TableHead className="hidden md:table-cell">Data</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -228,7 +236,7 @@ export function ContactsTable() {
           <TableBody>
             {contacts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Nenhum contato encontrado. Adicione seu primeiro contato!
                 </TableCell>
               </TableRow>
@@ -269,6 +277,7 @@ export function ContactsTable() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
+                  <TableCell>{formatCurrency(contact.value)}</TableCell>
                   <TableCell className="hidden md:table-cell">{formatDate(contact.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

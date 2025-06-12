@@ -1,77 +1,65 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { User, Calendar, ArrowRight } from "lucide-react"
+import { DollarSign, Phone } from "lucide-react"
 import type { Contact } from "./kanban-board"
 
 interface ContactCardProps {
   contact: Contact
-  onClick: () => void
-  isDragging?: boolean
-  isUpdating?: boolean
+  onClick?: () => void
 }
 
-export function ContactCard({ contact, onClick, isDragging, isUpdating }: ContactCardProps) {
-  // Determinar a cor do card com base no status
-  const getCardClass = (status: string) => {
-    switch (status) {
-      case "Novo":
-        return "border-l-4 border-l-sky-500 dark:border-l-sky-400"
-      case "Conversando":
-        return "border-l-4 border-l-amber-500 dark:border-l-amber-400"
-      case "Interessado":
-        return "border-l-4 border-l-violet-500 dark:border-l-violet-400"
-      case "Fechado":
-        return "border-l-4 border-l-emerald-500 dark:border-l-emerald-400"
-      case "Perdido":
-        return "border-l-4 border-l-rose-500 dark:border-l-rose-400"
-      default:
-        return "border-l-4 border-l-slate-500 dark:border-l-slate-400"
-    }
+export function ContactCard({ contact, onClick }: ContactCardProps) {
+  const formattedDate = formatDistanceToNow(new Date(contact.createdAt), {
+    addSuffix: true,
+    locale: ptBR,
+  })
+
+  // Formatar valor em reais
+  const formatCurrency = (value: number | undefined): string => {
+    if (value === undefined || value === 0) return ""
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
   }
 
-  // Formatar a data de criação
-  const formatDate = (date: Date | string) => {
-    try {
-      const dateObj = typeof date === "string" ? new Date(date) : date
-      return formatDistanceToNow(dateObj, { addSuffix: true, locale: ptBR })
-    } catch (error) {
-      return "Data desconhecida"
+  // Determinar a cor do badge com base na origem
+  const getBadgeVariant = (source: string) => {
+    switch (source) {
+      case "WhatsApp":
+        return "green"
+      case "Instagram":
+        return "purple"
+      default:
+        return "secondary"
     }
   }
 
   return (
-    <div className="w-full p-2 mb-2 bg-background rounded-md border shadow-lg hover:shadow transition-all duration-200 touch-none">
-      <Card
-        className={`
-        ${getCardClass(contact.status)}
-        ${isDragging ? "opacity-50" : ""}
-        ${isUpdating ? "animate-pulse" : ""}
-        hover:shadow-md transition-all duration-200 group
-      `}
-        onClick={onClick}
-      >
-        <CardContent className="p-3">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium truncate">{contact.name}</h3>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <User className="h-3 w-3 mr-1" />
-              <span className="truncate">{contact.contact}</span>
-            </div>
-            <div className="flex items-center text-xs text-muted-foreground mt-1">
-              <Calendar className="h-3 w-3 mr-1" />
-              <span>{formatDate(contact.createdAt)}</span>
-            </div>
+    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="font-medium text-sm truncate flex-1">{contact.name}</h3>
+          <Badge variant={getBadgeVariant(contact.source) as any} className="ml-2 text-xs">
+            {contact.source}
+          </Badge>
+        </div>
+
+        <div className="flex items-center text-xs text-muted-foreground mb-2">
+          <Phone className="h-3 w-3 mr-1" />
+          <span className="truncate">{contact.contact}</span>
+        </div>
+
+        {contact.value && contact.value > 0 && (
+          <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <DollarSign className="h-3 w-3 mr-1" />
+            <span>{formatCurrency(contact.value)}</span>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+
+        <div className="text-xs text-muted-foreground mt-2">{formattedDate}</div>
+      </CardContent>
+    </Card>
   )
 }

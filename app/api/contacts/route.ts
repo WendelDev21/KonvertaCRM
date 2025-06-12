@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
           name: filteredContacts[0].name,
           status: filteredContacts[0].status,
           source: filteredContacts[0].source,
+          value: filteredContacts[0].value,
         })
       }
 
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     try {
       const body = await req.json()
+      console.log("POST /api/contacts - Request body:", body)
 
       // Detectar se é operação em lote ou individual
       const isBatch = Array.isArray(body)
@@ -152,14 +154,28 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          // Garantir que o valor seja um número
+          let valueAsNumber = 0
+          if (contactData.value !== undefined && contactData.value !== null) {
+            valueAsNumber =
+              typeof contactData.value === "string" ? Number.parseFloat(contactData.value) : Number(contactData.value)
+
+            // Se não for um número válido, definir como 0
+            if (isNaN(valueAsNumber)) {
+              valueAsNumber = 0
+            }
+          }
+
           const contactInput: ContactInput = {
             name: contactData.name,
             contact: contactData.contact,
             source: contactData.source,
             status: contactData.status,
             notes: contactData.notes || null,
+            value: valueAsNumber,
           }
 
+          console.log("Creating contact with data:", contactInput)
           const [newContact, error] = await createContact(contactInput, userId)
 
           if (error) {

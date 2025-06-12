@@ -9,6 +9,7 @@ export type ContactInput = {
   source: ContactSource
   status: ContactStatus
   notes?: string | null
+  value?: number | null
 }
 
 export async function getAllContacts(userId: string) {
@@ -192,5 +193,75 @@ export async function checkContactLimit(userId: string) {
       limit: null, // Sem limite
       hasReachedLimit: false,
     }
+  })
+}
+
+// Funções para dados financials
+export async function getFinancialDataByStatus(userId: string) {
+  return dbAction(async () => {
+    const contacts = await prisma.contact.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        value: true,
+      },
+    })
+
+    // Initialize with zeros
+    const result: Record<ContactStatus, number> = {
+      Novo: 0,
+      Conversando: 0,
+      Interessado: 0,
+      Fechado: 0,
+      Perdido: 0,
+    }
+
+    // Sum values by status
+    contacts.forEach((contact) => {
+      const status = contact.status as ContactStatus
+      result[status] += contact.value || 0
+    })
+
+    return result
+  })
+}
+
+export async function getFinancialDataBySource(userId: string) {
+  return dbAction(async () => {
+    const contacts = await prisma.contact.findMany({
+      where: { userId },
+      select: {
+        source: true,
+        value: true,
+      },
+    })
+
+    // Initialize with zeros
+    const result: Record<ContactSource, number> = {
+      WhatsApp: 0,
+      Instagram: 0,
+      Outro: 0,
+    }
+
+    // Sum values by source
+    contacts.forEach((contact) => {
+      const source = contact.source as ContactSource
+      result[source] += contact.value || 0
+    })
+
+    return result
+  })
+}
+
+export async function getTotalFinancialValue(userId: string) {
+  return dbAction(async () => {
+    const result = await prisma.contact.aggregate({
+      where: { userId },
+      _sum: {
+        value: true,
+      },
+    })
+
+    return result._sum.value || 0
   })
 }

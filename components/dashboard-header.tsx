@@ -3,7 +3,19 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Kanban, Menu, Users, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle } from "lucide-react"
+import {
+  LayoutDashboard,
+  Kanban,
+  Menu,
+  Users,
+  Puzzle,
+  Settings,
+  PlusCircle,
+  ShieldAlert,
+  Wallet,
+  HelpCircle,
+  DollarSign,
+} from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserAvatar } from "@/components/user-avatar"
@@ -50,6 +62,11 @@ export function DashboardHeader() {
       icon: Kanban,
     },
     {
+      name: "Financeiro",
+      path: "/financial",
+      icon: DollarSign,
+    },
+    {
       name: "Integrações",
       path: "/integrations",
       icon: Puzzle,
@@ -92,7 +109,9 @@ export function DashboardHeader() {
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
               <img src="/favicon.png" alt="Konverta Logo" className="w-10 h-10" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Konverta</span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                Konverta
+              </span>
             </Link>
 
             {/* Menu para desktop */}
@@ -121,17 +140,17 @@ export function DashboardHeader() {
               </span>
             </div>
             {/* Botão de novo contato */}
-              <Button variant="default" size="sm" className="hidden sm:flex" asChild>
-                <Link href="/contacts/new">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  <span>Novo Contato</span>
-                </Link>
-              </Button>
+            <Button variant="default" size="sm" className="hidden sm:flex" asChild>
+              <Link href="/contacts/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                <span>Novo Contato</span>
+              </Link>
+            </Button>
             {/* Alternador de tema */}
             <ThemeToggle />
 
             {/* Avatar do usuário */}
-            <UserAvatar />           
+            <UserAvatar />
 
             {/* Menu móvel */}
             <Sheet>
@@ -144,7 +163,9 @@ export function DashboardHeader() {
                 <div className="py-4">
                   <div className="flex items-center gap-2 mb-6">
                     <img src="/favicon.png" alt="Konverta Logo" className="w-10 h-10" />
-                    <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Konverta</span>
+                    <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                      Konverta
+                    </span>
                   </div>
 
                   <nav className="flex flex-col gap-2">

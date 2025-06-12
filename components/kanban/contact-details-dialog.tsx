@@ -36,6 +36,7 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
       source: contact.source,
       status: contact.status,
       notes: contact.notes || "",
+      value: contact.value || 0,
     })
   }
 
@@ -52,6 +53,7 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
         source: contact.source,
         status: contact.status,
         notes: contact.notes || "",
+        value: contact.value || 0,
       })
     }
   }
@@ -71,12 +73,18 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
     setIsSaving(true)
 
     try {
+      // Converter valor para número se for uma string
+      const valueToSend = typeof formData.value === "string" ? Number.parseFloat(formData.value) : formData.value
+
       const response = await fetch(`/api/contacts/${contact.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          value: valueToSend,
+        }),
       })
 
       if (!response.ok) {
@@ -137,6 +145,12 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  // Formatar valor em reais
+  const formatCurrency = (value: number | undefined): string => {
+    if (value === undefined || value === 0) return "R$ 0,00"
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
   }
 
   if (!contact) return null
@@ -210,6 +224,19 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
               </div>
 
               <div className="grid gap-2">
+                <Label htmlFor="value">Valor (R$)</Label>
+                <Input
+                  id="value"
+                  name="value"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.value || 0}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="grid gap-2">
                 <Label htmlFor="notes">Observações</Label>
                 <Textarea id="notes" name="notes" value={formData.notes || ""} onChange={handleInputChange} rows={3} />
               </div>
@@ -232,9 +259,21 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
                 </div>
               </div>
 
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Status</p>
-                <p>{contact.status}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p>{contact.status}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Valor</p>
+                  <p
+                    className={
+                      contact.value && contact.value > 0 ? "text-emerald-600 dark:text-emerald-400 font-medium" : ""
+                    }
+                  >
+                    {formatCurrency(contact.value)}
+                  </p>
+                </div>
               </div>
 
               {contact.notes && (
