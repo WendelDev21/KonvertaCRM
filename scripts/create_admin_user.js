@@ -10,6 +10,7 @@ async function main() {
     email: "admin@super.user",
     password: "@wendelAdmin2003",
     role: "admin",
+    plan: "Business",
   }
 
   try {
@@ -44,6 +45,7 @@ async function main() {
         email: adminData.email,
         password: hashedPassword,
         role: adminData.role,
+        plan: adminData.plan,
         isActive: true,
       },
     })
