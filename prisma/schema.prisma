@@ -112,3 +112,18 @@ model Webhook {
   userId        String
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model Report {
+  id              String   @id @default(uuid())
+  userId          String
+  format          String
+  period          String
+  startDate       DateTime?
+  endDate         DateTime?
+  includeContacts Boolean  @default(true)
+  includeFinancial Boolean @default(true)
+  fileName        String?
+  fileUrl         String?
+  createdAt       DateTime @default(now())
+}
+
