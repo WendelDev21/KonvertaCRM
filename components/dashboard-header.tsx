@@ -3,19 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import {
-  LayoutDashboard,
-  Kanban,
-  Menu,
-  Users,
-  Puzzle,
-  Settings,
-  PlusCircle,
-  ShieldAlert,
-  Wallet,
-  HelpCircle,
-  DollarSign,
-} from "lucide-react"
+import { LayoutDashboard, Kanban, Menu, Users, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle, DollarSign, SquareChartGantt } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserAvatar } from "@/components/user-avatar"
@@ -93,6 +81,11 @@ export function DashboardHeader() {
       name: "Upgrades",
       path: "/settings/upgrades",
       icon: Wallet,
+    },
+    {
+      name: "Relatórios",
+      path: "/reports",
+      icon: SquareChartGantt,
     },
     {
       name: "Suporte",

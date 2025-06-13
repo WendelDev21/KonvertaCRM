@@ -270,38 +270,6 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       example:
         "curl -X DELETE 'https://konvertaleads.com.br/api/admin/users/delete/123e4567-e89b-12d3-a456-426614174000' -H 'Authorization: Bearer seu_token_aqui'",
     },
-    {
-      method: "GET",
-      path: "/api/admin/stats/users",
-      description: "Obtém estatísticas sobre usuários",
-      auth: "Somente Admin",
-      queryParams: [
-        { name: "period", type: "string", description: "Período (day/week/month/year)", required: false },
-        { name: "groupBy", type: "string", description: "Agrupar por (role/plan/status)", required: false },
-      ],
-      response: "Estatísticas de usuários",
-      responseExample: `{
-  "total": 45,
-  "active": 42,
-  "inactive": 3,
-  "byRole": {
-    "admin": 5,
-    "user": 40
-  },
-  "byPlan": {
-    "Starter": 25,
-    "Pro": 15,
-    "Business": 5
-  },
-  "newUsers": {
-    "today": 2,
-    "thisWeek": 8,
-    "thisMonth": 15
-  }
-}`,
-      example:
-        "curl -X GET 'https://konvertaleads.com.br/api/admin/stats/users?period=month&groupBy=plan' -H 'Authorization: Bearer seu_token_aqui'",
-    },
   ]
 }
 

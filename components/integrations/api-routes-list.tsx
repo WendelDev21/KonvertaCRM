@@ -29,11 +29,12 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       queryParams: [
         { name: "status", type: "string", description: "Filtrar por status", required: false },
         { name: "source", type: "string", description: "Filtrar por origem", required: false },
+        { name: "value", type: "string", description: "Filtrar por valor", required: false },
         { name: "q", type: "string", description: "Busca por nome, contato ou notas", required: false },
       ],
       response: "Array de contatos",
       example:
-        "curl -X GET 'https://konvertaleads.com.br/api/contacts?status=lead' -H 'Authorization: Bearer seu_token_aqui'",
+        "curl -X GET 'https://konvertaleads.com.br/api/contacts?status=Novo' -H 'Authorization: Bearer seu_token_aqui'",
     },
     {
       method: "GET",
@@ -52,11 +53,12 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "contact", type: "string", description: "Email ou telefone", required: true },
         { name: "source", type: "string", description: "Origem do contato", required: true },
         { name: "status", type: "string", description: "Status do contato", required: true },
+        { name: "value", type: "string", description: "Valor do contato", required: false },
         { name: "notes", type: "string", description: "Observações", required: false },
       ],
       response: "Contato criado",
       example:
-        'curl -X POST \'https://konvertaleads.com.br/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"João Silva","contact":"joao@email.com","source":"Outro","status":"Novo"}\'',
+        'curl -X POST \'https://konvertaleads.com.br/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"João Silva","contact":"joao@email.com","source":"Outro","status":"Novo", "value":"2000"}\'',
     },
     {
       method: "PUT",
@@ -68,11 +70,12 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         { name: "contact", type: "string", description: "Email ou telefone", required: false },
         { name: "source", type: "string", description: "Origem do contato", required: false },
         { name: "status", type: "string", description: "Status do contato", required: false },
+        { name: "value", type: "string", description: "Valor do contato", required: false },
         { name: "notes", type: "string", description: "Observações", required: false },
       ],
       response: "Contato atualizado",
       example:
-        "curl -X PUT 'https://konvertaleads.com.br/api/contacts/123456' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"status\":\"cliente\"}'",
+        "curl -X PUT 'https://konvertaleads.com.br/api/contacts/123456' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"status\":\"Fechado\"}'",
     },
     {
       method: "DELETE",
