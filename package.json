@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "docker:setup": "chmod +x scripts/docker-setup.sh && ./scripts/docker-setup.sh",
+    "docker:dev": "chmod +x scripts/docker-dev.sh && ./scripts/docker-dev.sh",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:clean": "docker-compose down -v --remove-orphans && docker system prune -f"
   },
   "dependencies": {
     "@auth/core": "latest",
