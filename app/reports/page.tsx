@@ -1,3 +1,5 @@
+import { ReportsClient } from "@/components/reports/reports-client"
+
 export default function ReportsPage() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -9,8 +11,8 @@ export default function ReportsPage() {
               <p className="text-muted-foreground mt-1">Obtenha insights valiosos sobre seus dados</p>
             </div>
           </div>
-          <div className="h-[calc(100%-5rem)]">
-            
+          <div className="h-full">
+            <ReportsClient />
           </div>
         </div>
       </main>

@@ -53,6 +53,7 @@
     "embla-carousel-react": "latest",
     "fs": "latest",
     "input-otp": "latest",
+    "jspdf": "^3.0.1",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "next-auth": "latest",
