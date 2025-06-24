@@ -369,7 +369,7 @@ async function generatePdfReport(
   }
 }
 
-// Gerar relatório em CSV
+// Gerar relatório em CSV organizado em colunas A-Z (baseado no PDF)
 async function generateCsvReport(
   data: any,
   options: ReportOptions,
@@ -379,91 +379,104 @@ async function generateCsvReport(
   const { includeContacts, includeFinancial } = options
   let csvContent = ""
 
-  // BOM para UTF-8
+  // BOM para UTF-8 (importante para acentos no Excel)
   csvContent = "\uFEFF"
 
-  // Adicionar cabeçalho com informações do relatório
-  csvContent += `"Relatório de ${
-    includeContacts && includeFinancial ? "Contatos e Financeiro" : includeContacts ? "Contatos" : "Financeiro"
-  }"\n`
-  csvContent += `"Período: ${format(fromDate, "dd/MM/yyyy", { locale: ptBR })} até ${format(toDate, "dd/MM/yyyy", { locale: ptBR })}"\n`
-  csvContent += `"Data de geração: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}"\n\n`
+  // ===========================================
+  // CABEÇALHO DO RELATÓRIO
+  // ===========================================
+  const reportTitle =
+    includeContacts && includeFinancial
+      ? "Relatório de Contatos e Financeiro"
+      : includeContacts
+        ? "Relatório de Contatos"
+        : "Relatório Financeiro"
 
-  // Seção de contatos
-  if (includeContacts && data.contacts) {
-    csvContent += `"DADOS DE CONTATOS"\n\n`
+  csvContent += `RELATÓRIO,PERÍODO INICIAL,PERÍODO FINAL,DATA GERAÇÃO\n`
+  csvContent += `"${reportTitle}","${format(fromDate, "dd/MM/yyyy", { locale: ptBR })}","${format(toDate, "dd/MM/yyyy", { locale: ptBR })}","${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}"\n`
+  csvContent += `\n`
 
-    // Resumo de contatos
-    csvContent += `"Resumo"\n`
-    csvContent += `"Total de contatos no período","${data.contactStats.total}"\n\n`
+  // ===========================================
+  // LISTA DE CONTATOS (se incluído e existir)
+  // ===========================================
+  if (includeContacts && data.contacts && data.contacts.length > 0) {
+    csvContent += `LISTA DE CONTATOS\n`
+    csvContent += `ID,NOME,CONTATO,ORIGEM,STATUS,VALOR\n`
 
-    // Contatos por status
-    csvContent += `"Contatos por Status"\n`
-    csvContent += `"Status","Quantidade"\n`
+    // Ordenar contatos por data de criação (mais recentes primeiro)
+    const sortedContacts = [...data.contacts].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
 
-    for (const [status, count] of Object.entries(data.contactStats.byStatus)) {
-      csvContent += `"${status}","${count}"\n`
-    }
-
-    csvContent += `\n`
-
-    // Contatos por origem
-    csvContent += `"Contatos por Origem"\n`
-    csvContent += `"Origem","Quantidade"\n`
-
-    for (const [source, count] of Object.entries(data.contactStats.bySource)) {
-      csvContent += `"${source}","${count}"\n`
-    }
-
-    csvContent += `\n`
-
-    // Lista de contatos
-    csvContent += `"Lista de Contatos"\n`
-    csvContent += `"Nome","Contato","Origem","Status","Valor","Data de Criação"\n`
-
-    for (const contact of data.contacts) {
+    for (const contact of sortedContacts) {
+      const id = contact.id || ""
       const name = (contact.name || "").replace(/"/g, '""')
       const contactInfo = (contact.contact || "").replace(/"/g, '""')
-      const source = (contact.source || "").replace(/"/g, '""')
-      const status = (contact.status || "").replace(/"/g, '""')
+      const source = contact.source || ""
+      const status = contact.status || ""
       const value = (contact.value || 0).toFixed(2)
-      const createdAt = format(new Date(contact.createdAt), "dd/MM/yyyy", { locale: ptBR })
 
-      csvContent += `"${name}","${contactInfo}","${source}","${status}","${value}","${createdAt}"\n`
+      csvContent += `"${id}","${name}","${contactInfo}","${source}","${status}",${value}\n`
     }
-
     csvContent += `\n`
   }
 
-  // Seção financeira
-  if (includeFinancial) {
-    csvContent += `"DADOS FINANCEIROS"\n\n`
-
-    // Resumo financeiro
-    csvContent += `"Resumo Financeiro"\n`
-    csvContent += `"Métrica","Valor"\n`
-    csvContent += `"Valor Total","${data.totalValue.toFixed(2)}"\n`
-    csvContent += `"Valor Fechado","${data.financialSummary.fechado.toFixed(2)}"\n`
-    csvContent += `"Em Negociação","${data.financialSummary.emNegociacao.toFixed(2)}"\n`
-    csvContent += `"Perdido","${data.financialSummary.perdido.toFixed(2)}"\n\n`
-
-    // Valores por status
-    csvContent += `"Valores por Status"\n`
-    csvContent += `"Status","Valor"\n`
-
-    for (const [status, value] of Object.entries(data.financialByStatus)) {
-      csvContent += `"${status}","${(value as number).toFixed(2)}"\n`
-    }
-
+  // ===========================================
+  // DADOS DE CONTATOS (RESUMO)
+  // ===========================================
+  if (includeContacts) {
+    csvContent += `DADOS DE CONTATOS\n`
+    csvContent += `MÉTRICA,VALOR\n`
+    csvContent += `"Total de contatos no período",${data.contactStats.total}\n`
     csvContent += `\n`
 
-    // Valores por origem
-    csvContent += `"Valores por Origem"\n`
-    csvContent += `"Origem","Valor"\n`
+    // Contatos por Status
+    csvContent += `CONTATOS POR STATUS\n`
+    csvContent += `STATUS,QUANTIDADE\n`
+    csvContent += `"Novo",${data.contactStats.byStatus.Novo}\n`
+    csvContent += `"Conversando",${data.contactStats.byStatus.Conversando}\n`
+    csvContent += `"Interessado",${data.contactStats.byStatus.Interessado}\n`
+    csvContent += `"Fechado",${data.contactStats.byStatus.Fechado}\n`
+    csvContent += `"Perdido",${data.contactStats.byStatus.Perdido}\n`
+    csvContent += `\n`
 
-    for (const [source, value] of Object.entries(data.financialBySource)) {
-      csvContent += `"${source}","${(value as number).toFixed(2)}"\n`
-    }
+    // Contatos por Origem
+    csvContent += `CONTATOS POR ORIGEM\n`
+    csvContent += `ORIGEM,QUANTIDADE\n`
+    csvContent += `"WhatsApp",${data.contactStats.bySource.WhatsApp}\n`
+    csvContent += `"Instagram",${data.contactStats.bySource.Instagram}\n`
+    csvContent += `"Outro",${data.contactStats.bySource.Outro}\n`
+    csvContent += `\n`
+  }
+
+  // ===========================================
+  // DADOS FINANCEIROS
+  // ===========================================
+  if (includeFinancial) {
+    csvContent += `DADOS FINANCEIROS\n`
+    csvContent += `MÉTRICA,VALOR\n`
+    csvContent += `"Valor Total",${data.totalValue.toFixed(2)}\n`
+    csvContent += `"Valor Fechado",${data.financialSummary.fechado.toFixed(2)}\n`
+    csvContent += `"Em Negociação",${data.financialSummary.emNegociacao.toFixed(2)}\n`
+    csvContent += `"Perdido",${data.financialSummary.perdido.toFixed(2)}\n`
+    csvContent += `\n`
+
+    // Valores por Status
+    csvContent += `VALORES POR STATUS\n`
+    csvContent += `STATUS,VALOR\n`
+    csvContent += `"Novo",${data.financialByStatus.Novo.toFixed(2)}\n`
+    csvContent += `"Conversando",${data.financialByStatus.Conversando.toFixed(2)}\n`
+    csvContent += `"Interessado",${data.financialByStatus.Interessado.toFixed(2)}\n`
+    csvContent += `"Fechado",${data.financialByStatus.Fechado.toFixed(2)}\n`
+    csvContent += `"Perdido",${data.financialByStatus.Perdido.toFixed(2)}\n`
+    csvContent += `\n`
+
+    // Valores por Origem
+    csvContent += `VALORES POR ORIGEM\n`
+    csvContent += `ORIGEM,VALOR\n`
+    csvContent += `"WhatsApp",${data.financialBySource.WhatsApp.toFixed(2)}\n`
+    csvContent += `"Instagram",${data.financialBySource.Instagram.toFixed(2)}\n`
+    csvContent += `"Outro",${data.financialBySource.Outro.toFixed(2)}\n`
   }
 
   const fileName = generateFileName(options.format, options.period, fromDate, toDate)
