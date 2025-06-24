@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { ChartDetailModal } from "@/components/dashboard/chart-detail-modal"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 
@@ -8,6 +10,9 @@ interface FinancialStatusChartProps {
 }
 
 export function FinancialStatusChart({ data }: FinancialStatusChartProps) {
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   // Transformar os dados para o formato esperado pelo Recharts
   const chartData = Object.entries(data).map(([name, value]) => ({
     name,
@@ -47,6 +52,11 @@ export function FinancialStatusChart({ data }: FinancialStatusChartProps) {
     return null
   }
 
+  const handlePieClick = (data: any) => {
+    setSelectedStatus(data.name)
+    setIsModalOpen(true)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -67,6 +77,8 @@ export function FinancialStatusChart({ data }: FinancialStatusChartProps) {
                   dataKey="value"
                   nameKey="name"
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  onClick={handlePieClick}
+                  style={{ cursor: "pointer" }}
                 >
                   {filteredData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || "#888888"} />
@@ -83,6 +95,60 @@ export function FinancialStatusChart({ data }: FinancialStatusChartProps) {
           </div>
         )}
       </CardContent>
+      <ChartDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={`Detalhes - ${selectedStatus || "Status"}`}
+        description={`Informações detalhadas sobre ${selectedStatus || "este status"}`}
+      >
+        {selectedStatus && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+              <div
+                className="w-6 h-6 rounded-full shadow-lg"
+                style={{
+                  backgroundColor: COLORS[selectedStatus as keyof typeof COLORS] || "#888888",
+                  boxShadow: `0 2px 8px ${COLORS[selectedStatus as keyof typeof COLORS] || "#888888"}33`,
+                }}
+              />
+              <div>
+                <h3 className="font-semibold text-lg">{selectedStatus}</h3>
+                <p className="text-sm text-muted-foreground">Status do contato</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Valor Total</h4>
+                <p
+                  className="text-2xl font-bold"
+                  style={{ color: COLORS[selectedStatus as keyof typeof COLORS] || "#888888" }}
+                >
+                  {formatCurrency(data[selectedStatus] || 0)}
+                </p>
+              </div>
+
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Percentual do Total</h4>
+                <p className="text-2xl font-bold">
+                  {(((data[selectedStatus] || 0) / Object.values(data).reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium text-sm text-muted-foreground mb-2">Descrição</h4>
+              <p className="text-sm">
+                {selectedStatus === "Novo" && "Contatos recém-adicionados que ainda não foram contatados."}
+                {selectedStatus === "Conversando" && "Contatos em processo de negociação ativa."}
+                {selectedStatus === "Interessado" && "Contatos que demonstraram interesse no produto/serviço."}
+                {selectedStatus === "Fechado" && "Contatos que se tornaram clientes efetivos."}
+                {selectedStatus === "Perdido" && "Contatos que não progrediram para venda."}
+              </p>
+            </div>
+          </div>
+        )}
+      </ChartDetailModal>
     </Card>
   )
 }

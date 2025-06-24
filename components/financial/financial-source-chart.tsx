@@ -2,6 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { useState } from "react"
+import { ChartDetailModal } from "@/components/dashboard/chart-detail-modal"
 
 interface FinancialSourceChartProps {
   data: Record<string, number>
@@ -30,6 +32,8 @@ const sourceColors: Record<string, { primary: string; gradient: string; light: s
 }
 
 export function FinancialSourceChart({ data }: FinancialSourceChartProps) {
+  const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   // Transformar os dados para o formato esperado pelo Recharts
   const chartData = Object.entries(data).map(([name, value]) => ({
     name,
@@ -72,6 +76,11 @@ export function FinancialSourceChart({ data }: FinancialSourceChartProps) {
     return null
   }
 
+  const handleBarClick = (data: any) => {
+    setSelectedSource(data.name)
+    setIsModalOpen(true)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -86,7 +95,13 @@ export function FinancialSourceChart({ data }: FinancialSourceChartProps) {
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={(value) => `R$ ${value}`} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="value" name="Valor" radius={[4, 4, 0, 0]}>
+                <Bar
+                  dataKey="value"
+                  name="Valor"
+                  radius={[4, 4, 0, 0]}
+                  onClick={handleBarClick}
+                  style={{ cursor: "pointer" }}
+                >
                   {filteredData.map((entry, index) => {
                     const sourceInfo = sourceColors[entry.name] || sourceColors["Outro"]
                     return (
@@ -109,6 +124,60 @@ export function FinancialSourceChart({ data }: FinancialSourceChartProps) {
           </div>
         )}
       </CardContent>
+      <ChartDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={`Detalhes - ${selectedSource || "Origem"}`}
+        description={`Informações detalhadas sobre ${selectedSource || "esta origem"}`}
+      >
+        {selectedSource && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+              <div
+                className="w-6 h-6 rounded-full shadow-lg"
+                style={{
+                  background: sourceColors[selectedSource]?.gradient || sourceColors["Outro"].gradient,
+                  boxShadow: `0 2px 8px ${sourceColors[selectedSource]?.shadow || sourceColors["Outro"].shadow}`,
+                }}
+              />
+              <div>
+                <h3 className="font-semibold text-lg">{selectedSource}</h3>
+                <p className="text-sm text-muted-foreground">Origem dos contatos</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Valor Total</h4>
+                <p
+                  className="text-2xl font-bold"
+                  style={{ color: sourceColors[selectedSource]?.primary || sourceColors["Outro"].primary }}
+                >
+                  {formatCurrency(data[selectedSource] || 0)}
+                </p>
+              </div>
+
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Percentual do Total</h4>
+                <p className="text-2xl font-bold">
+                  {(((data[selectedSource] || 0) / Object.values(data).reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border rounded-lg">
+              <h4 className="font-medium text-sm text-muted-foreground mb-2">Descrição</h4>
+              <p className="text-sm">
+                {selectedSource === "WhatsApp" && "Contatos originados através do WhatsApp Business ou links diretos."}
+                {selectedSource === "Instagram" &&
+                  "Contatos originados através do Instagram, stories, posts ou direct messages."}
+                {selectedSource === "Outro" &&
+                  "Contatos originados através de outras fontes como site, indicações, etc."}
+              </p>
+            </div>
+          </div>
+        )}
+      </ChartDetailModal>
     </Card>
   )
 }
