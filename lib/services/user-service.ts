@@ -9,9 +9,7 @@ export type UserInput = {
   password: string
   role?: UserRole
   plan?: string
-  bio?: string
   theme?: string
-  image?: string
   notificationSettings?: any
 }
 
@@ -35,9 +33,7 @@ export async function createUser(data: UserInput) {
         password: hashedPassword,
         role: data.role || "user",
         plan: data.plan || "Starter",
-        bio: data.bio,
         theme: data.theme,
-        image: data.image,
         notificationSettings: data.notificationSettings ? JSON.stringify(data.notificationSettings) : null,
       },
       select: {
@@ -46,9 +42,7 @@ export async function createUser(data: UserInput) {
         email: true,
         role: true,
         plan: true,
-        bio: true,
         theme: true,
-        image: true,
         createdAt: true,
       },
     })
@@ -66,9 +60,7 @@ export async function getUserByEmail(email: string) {
         password: true,
         role: true,
         plan: true,
-        bio: true,
         theme: true,
-        image: true,
         isActive: true,
         notificationSettings: true,
         createdAt: true,
@@ -87,9 +79,7 @@ export async function getUserById(id: string) {
         email: true,
         role: true,
         plan: true,
-        bio: true,
         theme: true,
-        image: true,
         notificationSettings: true,
         createdAt: true,
       },
@@ -126,9 +116,7 @@ export async function updateUser(id: string, data: Partial<Omit<UserInput, "pass
     if (data.email) updateData.email = data.email
     if (data.role) updateData.role = data.role
     if (data.plan) updateData.plan = data.plan
-    if (data.bio !== undefined) updateData.bio = data.bio
     if (data.theme !== undefined) updateData.theme = data.theme
-    if (data.image !== undefined) updateData.image = data.image
     if (data.notificationSettings !== undefined) {
       updateData.notificationSettings =
         typeof data.notificationSettings === "string"
@@ -149,9 +137,7 @@ export async function updateUser(id: string, data: Partial<Omit<UserInput, "pass
         email: true,
         role: true,
         plan: true,
-        bio: true,
         theme: true,
-        image: true,
         notificationSettings: true,
         updatedAt: true,
       },

@@ -1,6 +1,6 @@
 "use client"
 
-import { HelpCircle, LogOut, Settings, Wallet, SquareChartGantt } from "lucide-react"
+import { HelpCircle, LogOut, Settings, Wallet, FileText } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -54,7 +54,7 @@ export function UserAvatar() {
           <span>Upgrades</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/reports")}>
-          <SquareChartGantt className="mr-2 h-4 w-4" />
+          <FileText className="mr-2 h-4 w-4" />
           <span>Relatórios</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/settings/help")}>

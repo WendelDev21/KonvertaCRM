@@ -20,9 +20,7 @@ export const authOptions: NextAuthOptions = {
           id: token.id,
           role: token.role,
           plan: token.plan,
-          bio: token.bio,
           theme: token.theme,
-          image: token.image,
           isActive: token.isActive,
         },
       }
@@ -35,9 +33,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           role: user.role,
           plan: (user as any).plan,
-          bio: (user as any).bio,
           theme: (user as any).theme,
-          image: user.image,
           isActive: (user as any).isActive,
         }
       }
@@ -79,9 +75,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          bio: user.bio,
           theme: user.theme,
-          image: user.image,
           isActive: user.isActive,
           plan: user.plan,
         }

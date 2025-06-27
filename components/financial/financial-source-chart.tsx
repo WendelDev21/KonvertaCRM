@@ -172,7 +172,7 @@ export function FinancialSourceChart({ data }: FinancialSourceChartProps) {
                 {selectedSource === "Instagram" &&
                   "Contatos originados através do Instagram, stories, posts ou direct messages."}
                 {selectedSource === "Outro" &&
-                  "Contatos originados através de outras fontes como site, indicações, etc."}
+                  "Contatos originados através de outras fontes como Outro, indicações, etc."}
               </p>
             </div>
           </div>

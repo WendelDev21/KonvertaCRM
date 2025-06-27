@@ -33,7 +33,7 @@ async function main() {
       // Verificar se as colunas necessárias existem
       try {
         // Tentar buscar um usuário com as colunas que precisamos
-        await prisma.$queryRaw`SELECT "id", "name", "email", "image", "bio", "theme", "notificationSettings" FROM "User" LIMIT 1`
+        await prisma.$queryRaw`SELECT "id", "name", "email", "theme", "notificationSettings" FROM "User" LIMIT 1`
         console.log("✅ Todas as colunas necessárias existem")
       } catch (error) {
         console.log("⚠️ Algumas colunas necessárias não existem. Aplicando alterações...")
@@ -54,8 +54,6 @@ async function main() {
             console.error("❌ Não foi possível aplicar o esquema diretamente")
             console.error("Por favor, execute as seguintes consultas SQL manualmente:")
             console.log(`
-              ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "image" TEXT;
-              ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "bio" TEXT;
               ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "theme" TEXT;
               ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "notificationSettings" TEXT;
             `)

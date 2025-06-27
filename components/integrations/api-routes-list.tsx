@@ -119,7 +119,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Webhook criado",
       example:
-        'curl -X POST \'https://konvertaleads.com.br/api/webhooks\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Meu Webhook","url":"https://meu-site.com/webhook","events":["contact.created","contact.updated"]}\'',
+        'curl -X POST \'https://konvertaleads.com.br/api/webhooks\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"Meu Webhook","url":"https://meu-Outro.com/webhook","events":["contact.created","contact.updated"]}\'',
     },
     {
       method: "PUT",
@@ -154,7 +154,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Resultado do teste",
       example:
-        "curl -X POST 'https://konvertaleads.com.br/api/webhooks/test' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"url\":\"https://meu-site.com/webhook\"}'",
+        "curl -X POST 'https://konvertaleads.com.br/api/webhooks/test' \\\n  -H 'Authorization: Bearer seu_token_aqui' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"url\":\"https://meu-Outro.com/webhook\"}'",
     },
   ],
   dashboard: [
@@ -191,6 +191,30 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       response: "Dados de conversão",
       example:
         "curl -X GET 'https://konvertaleads.com.br/api/dashboard/conversion?period=month' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+  ],
+  financial: [
+    {
+      method: "GET",
+      path: "/api/financial",
+      description: "Obtém dados financeiros do usuário",
+      queryParams: [
+        { name: "type", type: "string", description: "Tipo de dados (contacts, summary)", required: false },
+      ],
+      response: "Dados financeiros",
+      example:
+        "curl -X GET 'https://konvertaleads.com.br/api/financial?type=summary' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "GET",
+      path: "/api/financial/contacts",
+      description: "Obtém contatos financeiros do usuário",
+      queryParams: [
+        { name: "status", type: "string", description: "Status do contato", required: false },
+      ],
+      response: "Contatos financeiros",
+      example:
+        "curl -X GET 'https://konvertaleads.com.br/api/financial/contacts' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ],
   users: [
@@ -232,6 +256,54 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       description: "Gera um novo token de API",
       response: "{ token: string }",
       example: "curl -X POST 'https://konvertaleads.com.br/api/tokens' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+  ],
+  reports: [
+    {
+      method: "GET",
+      path: "/api/reports",
+      description: "Lista todos os relatórios disponíveis",
+      response: "Array de relatórios",
+      example: "curl -X GET 'https://konvertaleads.com.br/api/reports' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "GET",
+      path: "/api/reports/last",
+      description: "Obtém o último relatório gerado",
+      response: "Detalhes do último relatório",
+      example: "curl -X GET 'https://konvertaleads.com.br/api/reports/last' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "GET",
+      path: "/api/reports/[id]",
+      description: "Obtém detalhes de um relatório específico",
+      params: [{ name: "id", type: "string", description: "ID do relatório", required: true }],
+      response: "Detalhes do relatório",
+      example: "curl -X GET 'https://konvertaleads.com.br/api/reports/123456' -H 'Authorization: Bearer seu_token_aqui'",
+    },
+    {
+      method: "POST",
+      path: "/api/reports/generate",
+      description: "Cria um novo relatório",
+      bodyParams: [
+        { name: "format", type: "string", description: "Formato do relatório (csv, pdf)", required: true },
+        { name: "period", type: "string", description: "Período do relatório (7d, 30d, 90d, 1y, custom)", required: true },
+        { name: "startDate", type: "string", description: "Data de início (apenas para período customizado)", required: false },
+        { name: "endDate", type: "string", description: "Data de fim (apenas para período customizado)", required: false },
+        { name: "includeContacts", type: "boolean", description: "Incluir contatos no relatório", required: false },
+        { name: "includeFinancial", type: "boolean", description: "Incluir dados financeiros no relatório", required: false },
+      ],
+      response: "Relatório criado",
+      example:
+        "curl -X POST 'https://konvertaleads.com.br/api/reports/generate' \\\n -H 'Authorization: Bearer seu_token_aqui' -H 'Content-Type: application/json' \\\n -d '{\"format\":\"csv\",\"period\":\"30d\",\"includeContacts\":true,\"includeFinancial\":true}'",
+    },
+    {
+      method: "DELETE",
+      path: "/api/reports/[id]",
+      description: "Remove um relatório específico",
+      params: [{ name: "id", type: "string", description: "ID do relatório", required: true }],
+      response: "Relatório removido",
+      example: "curl -X DELETE 'https://konvertaleads.com.br/api/reports/123456' -H 'Authorization: Bearer seu_token_aqui'",
     },
   ],
 }

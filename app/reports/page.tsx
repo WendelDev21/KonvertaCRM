@@ -1,4 +1,5 @@
 import { ReportsClient } from "@/components/reports/reports-client"
+import { FileText } from "lucide-react"
 
 export default function ReportsPage() {
   return (
@@ -7,7 +8,10 @@ export default function ReportsPage() {
         <div className="flex flex-col gap-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Relatórios</h1>
+              <h1 className="text-3xl font-bold flex items-center space-x-2">
+                <FileText className="h-8 w-8 text-primary" />
+                <span>Relatórios</span>
+              </h1>
               <p className="text-muted-foreground mt-1">Obtenha insights valiosos sobre seus dados</p>
             </div>
           </div>

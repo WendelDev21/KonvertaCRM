@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Check, Crown } from "lucide-react"
+import { Check, Crown, Wallet } from "lucide-react"
 import { getCurrentUser } from "@/lib/session"
 import { getUserById } from "@/lib/services/user-service"
 import { redirect } from "next/navigation"
@@ -108,7 +108,10 @@ export default async function UpgradesPage() {
       <main className="flex-1 container mx-auto py-6 px-4">
         <div className="max-w-5xl mx-auto animate-fade-in">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Upgrades</h1>
+            <h1 className="text-3xl font-bold flex items-center space-x-2">
+                <Wallet className="h-8 w-8 text-primary" />
+                <span>Upgrades</span>
+              </h1>
             <p className="text-muted-foreground">
               Escolha o plano ideal para o seu negócio. Plano atual:{" "}
               <span className="font-semibold text-foreground">{currentPlan}</span>

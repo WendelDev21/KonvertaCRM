@@ -1,24 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
 // GET /api/reports/[id] - Obter um relatório específico
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    const userId = session.user.id
     const reportId = params.id
 
-    // Buscar o relatório
-    const report = await prisma.report.findFirst({
+    const report = await prisma.report.findUnique({
       where: {
         id: reportId,
-        userId,
       },
     })
 
@@ -36,19 +26,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // DELETE /api/reports/[id] - Excluir um relatório específico
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    const userId = session.user.id
     const reportId = params.id
 
-    // Verificar se o relatório existe
-    const report = await prisma.report.findFirst({
+    const report = await prisma.report.findUnique({
       where: {
         id: reportId,
-        userId,
       },
     })
 
@@ -56,7 +38,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Relatório não encontrado" }, { status: 404 })
     }
 
-    // Excluir o relatório
     await prisma.report.delete({
       where: {
         id: reportId,

@@ -281,18 +281,6 @@ export function ApiTokenManager() {
             </p>
           </div>
         )}
-
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">Como usar seu token</h3>
-          <div className="rounded-md bg-muted p-4">
-            <pre className="text-xs overflow-x-auto">
-              <code>
-                curl -X GET https://konvertaleads.com.br/api/contacts \<br />
-                -H "Authorization: Bearer seu_token_aqui"
-              </code>
-            </pre>
-          </div>
-        </div>
       </CardContent>
       <CardFooter>
         {tokenInfo ? (

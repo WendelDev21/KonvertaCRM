@@ -21,31 +21,49 @@ interface FinancialData {
   }
 }
 
+interface Contact {
+  id: string
+  name: string
+  contact: string
+  status: string
+  source: string
+  value: number
+  createdAt: string
+}
+
 export function FinancialClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [financialData, setFinancialData] = useState<FinancialData | null>(null)
-  const [contacts, setContacts] = useState([])
+  const [contacts, setContacts] = useState<Contact[]>([])
 
   useEffect(() => {
     const fetchFinancialData = async () => {
       try {
         const response = await fetch("/api/financial?type=all")
-        if (!response.ok) throw new Error("Erro ao buscar dados financials")
+        if (!response.ok) throw new Error("Erro ao buscar dados financeiros")
         const data = await response.json()
         setFinancialData(data)
       } catch (error) {
-        console.error("Erro ao buscar dados financials:", error)
+        console.error("Erro ao buscar dados financeiros:", error)
       }
     }
 
     const fetchContacts = async () => {
       try {
-        const response = await fetch("/api/financial?type=contacts")
+        const response = await fetch("/api/financial/contacts")
         if (!response.ok) throw new Error("Erro ao buscar contatos")
         const data = await response.json()
-        setContacts(data)
+
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setContacts(data)
+        } else {
+          console.error("Contacts API response is not an array:", data)
+          setContacts([])
+        }
       } catch (error) {
         console.error("Erro ao buscar contatos:", error)
+        setContacts([])
       }
     }
 

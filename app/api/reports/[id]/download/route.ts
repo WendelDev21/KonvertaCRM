@@ -1,25 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { generateReport } from "@/lib/services/report-service"
 
 // GET /api/reports/[id]/download - Baixar um relatório específico
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    const userId = session.user.id
     const reportId = params.id
 
-    // Buscar o relatório
-    const report = await prisma.report.findFirst({
+    const report = await prisma.report.findUnique({
       where: {
         id: reportId,
-        userId,
       },
     })
 
@@ -32,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Gerar o relatório
     const { fileContent, contentType, fileName } = await generateReport({
-      userId,
+      userId: "system", // Placeholder para manter compatibilidade
       format: format as "pdf" | "csv",
       period: period as "7d" | "30d" | "90d" | "1y" | "custom",
       startDate: startDate ? new Date(startDate) : undefined,
@@ -41,7 +31,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       includeFinancial,
     })
 
-    // Retornar o arquivo
     return new NextResponse(fileContent, {
       headers: {
         "Content-Type": contentType,

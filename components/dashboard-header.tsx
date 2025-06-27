@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Kanban, Menu, Users, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle, DollarSign, SquareChartGantt } from "lucide-react"
+import { LayoutDashboard, Kanban, Menu, Phone, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle, DollarSign, FileText } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserAvatar } from "@/components/user-avatar"
@@ -42,7 +42,7 @@ export function DashboardHeader() {
     {
       name: "Contatos",
       path: "/contacts",
-      icon: Users,
+      icon: Phone,
     },
     {
       name: "Kanban",
@@ -85,7 +85,7 @@ export function DashboardHeader() {
     {
       name: "Relatórios",
       path: "/reports",
-      icon: SquareChartGantt,
+      icon: FileText,
     },
     {
       name: "Suporte",

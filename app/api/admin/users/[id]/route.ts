@@ -30,9 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           createdAt: true,
           updatedAt: true,
           isActive: true,
-          bio: true,
           theme: true,
-          image: true,
           notificationSettings: true,
           // Exclude password
         },
@@ -74,9 +72,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       if (body.email !== undefined) updateData.email = body.email
       if (body.role !== undefined) updateData.role = body.role
       if (body.isActive !== undefined) updateData.isActive = body.isActive
-      if (body.bio !== undefined) updateData.bio = body.bio
       if (body.theme !== undefined) updateData.theme = body.theme
-      if (body.image !== undefined) updateData.image = body.image
       if (body.plan !== undefined) updateData.plan = body.plan
       if (body.notificationSettings !== undefined) {
         updateData.notificationSettings =
@@ -106,7 +102,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           createdAt: true,
           updatedAt: true,
           isActive: true,
-          bio: true,
           theme: true,
           // Exclude password
         },

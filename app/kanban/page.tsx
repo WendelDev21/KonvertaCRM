@@ -1,6 +1,7 @@
 "use client"
 
 import { KanbanBoard } from "@/components/kanban/kanban-board"
+import { Kanban } from "lucide-react"
 
 export default function KanbanPage() {
   return (
@@ -9,7 +10,10 @@ export default function KanbanPage() {
         <div className="flex flex-col gap-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold">Kanban</h1>
+              <h1 className="text-3xl font-bold flex items-center space-x-2">
+                <Kanban className="h-8 w-8 text-primary" />
+                <span>Kanban</span>
+              </h1>
               <p className="text-muted-foreground mt-1">Gerencie seus contatos com facilidade</p>
             </div>
           </div>

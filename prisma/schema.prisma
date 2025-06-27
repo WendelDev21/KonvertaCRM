@@ -16,13 +16,11 @@ model User {
   email                String    @unique
   emailVerified        DateTime?
   password             String?
-  image                String?
   role                 String    @default("user")
   plan                 String    @default("Starter")
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   isActive             Boolean   @default(true)
-  bio                  String?
   theme                String?   @default("light")
   notificationSettings String?   @default("{}")
 
@@ -72,10 +70,8 @@ model Contact {
   id          String   @id @default(uuid())
   name        String
   contact     String
-  phone       String?
-  company     String?
-  status      String   @default("lead")
-  source      String   @default("website")
+  status      String   
+  source      String   @default("webOutro")
   notes       String?
   value       Float?   @default(0)
   createdAt   DateTime @default(now())

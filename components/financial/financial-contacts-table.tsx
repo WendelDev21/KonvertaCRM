@@ -22,7 +22,7 @@ interface FinancialContactsTableProps {
   contacts?: Contact[]
 }
 
-export function FinancialContactsTable({ contacts: initialContacts }: FinancialContactsTableProps) {
+export function FinancialContactsTable({ contacts: initialContacts = [] }: FinancialContactsTableProps) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -35,38 +35,50 @@ export function FinancialContactsTable({ contacts: initialContacts }: FinancialC
         const response = await fetch("/api/contacts")
         if (!response.ok) throw new Error("Erro ao buscar contatos")
         const data = await response.json()
-        setContacts(data)
+
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setContacts(data)
+        } else {
+          console.error("API response is not an array:", data)
+          setContacts([])
+        }
       } catch (error) {
         console.error("Erro ao buscar contatos:", error)
+        setContacts([]) // Ensure contacts is always an array on error
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (initialContacts) {
+    // Check if initialContacts is provided and is an array
+    if (initialContacts && Array.isArray(initialContacts) && initialContacts.length > 0) {
       setContacts(initialContacts)
       setIsLoading(false)
     } else {
+      // If initialContacts is not provided or is empty, fetch from API
       fetchContacts()
     }
   }, [initialContacts])
 
-  // Filtrar contatos
-  const filteredContacts = contacts.filter((contact) => {
-    // Filtro de busca
-    const matchesSearch =
-      searchTerm === "" ||
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.contact.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filtrar contatos - add safety check
+  const filteredContacts = Array.isArray(contacts)
+    ? contacts.filter((contact) => {
+        // Filtro de busca
+        const matchesSearch =
+          searchTerm === "" ||
+          (contact.name && contact.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (contact.contact && contact.contact.toLowerCase().includes(searchTerm.toLowerCase()))
 
-    // Filtro de status
-    const matchesStatus = statusFilter === "todos" || contact.status === statusFilter
+        // Filtro de status
+        const matchesStatus = statusFilter === "todos" || contact.status === statusFilter
 
-    // Filtro de origem
-    const matchesSource = sourceFilter === "todas" || contact.source === sourceFilter
+        // Filtro de origem
+        const matchesSource = sourceFilter === "todas" || contact.source === sourceFilter
 
-    return matchesSearch && matchesStatus && matchesSource
-  })
+        return matchesSearch && matchesStatus && matchesSource
+      })
+    : []
 
   // Ordenar por valor (maior para menor)
   const sortedContacts = [...filteredContacts].sort((a, b) => (b.value || 0) - (a.value || 0))
@@ -151,10 +163,10 @@ export function FinancialContactsTable({ contacts: initialContacts }: FinancialC
             {sortedContacts.length > 0 ? (
               sortedContacts.map((contact) => (
                 <TableRow key={contact.id}>
-                  <TableCell className="font-medium">{contact.name}</TableCell>
-                  <TableCell>{contact.contact}</TableCell>
-                  <TableCell>{contact.status}</TableCell>
-                  <TableCell>{contact.source}</TableCell>
+                  <TableCell className="font-medium">{contact.name || "N/A"}</TableCell>
+                  <TableCell>{contact.contact || "N/A"}</TableCell>
+                  <TableCell>{contact.status || "N/A"}</TableCell>
+                  <TableCell>{contact.source || "N/A"}</TableCell>
                   <TableCell className="text-right font-medium">
                     <span
                       className={contact.value && contact.value > 0 ? "text-emerald-600 dark:text-emerald-400" : ""}
@@ -162,7 +174,7 @@ export function FinancialContactsTable({ contacts: initialContacts }: FinancialC
                       {formatCurrency(contact.value)}
                     </span>
                   </TableCell>
-                  <TableCell>{formatDate(contact.createdAt)}</TableCell>
+                  <TableCell>{contact.createdAt ? formatDate(contact.createdAt) : "N/A"}</TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/contacts/${contact.id}`}>Ver</Link>
