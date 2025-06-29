@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
   Copy,
   Key,
@@ -16,12 +17,31 @@ import {
   Users,
   KeyRound,
   Phone,
+  Menu,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { ApiTokenManager } from "@/components/integrations/api-token-manager"
+
+// Hook personalizado para detectar dispositivos móveis
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 1024) // lg breakpoint
+    }
+
+    checkIsMobile()
+    window.addEventListener("resize", checkIsMobile)
+
+    return () => window.removeEventListener("resize", checkIsMobile)
+  }, [])
+
+  return isMobile
+}
 
 interface ApiRoute {
   id: string
@@ -697,10 +717,24 @@ const sections: Section[] = [
         description: "Gera um novo relatório com base nos filtros especificados",
         bodyParams: [
           { name: "format", type: "string", description: "Formato do relatório (pdf, csv)", required: true },
-          { name: "period", type: "string", description: "Período do relatório (30d, 90d, 1y, custom)", required: true },
-          { name: "includeContacts", type: "boolean", description: "Incluir dados de contatos no relatório", required: false },
-          { name: "includeFinancial", type: "boolean", description: "Incluir dados financeiros no relatório", required: false },
-
+          {
+            name: "period",
+            type: "string",
+            description: "Período do relatório (30d, 90d, 1y, custom)",
+            required: true,
+          },
+          {
+            name: "includeContacts",
+            type: "boolean",
+            description: "Incluir dados de contatos no relatório",
+            required: false,
+          },
+          {
+            name: "includeFinancial",
+            type: "boolean",
+            description: "Incluir dados financeiros no relatório",
+            required: false,
+          },
         ],
         response: "Objeto relatório criado",
         responseExample: `{
@@ -846,6 +880,8 @@ const sections: Section[] = [
 export default function ApiDocsPage() {
   const [activeSection, setActiveSection] = useState("auth")
   const [activeRoute, setActiveRoute] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   const copyExample = (example: string) => {
     navigator.clipboard.writeText(example)
@@ -867,42 +903,44 @@ export default function ApiDocsPage() {
   }
 
   const renderAuthContent = () => (
-    <div className="space-y-6">
+    <div className="space-y-3 xs:space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Autenticação</h1>
-        <p className="text-muted-foreground text-lg">Como autenticar suas requisições à API do KonvertaLeads</p>
+        <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold mb-2 leading-tight">Autenticação</h1>
+        <p className="text-muted-foreground text-sm xs:text-base sm:text-lg leading-relaxed">
+          Como autenticar suas requisições à API da Konverta
+        </p>
       </div>
 
-      <Alert>
-        <Key className="h-4 w-4" />
-        <AlertTitle>Token de API Obrigatório</AlertTitle>
-        <AlertDescription>
+      <Alert className="border-l-4">
+        <Key className="h-4 w-4 flex-shrink-0" />
+        <AlertTitle className="text-sm xs:text-base">Token de API Obrigatório</AlertTitle>
+        <AlertDescription className="text-xs xs:text-sm leading-relaxed">
           Todas as requisições à API devem incluir um token de autenticação válido no cabeçalho Authorization.
         </AlertDescription>
       </Alert>
 
       {/* Componente ApiTokenManager importado diretamente */}
-      <div className="my-8">
+      <div className="my-4 xs:my-6 sm:my-8">
         <ApiTokenManager />
       </div>
 
       {/* Seção: Testando a autenticação */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Testando sua autenticação</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base xs:text-lg sm:text-xl">Testando sua autenticação</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+        <CardContent className="space-y-3 xs:space-y-4">
+          <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">
             Use este comando para testar se seu token está funcionando corretamente:
           </p>
-          <div className="rounded-md bg-muted p-4">
-            <pre className="text-sm overflow-x-auto">
+          <div className="rounded-md bg-muted p-2 xs:p-3 sm:p-4 overflow-x-auto">
+            <pre className="text-xs leading-relaxed whitespace-pre-wrap break-all">
               <code>{`curl -X GET 'https://konvertaleads.com.br/api/users/me' \\
   -H 'Authorization: Bearer SEU_TOKEN_AQUI' \\
   -H 'Content-Type: application/json'`}</code>
             </pre>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">
             Se o token estiver válido, você receberá suas informações de usuário. Caso contrário, receberá um erro 401
             (Não autorizado).
           </p>
@@ -912,35 +950,41 @@ export default function ApiDocsPage() {
   )
 
   const renderRouteContent = (route: ApiRoute) => (
-    <div className="space-y-6">
+    <div className="space-y-3 xs:space-y-4 sm:space-y-6">
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <Badge className={getMethodColor(route.method)}>{route.method}</Badge>
-          <code className="text-lg font-mono">{route.path}</code>
+        <div className="flex flex-col gap-2 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge className={cn(getMethodColor(route.method), "text-xs px-2 py-1")}>{route.method}</Badge>
+            <code className="text-xs xs:text-sm font-mono bg-muted px-2 py-1 rounded break-all flex-1 min-w-0">
+              {route.path}
+            </code>
+          </div>
         </div>
-        <h1 className="text-3xl font-bold mb-2">{route.title}</h1>
-        <p className="text-muted-foreground text-lg">{route.description}</p>
+        <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold mb-2 leading-tight">{route.title}</h1>
+        <p className="text-muted-foreground text-sm xs:text-base sm:text-lg leading-relaxed">{route.description}</p>
       </div>
 
       {route.params && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Parâmetros de URL</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base xs:text-lg sm:text-xl">Parâmetros de URL</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {route.params.map((param, i) => (
-                <div key={i} className="border-l-2 border-blue-200 pl-4">
-                  <div className="flex items-center gap-2">
-                    <code className="font-mono text-sm bg-muted px-2 py-1 rounded">{param.name}</code>
-                    <Badge variant="outline">{param.type}</Badge>
+                <div key={i} className="border-l-2 border-blue-200 pl-3 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code className="font-mono text-xs bg-muted px-2 py-1 rounded">{param.name}</code>
+                    <Badge variant="outline" className="text-xs">
+                      {param.type}
+                    </Badge>
                     {param.required && (
                       <Badge variant="destructive" className="text-xs">
                         obrigatório
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{param.description}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{param.description}</p>
                 </div>
               ))}
             </div>
@@ -949,24 +993,26 @@ export default function ApiDocsPage() {
       )}
 
       {route.queryParams && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Parâmetros de Query</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base xs:text-lg sm:text-xl">Parâmetros de Query</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {route.queryParams.map((param, i) => (
-                <div key={i} className="border-l-2 border-green-200 pl-4">
-                  <div className="flex items-center gap-2">
-                    <code className="font-mono text-sm bg-muted px-2 py-1 rounded">{param.name}</code>
-                    <Badge variant="outline">{param.type}</Badge>
+                <div key={i} className="border-l-2 border-green-200 pl-3 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code className="font-mono text-xs bg-muted px-2 py-1 rounded">{param.name}</code>
+                    <Badge variant="outline" className="text-xs">
+                      {param.type}
+                    </Badge>
                     {param.required && (
                       <Badge variant="destructive" className="text-xs">
                         obrigatório
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{param.description}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{param.description}</p>
                 </div>
               ))}
             </div>
@@ -975,24 +1021,26 @@ export default function ApiDocsPage() {
       )}
 
       {route.bodyParams && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Parâmetros do Body</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base xs:text-lg sm:text-xl">Parâmetros do Body</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {route.bodyParams.map((param, i) => (
-                <div key={i} className="border-l-2 border-amber-200 pl-4">
-                  <div className="flex items-center gap-2">
-                    <code className="font-mono text-sm bg-muted px-2 py-1 rounded">{param.name}</code>
-                    <Badge variant="outline">{param.type}</Badge>
+                <div key={i} className="border-l-2 border-amber-200 pl-3 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <code className="font-mono text-xs bg-muted px-2 py-1 rounded">{param.name}</code>
+                    <Badge variant="outline" className="text-xs">
+                      {param.type}
+                    </Badge>
                     {param.required && (
                       <Badge variant="destructive" className="text-xs">
                         obrigatório
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{param.description}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{param.description}</p>
                 </div>
               ))}
             </div>
@@ -1000,15 +1048,15 @@ export default function ApiDocsPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Resposta</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base xs:text-lg sm:text-xl">Resposta</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground mb-4">{route.response}</p>
+          <p className="text-muted-foreground mb-3 text-xs xs:text-sm leading-relaxed">{route.response}</p>
           {route.responseExample && (
-            <div className="rounded-md bg-muted p-4">
-              <pre className="text-sm overflow-x-auto">
+            <div className="rounded-md bg-muted p-2 xs:p-3 overflow-x-auto">
+              <pre className="text-xs leading-relaxed">
                 <code>{route.responseExample}</code>
               </pre>
             </div>
@@ -1016,28 +1064,74 @@ export default function ApiDocsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Exemplo de requisição</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base xs:text-lg sm:text-xl">Exemplo de requisição</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="relative">
-            <div className="rounded-md bg-muted p-4">
-              <pre className="text-sm overflow-x-auto">
+            <div className="rounded-md bg-muted p-2 xs:p-3 overflow-x-auto">
+              <pre className="text-xs leading-relaxed">
                 <code>{route.example}</code>
               </pre>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="absolute top-2 right-2"
+              className="absolute top-1 right-1 xs:top-2 xs:right-2 h-8 w-8 p-0"
               onClick={() => copyExample(route.example)}
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-3 w-3 xs:h-4 xs:w-4" />
             </Button>
           </div>
         </CardContent>
       </Card>
+    </div>
+  )
+
+  const SidebarContent = () => (
+    <div className="space-y-1">
+      {sections.map((section) => (
+        <div key={section.id}>
+          <button
+            onClick={() => {
+              setActiveSection(section.id)
+              setActiveRoute(null)
+              if (isMobile) setSidebarOpen(false)
+            }}
+            className={cn(
+              "flex items-center gap-2 w-full p-2 rounded-md text-left hover:bg-muted transition-colors text-sm",
+              activeSection === section.id && !activeRoute && "bg-muted font-medium",
+            )}
+          >
+            <section.icon className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate text-xs xs:text-sm">{section.title}</span>
+          </button>
+
+          {section.routes.length > 0 && activeSection === section.id && (
+            <div className="ml-4 xs:ml-6 mt-1 space-y-1">
+              {section.routes.map((route) => (
+                <button
+                  key={route.id}
+                  onClick={() => {
+                    setActiveRoute(route.id)
+                    if (isMobile) setSidebarOpen(false)
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 w-full p-2 rounded-md text-left hover:bg-muted transition-colors",
+                    activeRoute === route.id && "bg-muted font-medium",
+                  )}
+                >
+                  <Badge className={cn(getMethodColor(route.method), "text-xs px-1 py-0.5 flex-shrink-0")}>
+                    {route.method}
+                  </Badge>
+                  <span className="truncate text-xs">{route.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 
@@ -1046,95 +1140,95 @@ export default function ApiDocsPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <div className="w-80 border-r bg-muted/30">
-        <div className="p-6 border-b">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block w-72 xl:w-80 border-r bg-muted/30">
+        <div className="p-3 xs:p-4 border-b">
           <div className="flex items-center gap-2">
-            <Book className="h-8 w-8 text-primary" />
-            <h2 className="text-xl font-bold">Documentação da API</h2>
+            <Book className="h-5 w-5 xs:h-6 xs:w-6 text-primary flex-shrink-0" />
+            <h2 className="text-sm xs:text-base font-bold truncate">Documentação da API</h2>
           </div>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-80px)]">
-          <div className="p-4 space-y-2">
-            {sections.map((section) => (
-              <div key={section.id}>
-                <button
-                  onClick={() => {
-                    setActiveSection(section.id)
-                    setActiveRoute(null)
-                  }}
-                  className={cn(
-                    "flex items-center gap-2 w-full p-2 rounded-md text-left hover:bg-muted transition-colors",
-                    activeSection === section.id && !activeRoute && "bg-muted font-medium",
-                  )}
-                >
-                  <section.icon className="h-4 w-4" />
-                  {section.title}
-                </button>
-
-                {section.routes.length > 0 && activeSection === section.id && (
-                  <div className="ml-6 mt-1 space-y-1">
-                    {section.routes.map((route) => (
-                      <button
-                        key={route.id}
-                        onClick={() => setActiveRoute(route.id)}
-                        className={cn(
-                          "flex items-center gap-2 w-full p-2 rounded-md text-left text-sm hover:bg-muted transition-colors",
-                          activeRoute === route.id && "bg-muted font-medium",
-                        )}
-                      >
-                        <Badge className={cn(getMethodColor(route.method), "text-xs px-1.5 py-0.5")}>
-                          {route.method}
-                        </Badge>
-                        {route.title}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+        <ScrollArea className="h-[calc(100vh-60px)] xs:h-[calc(100vh-80px)]">
+          <div className="p-3 xs:p-4">
+            <SidebarContent />
           </div>
         </ScrollArea>
       </div>
 
+      {/* Mobile Header with Menu */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background border-b">
+        <div className="flex items-center justify-between p-3 xs:p-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Book className="h-5 w-5 text-primary flex-shrink-0" />
+            <h2 className="text-sm xs:text-base font-bold truncate">API Docs</h2>
+          </div>
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 xs:w-80 p-0">
+              <div className="p-3 xs:p-4 border-b">
+                <div className="flex items-center gap-2">
+                  <Book className="h-5 w-5 text-primary flex-shrink-0" />
+                  <h2 className="text-sm xs:text-base font-bold">Documentação da API</h2>
+                </div>
+              </div>
+              <ScrollArea className="h-[calc(100vh-60px)] xs:h-[calc(100vh-80px)]">
+                <div className="p-3 xs:p-4">
+                  <SidebarContent />
+                </div>
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <ScrollArea className="h-screen">
-          <div className="p-8 max-w-4xl">
+          <div className="p-3 xs:p-4 sm:p-6 lg:p-8 max-w-4xl pt-16 xs:pt-20 lg:pt-8">
             {activeSection === "auth" && renderAuthContent()}
             {currentRoute && renderRouteContent(currentRoute)}
             {activeSection !== "auth" && !currentRoute && currentSection && (
-              <div className="space-y-6">
+              <div className="space-y-3 xs:space-y-4 sm:space-y-6">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-                    <currentSection.icon className="h-8 w-8" />
-                    {currentSection.title}
+                  <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-2 xs:gap-3 leading-tight">
+                    <currentSection.icon className="h-5 w-5 xs:h-6 xs:w-6 sm:h-8 sm:w-8 flex-shrink-0" />
+                    <span className="truncate">{currentSection.title}</span>
                   </h1>
-                  <p className="text-muted-foreground text-lg">
-                    Selecione um endpoint na barra lateral para ver a documentação detalhada.
+                  <p className="text-muted-foreground text-sm xs:text-base sm:text-lg leading-relaxed">
+                    Selecione um endpoint {isMobile ? "no menu" : "na barra lateral"} para ver a documentação detalhada.
                   </p>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-2 xs:gap-3 sm:gap-4">
                   {currentSection.routes.map((route) => (
                     <Card
                       key={route.id}
-                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
                       onClick={() => setActiveRoute(route.id)}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Badge className={getMethodColor(route.method)}>{route.method}</Badge>
-                            <div>
-                              <h3 className="font-medium">{route.title}</h3>
-                              <code className="text-sm text-muted-foreground">{route.path}</code>
+                      <CardContent className="p-3 xs:p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-start gap-2 xs:gap-3 min-w-0 flex-1">
+                            <Badge className={cn(getMethodColor(route.method), "flex-shrink-0 text-xs px-1.5 py-0.5")}>
+                              {route.method}
+                            </Badge>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <h3 className="font-medium text-sm leading-tight">{route.title}</h3>
+                              <code className="text-xs text-muted-foreground break-all block leading-relaxed">
+                                {route.path}
+                              </code>
                             </div>
                           </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         </div>
-                        <p className="text-sm text-muted-foreground mt-2">{route.description}</p>
+                        <p className="text-xs text-muted-foreground mt-2 leading-relaxed line-clamp-2">
+                          {route.description}
+                        </p>
                       </CardContent>
                     </Card>
                   ))}
