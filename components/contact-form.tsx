@@ -172,7 +172,7 @@ export function ContactForm({ contactId }: ContactFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="contact">Telefone ou @Instagram</Label>
+          <Label htmlFor="contact">Contato</Label>
           <div className="relative">
             <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input

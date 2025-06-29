@@ -121,7 +121,7 @@ export function AddContactDialog({ open, onOpenChange, initialStatus, onContactA
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="contact">Telefone ou @Instagram</Label>
+            <Label htmlFor="contact">Contato</Label>
             <Input
               id="contact"
               name="contact"

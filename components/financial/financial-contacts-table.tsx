@@ -32,7 +32,12 @@ export function FinancialContactsTable({ contacts: initialContacts = [] }: Finan
   useEffect(() => {
     const fetchContacts = async () => {
       try {
-        const response = await fetch("/api/contacts")
+        const response = await fetch("/api/financial/contacts")
+        if (response.status === 401) {
+          console.error("Usuário não autenticado")
+          setContacts([])
+          return
+        }
         if (!response.ok) throw new Error("Erro ao buscar contatos")
         const data = await response.json()
 

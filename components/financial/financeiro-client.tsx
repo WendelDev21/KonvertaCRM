@@ -39,7 +39,11 @@ export function FinancialClient() {
   useEffect(() => {
     const fetchFinancialData = async () => {
       try {
-        const response = await fetch("/api/financial?type=all")
+        const response = await fetch("/api/financial")
+        if (response.status === 401) {
+          console.error("Usuário não autenticado")
+          return
+        }
         if (!response.ok) throw new Error("Erro ao buscar dados financeiros")
         const data = await response.json()
         setFinancialData(data)
@@ -51,6 +55,11 @@ export function FinancialClient() {
     const fetchContacts = async () => {
       try {
         const response = await fetch("/api/financial/contacts")
+        if (response.status === 401) {
+          console.error("Usuário não autenticado")
+          setContacts([])
+          return
+        }
         if (!response.ok) throw new Error("Erro ao buscar contatos")
         const data = await response.json()
 

@@ -71,7 +71,7 @@ model Contact {
   name        String
   contact     String
   status      String   
-  source      String   @default("webOutro")
+  source      String   
   notes       String?
   value       Float?   @default(0)
   createdAt   DateTime @default(now())

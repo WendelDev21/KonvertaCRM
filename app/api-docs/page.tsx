@@ -604,12 +604,17 @@ const sections: Section[] = [
         response: "Array de objetos relatório",
         responseExample: `[
   {
-    "id": "report_123",
-    "type": "contacts",
-    "period": "month",
-    "status": "completed",
-    "fileUrl": "/reports/report_123.pdf",
-    "createdAt": "2024-01-15T10:30:00Z"
+    "id": "relatorio_123",
+    "userId": "userId_123",
+    "format": "pdf",
+    "period": "30d",
+    "startDate": null,
+    "endDate": null,
+    "includeContacts": true,
+    "includeFinancial": true,
+    "fileName": "relatorio_30_dias_2025-06-29.pdf",
+    "fileUrl": null,
+    "createdAt": "2025-06-29T12:58:36.225Z"
   }
 ]`,
         example: `curl -X GET 'https://konvertaleads.com.br/api/reports?type=contacts&limit=10' \\
@@ -624,16 +629,17 @@ const sections: Section[] = [
         params: [{ name: "id", type: "string", description: "ID único do relatório", required: true }],
         response: "Objeto relatório",
         responseExample: `{
-  "id": "report_123",
-  "type": "contacts",
-  "period": "month",
-  "status": "completed",
-  "fileUrl": "/reports/report_123.pdf",
-  "filters": {
-    "status": "Fechado",
-    "source": "Outro"
-  },
-  "createdAt": "2024-01-15T10:30:00Z"
+    "id": "relatorio_123",
+    "userId": "userId_123",
+    "format": "pdf",
+    "period": "30d",
+    "startDate": null,
+    "endDate": null,
+    "includeContacts": true,
+    "includeFinancial": true,
+    "fileName": "relatorio_30_dias_2025-06-29.pdf",
+    "fileUrl": null,
+    "createdAt": "2025-06-29T12:58:36.225Z"
 }`,
         example: `curl -X GET 'https://konvertaleads.com.br/api/reports/report_123' \\
   -H 'Authorization: Bearer seu_token_aqui'`,
@@ -654,55 +660,60 @@ const sections: Section[] = [
         ],
         response: "Objeto relatório",
         responseExample: `{
-  "id": "report_123",
-  "type": "contacts",
-  "period": "month",
-  "status": "completed",
-  "fileUrl": "/reports/report_123.pdf",
-  "createdAt": "2024-01-15T10:30:00Z"
+    "id": "relatorio_123",
+    "userId": "userId_123",
+    "format": "pdf",
+    "period": "30d",
+    "startDate": null,
+    "endDate": null,
+    "includeContacts": true,
+    "includeFinancial": true,
+    "fileName": "relatorio_30_dias_2025-06-29.pdf",
+    "fileUrl": null,
+    "createdAt": "2025-06-29T12:58:36.225Z"
 }`,
         example: `curl -X GET 'https://konvertaleads.com.br/api/reports/last?type=contacts' \\
   -H 'Authorization: Bearer seu_token_aqui'`,
       },
       {
-        id: "generate-report",
+        id: "get-dowload-report-file",
+        method: "GET",
+        path: "/api/reports/[id]/download",
+        title: "Baixar Relatório",
+        description: "Baixa o arquivo de um relatório gerado",
+        params: [{ name: "id", type: "string", description: "ID único do relatório", required: true }],
+        response: "Arquivo do relatório",
+        responseExample: `{
+    "fileName": "relatorio_30_dias_exemplo.pdf",
+}`,
+        example: `curl -X GET 'https://konvertaleads.com.br/api/reports/report_123/download' \\
+        -H 'Authorization: Bearer seu_token_aqui'`,
+      },
+      {
+        id: "create-report",
         method: "POST",
         path: "/api/reports/generate",
         title: "Gerar Relatório",
-        description: "Gera um novo relatório com base nos parâmetros fornecidos",
+        description: "Gera um novo relatório com base nos filtros especificados",
         bodyParams: [
-          {
-            name: "type",
-            type: "string",
-            description: "Tipo do relatório (contacts, financial, dashboard)",
-            required: true,
-          },
-          {
-            name: "period",
-            type: "string",
-            description: "Período do relatório (day, week, month, year)",
-            required: false,
-          },
-          { name: "filters", type: "object", description: "Filtros específicos para o relatório", required: false },
-          { name: "format", type: "string", description: "Formato do arquivo (pdf, excel)", required: false },
+          { name: "format", type: "string", description: "Formato do relatório (pdf, csv)", required: true },
+          { name: "period", type: "string", description: "Período do relatório (30d, 90d, 1y, custom)", required: true },
+          { name: "includeContacts", type: "boolean", description: "Incluir dados de contatos no relatório", required: false },
+          { name: "includeFinancial", type: "boolean", description: "Incluir dados financeiros no relatório", required: false },
+
         ],
-        response: "Objeto relatório gerado",
+        response: "Objeto relatório criado",
         responseExample: `{
-  "id": "report_123",
-  "type": "contacts",
-  "period": "month",
-  "status": "processing",
-  "createdAt": "2024-01-15T10:30:00Z"
+    Relatório gerado com sucesso: relatorio_30_dias_exemplo.pdf
 }`,
         example: `curl -X POST 'https://konvertaleads.com.br/api/reports/generate' \\
   -H 'Authorization: Bearer seu_token_aqui' \\
   -H 'Content-Type: application/json' \\
   -d '{
-    "type": "contacts",
-    "period": "month",
-    "filters": {
-      "status": "Fechado"
-    }
+  "format": "pdf",
+  "period": "30d",
+  "includeContacts": true,
+  "includeFinancial": true
   }'`,
       },
       {
