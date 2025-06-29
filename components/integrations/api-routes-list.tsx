@@ -58,7 +58,7 @@ const apiRoutes: Record<string, ApiRoute[]> = {
       ],
       response: "Contato criado",
       example:
-        'curl -X POST \'https://konvertaleads.com.br/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"João Silva","contact":"joao@email.com","source":"Outro","status":"Novo", "value":"2000"}\'',
+        'curl -X POST \'https://konvertaleads.com.br/api/contacts\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{"name":"João Silva","contact":"+55 99 9 9999-9999","source":"Outro","status":"Novo", "value":"2000"}\'',
     },
     {
       method: "PUT",

@@ -104,7 +104,7 @@ const sections: Section[] = [
   {
     "id": "123456",
     "name": "João Silva",
-    "contact": "joao@email.com",
+    "contact": "+55 99 9 9999-9999",
     "source": "Outro",
     "status": "Novo",
     "value": "2500.00",
@@ -128,7 +128,7 @@ const sections: Section[] = [
         responseExample: `{
   "id": "123456",
   "name": "João Silva",
-  "contact": "joao@email.com",
+  "contact": "+55 99 9 9999-9999",
   "source": "Outro",
   "status": "Novo",
   "value": "2500.00",
@@ -168,7 +168,7 @@ const sections: Section[] = [
         responseExample: `{
   "id": "123456",
   "name": "João Silva",
-  "contact": "joao@email.com",
+  "contact": "+55 99 9 9999-9999",
   "source": "Outro",
   "status": "Novo",
   "value": "2500.00",
@@ -181,7 +181,7 @@ const sections: Section[] = [
   -H 'Content-Type: application/json' \\
   -d '{
     "name": "João Silva",
-    "contact": "joao@email.com",
+    "contact": "+55 99 9 9999-9999",
     "source": "Outro",
     "status": "Novo",
     "value": "2500.00",
@@ -207,7 +207,7 @@ const sections: Section[] = [
         responseExample: `{
   "id": "123456",
   "name": "João Silva",
-  "contact": "joao@email.com",
+  "contact": "+55 99 9 9999-9999",
   "source": "Outro",
   "status": "Fechado",
   "value": "2500.00",
@@ -586,7 +586,7 @@ const sections: Section[] = [
   {
     "id": "123456",
     "name": "João Silva",
-    "contact": "joao@email.com",
+    "contact": "+55 99 9 9999-9999",
     "value": "15000.00",
     "status": "Fechado",
     "source": "Outro"
