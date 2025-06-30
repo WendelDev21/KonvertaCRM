@@ -304,6 +304,9 @@ export function KanbanBoard() {
   }
 
   const handleCardClick = (contact: Contact) => {
+    // Prevent opening dialog during drag operations
+    if (activeId) return
+
     setSelectedContact(contact)
     setDetailsOpen(true)
   }

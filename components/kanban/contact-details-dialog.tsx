@@ -79,7 +79,7 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
 
     try {
       // Converter valor para número se for uma string
-      const valueToSend = typeof formData.value === "string" ? Number.parseFloat(formData.value) : formData.value
+      const valueToSend = formData.value ? Number.parseFloat(String(formData.value)) : 0
 
       const response = await fetch(`/api/contacts/${contact.id}`, {
         method: "PUT",
@@ -236,8 +236,9 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
                   type="number"
                   step="0.01"
                   min="0"
-                  value={formData.value || 0}
+                  value={formData.value || ""}
                   onChange={handleInputChange}
+                  placeholder="0.00"
                 />
               </div>
 

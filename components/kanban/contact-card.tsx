@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { MessageCircle, Instagram, Globe, Loader2 } from "lucide-react"
+import { MessageCircle, Instagram, Globe, Loader2, Eye } from "lucide-react"
 import type { Contact } from "./kanban-board"
 
 interface ContactCardProps {
@@ -89,9 +89,24 @@ export function ContactCard({
   const sourceConfig = getSourceConfig(contact.source)
   const SourceIcon = sourceConfig.icon
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleCardClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (onClick && !isDragging) {
+      onClick()
+    }
+  }
+
+  const handleViewClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.nativeEvent.stopImmediatePropagation()
+
+    // Previne qualquer comportamento de drag
+    if (e.currentTarget) {
+      e.currentTarget.setAttribute("draggable", "false")
+    }
+
     if (onClick && !isDragging) {
       onClick()
     }
@@ -100,7 +115,7 @@ export function ContactCard({
   return (
     <Card
       className={`
-        cursor-pointer transition-all duration-200 
+        group cursor-pointer transition-all duration-200 
         border border-border/50 bg-card backdrop-blur-sm rounded-xl
         hover:bg-card/90 hover:scale-[1.02] hover:border-border
         hover:shadow-md
@@ -109,7 +124,7 @@ export function ContactCard({
         ${isUpdating ? "opacity-50" : ""}
         ${className}
       `}
-      onClick={handleClick}
+      onClick={handleCardClick}
       style={{
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
@@ -122,14 +137,42 @@ export function ContactCard({
         {/* Barra vertical colorida */}
         <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusBarColor(contact.status)} rounded-l-xl`} />
 
+        {/* Ícone de visualização - posicionado no topo direito */}
+        <div className="absolute top-2 right-2 z-20">
+          <button
+            onClick={handleViewClick}
+            onMouseDown={handleViewClick}
+            onTouchStart={handleViewClick}
+            className={`
+              p-2 rounded-full transition-all duration-200
+              bg-background/80 backdrop-blur-sm border border-border/50
+              hover:bg-background hover:border-border hover:scale-110
+              active:scale-95 shadow-sm hover:shadow-md
+              opacity-0 group-hover:opacity-100
+              ${isUpdating ? "opacity-0 pointer-events-none" : ""}
+            `}
+            title="Ver detalhes do contato"
+            draggable={false}
+            style={{
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+              pointerEvents: isUpdating ? "none" : "auto",
+            }}
+          >
+            <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+          </button>
+        </div>
+
         {/* Indicador de carregamento */}
         {isUpdating && (
-          <div className="absolute top-2 right-2 z-10">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <div className="absolute top-2 right-2 z-30">
+            <div className="p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/50">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            </div>
           </div>
         )}
 
-        <div className="p-3 pl-4">
+        <div className="p-3 pl-4 pr-12">
           {/* Header com nome e badge */}
           <div className="flex justify-between items-start mb-2">
             <div className="flex-1 min-w-0">
