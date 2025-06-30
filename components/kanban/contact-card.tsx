@@ -1,10 +1,12 @@
 "use client"
 
+import type React from "react"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { MessageCircle, Instagram, Globe } from "lucide-react"
+import { MessageCircle, Instagram, Globe, Loader2 } from "lucide-react"
 import type { Contact } from "./kanban-board"
 
 interface ContactCardProps {
@@ -12,9 +14,16 @@ interface ContactCardProps {
   onClick?: () => void
   className?: string
   isDragging?: boolean
+  isUpdating?: boolean
 }
 
-export function ContactCard({ contact, onClick, className = "", isDragging = false }: ContactCardProps) {
+export function ContactCard({
+  contact,
+  onClick,
+  className = "",
+  isDragging = false,
+  isUpdating = false,
+}: ContactCardProps) {
   const formattedDate = formatDistanceToNow(new Date(contact.createdAt), {
     addSuffix: true,
     locale: ptBR,
@@ -80,6 +89,14 @@ export function ContactCard({ contact, onClick, className = "", isDragging = fal
   const sourceConfig = getSourceConfig(contact.source)
   const SourceIcon = sourceConfig.icon
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (onClick && !isDragging) {
+      onClick()
+    }
+  }
+
   return (
     <Card
       className={`
@@ -88,13 +105,21 @@ export function ContactCard({ contact, onClick, className = "", isDragging = fal
         hover:bg-card/90 hover:scale-[1.02] hover:border-border
         hover:shadow-md
         ${isDragging ? "shadow-2xl scale-105 rotate-1 border-border" : ""}
+        ${isUpdating ? "opacity-50" : ""}
         ${className}
       `}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <CardContent className="p-0 relative overflow-hidden rounded-xl">
         {/* Barra vertical colorida */}
         <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusBarColor(contact.status)} rounded-l-xl`} />
+
+        {/* Indicador de carregamento */}
+        {isUpdating && (
+          <div className="absolute top-2 right-2 z-10">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          </div>
+        )}
 
         <div className="p-3 pl-4">
           {/* Header com nome e badge */}

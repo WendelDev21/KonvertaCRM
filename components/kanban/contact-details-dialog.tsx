@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,17 +28,22 @@ export function ContactDetailsDialog({ contact, open, onOpenChange, onContactUpd
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState<Partial<Contact>>({})
 
-  // Reset form when contact changes
-  if (contact && open && !isEditing && Object.keys(formData).length === 0) {
-    setFormData({
-      name: contact.name,
-      contact: contact.contact,
-      source: contact.source,
-      status: contact.status,
-      notes: contact.notes || "",
-      value: contact.value || 0,
-    })
-  }
+  // Reset form when contact changes or dialog opens/closes
+  useEffect(() => {
+    if (contact && open) {
+      setFormData({
+        name: contact.name,
+        contact: contact.contact,
+        source: contact.source,
+        status: contact.status,
+        notes: contact.notes || "",
+        value: contact.value || 0,
+      })
+    } else if (!open) {
+      setFormData({})
+      setIsEditing(false)
+    }
+  }, [contact, open])
 
   const handleEdit = () => {
     setIsEditing(true)
