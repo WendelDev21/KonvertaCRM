@@ -104,11 +104,19 @@ export function ContactCard({
         border border-border/50 bg-card backdrop-blur-sm rounded-xl
         hover:bg-card/90 hover:scale-[1.02] hover:border-border
         hover:shadow-md
+        active:scale-95
         ${isDragging ? "shadow-2xl scale-105 rotate-1 border-border" : ""}
         ${isUpdating ? "opacity-50" : ""}
         ${className}
       `}
       onClick={handleClick}
+      style={{
+        touchAction: "manipulation",
+        WebkitTapHighlightColor: "transparent",
+        WebkitTouchCallout: "none",
+        WebkitUserSelect: "none",
+        userSelect: "none",
+      }}
     >
       <CardContent className="p-0 relative overflow-hidden rounded-xl">
         {/* Barra vertical colorida */}

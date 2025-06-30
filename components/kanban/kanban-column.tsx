@@ -94,7 +94,7 @@ export function KanbanColumn({
     <div
       ref={setNodeRef}
       className={`
-        touch-none
+        touch-none select-none
         flex flex-col h-[calc(100vh-12rem)] min-h-[500px] rounded-lg border bg-card 
         transition-all duration-200 ${isColumnOver ? `${getColumnClass(status, true)} scale-[1.02]` : ""}
         snap-center
@@ -104,6 +104,7 @@ export function KanbanColumn({
         minWidth: "280px",
         width: "min(100vw - 2rem, 350px)",
         flexShrink: 0,
+        touchAction: "none",
       }}
     >
       <div className={`p-3 border-b rounded-t-lg ${getHeaderClass(status)}`}>
@@ -118,7 +119,10 @@ export function KanbanColumn({
         </div>
       </div>
 
-      <div className={`flex-1 p-2 overflow-y-auto ${isColumnOver ? "bg-muted/30" : ""}`}>
+      <div
+        className={`flex-1 p-2 overflow-y-auto ${isColumnOver ? "bg-muted/30" : ""}`}
+        style={{ touchAction: "pan-y" }}
+      >
         <SortableContext items={contacts.map((c) => c.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {contacts.map((contact) => (
@@ -139,6 +143,7 @@ export function KanbanColumn({
               flex items-center justify-center h-full min-h-[200px] text-sm text-muted-foreground
               ${isColumnOver ? "border-2 border-dashed border-primary/40 rounded-md bg-primary/5" : "border border-dashed border-muted-foreground/20 rounded-md"}
             `}
+            style={{ touchAction: "none" }}
           >
             {isColumnOver ? (
               <div className="p-8 w-full h-full flex items-center justify-center">

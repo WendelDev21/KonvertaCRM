@@ -315,8 +315,76 @@
 /* oculta completamente a scrollbar horizontal e vertical */
 .no-scrollbar {
   scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+/* Melhorias para dispositivos móveis - Kanban */
+.kanban-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevenir seleção de texto durante drag */
+.dragging * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Melhorar feedback visual em dispositivos touch */
+@media (hover: none) and (pointer: coarse) {
+  .touch-manipulation:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+
+  /* Aumentar área de toque para elementos pequenos */
+  .kanban-column button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Melhorar scroll em colunas */
+  .kanban-column > div:last-child {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Prevenir zoom em inputs em iOS */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Melhorar aparência do drag overlay em mobile */
+.dnd-drag-overlay {
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Indicadores visuais para áreas de drop */
+.drop-zone-active {
+  background: rgba(var(--primary), 0.05);
+  border: 2px dashed rgba(var(--primary), 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }

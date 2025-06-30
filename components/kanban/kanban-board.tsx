@@ -56,9 +56,9 @@ export function KanbanBoard() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 15,
-        delay: 200,
-        tolerance: 8,
+        distance: 8,
+        delay: 150,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -364,11 +364,11 @@ export function KanbanBoard() {
               : {
                   enabled: true,
                   threshold: {
-                    x: 0.1,
-                    y: 0.1,
+                    x: 0.15,
+                    y: 0.15,
                   },
-                  acceleration: 0.2,
-                  interval: 10,
+                  acceleration: 0.3,
+                  interval: 8,
                 }
           }
           collisionDetection={(args) => {
@@ -384,10 +384,10 @@ export function KanbanBoard() {
                     rect: container.rect
                       ? {
                           ...container.rect,
-                          width: container.rect.width + 40,
-                          height: container.rect.height + 40,
-                          left: container.rect.left - 20,
-                          top: container.rect.top - 20,
+                          width: container.rect.width + 60,
+                          height: container.rect.height + 60,
+                          left: container.rect.left - 30,
+                          top: container.rect.top - 30,
                         }
                       : undefined,
                   },
