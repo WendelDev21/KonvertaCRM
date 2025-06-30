@@ -16,7 +16,7 @@ import {
   type DragOverEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core"
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable"
 import { KanbanColumn } from "./kanban-column"
 import { ContactCard } from "./contact-card"
 import { ContactDetailsDialog } from "./contact-details-dialog"
@@ -51,6 +51,7 @@ export function KanbanBoard() {
   const [columnOver, setColumnOver] = useState<ContactStatus | null>(null)
   const [updatingContactId, setUpdatingContactId] = useState<string | null>(null)
   const [scrollLocked, setScrollLocked] = useState(false)
+  const [originalContacts, setOriginalContacts] = useState<Contact[]>([])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -88,6 +89,7 @@ export function KanbanBoard() {
       const data = await response.json()
       console.log("Contatos carregados:", data.length)
       setContacts(data)
+      setOriginalContacts(data) // Salvar estado original
     } catch (error) {
       console.error("Erro ao buscar contatos:", error)
       toast({
@@ -112,11 +114,13 @@ export function KanbanBoard() {
     const draggedContact = contacts.find((contact) => contact.id === active.id)
     if (draggedContact) {
       setActiveContact(draggedContact)
+      // Salvar o estado original antes de começar o drag
+      setOriginalContacts([...contacts])
     }
   }
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { over, activatorEvent } = event
+    const { active, over, activatorEvent } = event
 
     // Detectar se está próximo às bordas para travar o scroll
     if (activatorEvent && "clientX" in activatorEvent) {
@@ -143,19 +147,53 @@ export function KanbanBoard() {
       return
     }
 
+    const activeId = String(active.id)
     const overId = String(over.id)
+
+    // Encontrar o contato ativo
+    const activeContact = contacts.find((c) => c.id === activeId)
+    if (!activeContact) return
 
     // Verificar se está sobre uma coluna
     if (["Novo", "Conversando", "Interessado", "Fechado", "Perdido"].includes(overId)) {
-      setColumnOver(overId as ContactStatus)
-    } else {
-      // Se estiver sobre um card, identificar a coluna do card
-      const overContact = contacts.find((c) => c.id === overId)
-      if (overContact) {
-        setColumnOver(overContact.status)
-      } else {
-        setColumnOver(null)
+      const newStatus = overId as ContactStatus
+      setColumnOver(newStatus)
+
+      // Se mudou de coluna, atualizar imediatamente
+      if (activeContact.status !== newStatus) {
+        setContacts((prevContacts) =>
+          prevContacts.map((contact) => (contact.id === activeId ? { ...contact, status: newStatus } : contact)),
+        )
       }
+      return
+    }
+
+    // Se estiver sobre outro contato
+    const overContact = contacts.find((c) => c.id === overId)
+    if (overContact) {
+      setColumnOver(overContact.status)
+
+      // Reordenar contatos
+      setContacts((prevContacts) => {
+        const activeIndex = prevContacts.findIndex((c) => c.id === activeId)
+        const overIndex = prevContacts.findIndex((c) => c.id === overId)
+
+        if (activeIndex === -1 || overIndex === -1) return prevContacts
+
+        // Se estão na mesma coluna, apenas reordenar
+        if (activeContact.status === overContact.status) {
+          return arrayMove(prevContacts, activeIndex, overIndex)
+        }
+
+        // Se estão em colunas diferentes, mover para a nova coluna
+        const updatedContacts = [...prevContacts]
+        updatedContacts[activeIndex] = { ...activeContact, status: overContact.status }
+
+        // Reordenar na nova posição
+        return arrayMove(updatedContacts, activeIndex, overIndex)
+      })
+    } else {
+      setColumnOver(null)
     }
   }
 
@@ -166,91 +204,56 @@ export function KanbanBoard() {
     setActiveId(null)
     setActiveContact(null)
     setColumnOver(null)
-    setScrollLocked(false) // Adicionar esta linha
+    setScrollLocked(false)
 
-    // Se não houver destino, não fazer nada
+    // Se não houver destino, reverter para o estado original
     if (!over) {
+      setContacts(originalContacts)
       return
     }
 
     const activeId = String(active.id)
     const overId = String(over.id)
 
-    // Encontrar o contato que está sendo arrastado
-    const draggedContact = contacts.find((c) => c.id === activeId)
-    if (!draggedContact) return
+    // Encontrar o contato que está sendo arrastado no estado original
+    const originalContact = originalContacts.find((c) => c.id === activeId)
+    const currentContact = contacts.find((c) => c.id === activeId)
+
+    if (!originalContact || !currentContact) {
+      setContacts(originalContacts)
+      return
+    }
+
+    let targetStatus: ContactStatus = currentContact.status
+    let statusChanged = false
 
     // Verificar se o destino é uma coluna (status)
-    const isColumnDrop = ["Novo", "Conversando", "Interessado", "Fechado", "Perdido"].includes(overId)
-
-    let targetStatus: ContactStatus
-    let targetPosition: number | null = null
-
-    if (isColumnDrop) {
-      // Se soltar diretamente na coluna
+    if (["Novo", "Conversando", "Interessado", "Fechado", "Perdido"].includes(overId)) {
       targetStatus = overId as ContactStatus
+      statusChanged = originalContact.status !== targetStatus
     } else {
       // Se soltar em outro card
       const overContact = contacts.find((c) => c.id === overId)
-      if (!overContact) return
-
-      targetStatus = overContact.status
-
-      // Determinar se deve inserir antes ou depois do card alvo
-      // Usando a posição do cursor em relação ao centro do elemento
-      const { over: overData } = event
-      if (overData && overData.rect) {
-        const overRect = overData.rect
-        const overCenterY = overRect.top + overRect.height / 2
-
-        // Se o cursor estiver acima do centro do card, inserir antes
-        // Se estiver abaixo, inserir depois
-        const isBefore = event.activatorEvent instanceof PointerEvent && event.activatorEvent.clientY < overCenterY
-
-        // Encontrar a posição do card alvo na lista de sua coluna
-        const contactsInColumn = contacts.filter((c) => c.status === targetStatus)
-        const overIndex = contactsInColumn.findIndex((c) => c.id === overId)
-
-        // Calcular a posição de inserção
-        targetPosition = isBefore ? overIndex : overIndex + 1
+      if (overContact) {
+        targetStatus = overContact.status
+        statusChanged = originalContact.status !== targetStatus
       }
     }
 
     // Se o status mudou, atualizar no servidor
-    if (draggedContact.status !== targetStatus) {
+    if (statusChanged) {
+      console.log(`Status changed from ${originalContact.status} to ${targetStatus}`)
       await updateContactStatus(activeId, targetStatus)
-    }
-
-    // Reordenar localmente os contatos na coluna de destino
-    if (targetPosition !== null) {
-      setContacts((prevContacts) => {
-        // Remover o contato arrastado da lista
-        const withoutDragged = prevContacts.filter((c) => c.id !== activeId)
-
-        // Encontrar todos os contatos na coluna de destino
-        const contactsInTargetColumn = withoutDragged.filter((c) => c.status === targetStatus)
-
-        // Inserir o contato arrastado na posição correta
-        contactsInTargetColumn.splice(targetPosition, 0, {
-          ...draggedContact,
-          status: targetStatus,
-        })
-
-        // Combinar com os contatos de outras colunas
-        const contactsInOtherColumns = withoutDragged.filter((c) => c.status !== targetStatus)
-        return [...contactsInOtherColumns, ...contactsInTargetColumn]
-      })
+    } else {
+      // Se não mudou o status, mas pode ter mudado a posição, ainda assim confirmar no servidor
+      // Para simplificar, vamos apenas manter a mudança local se não houve mudança de status
+      console.log("No status change detected, keeping local changes")
     }
   }
 
   const updateContactStatus = async (contactId: string, newStatus: ContactStatus) => {
     // Marcar o contato como sendo atualizado
     setUpdatingContactId(contactId)
-
-    // Atualizar o estado local primeiro para feedback imediato
-    setContacts((prevContacts) =>
-      prevContacts.map((contact) => (contact.id === contactId ? { ...contact, status: newStatus } : contact)),
-    )
 
     try {
       console.log(`Enviando atualização para contato ${contactId}: status=${newStatus}`)
@@ -276,8 +279,15 @@ export function KanbanBoard() {
         description: `Contato movido para ${newStatus}`,
       })
 
-      // Recarregar os contatos para garantir sincronização
-      await fetchContacts(true)
+      // Atualizar o estado local com a resposta do servidor
+      setContacts((prevContacts) =>
+        prevContacts.map((contact) => (contact.id === contactId ? { ...contact, status: newStatus } : contact)),
+      )
+
+      // Atualizar também o estado original para futuras comparações
+      setOriginalContacts((prevContacts) =>
+        prevContacts.map((contact) => (contact.id === contactId ? { ...contact, status: newStatus } : contact)),
+      )
     } catch (error) {
       console.error("Erro ao atualizar status do contato:", error)
       toast({
@@ -286,8 +296,8 @@ export function KanbanBoard() {
         variant: "destructive",
       })
 
-      // Reverter a mudança no estado local em caso de erro e recarregar os dados
-      await fetchContacts()
+      // Reverter para o estado original em caso de erro
+      setContacts(originalContacts)
     } finally {
       setUpdatingContactId(null)
     }
@@ -416,7 +426,7 @@ export function KanbanBoard() {
                 onAddContact={handleAddContact}
                 isOver={columnOver === status}
                 updatingContactId={updatingContactId}
-                activeId={activeId ? String(activeId) : null} // Passar o activeId para a coluna
+                activeId={activeId ? String(activeId) : null}
               />
             ))}
           </div>

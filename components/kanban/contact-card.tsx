@@ -83,7 +83,7 @@ export function ContactCard({ contact, onClick, className = "", isDragging = fal
   return (
     <Card
       className={`
-        cursor-pointer hover:shadow-lg transition-all duration-200 
+        cursor-pointer transition-all duration-200 
         border border-border/50 bg-card backdrop-blur-sm rounded-xl
         hover:bg-card/90 hover:scale-[1.02] hover:border-border
         hover:shadow-md

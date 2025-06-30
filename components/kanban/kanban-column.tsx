@@ -15,7 +15,7 @@ interface KanbanColumnProps {
   onAddContact: (status: ContactStatus) => void
   isOver?: boolean
   updatingContactId?: string | null
-  activeId?: string | null // Novo: ID do contato sendo arrastado
+  activeId?: string | null
 }
 
 export function KanbanColumn({
@@ -25,7 +25,7 @@ export function KanbanColumn({
   onAddContact,
   isOver,
   updatingContactId,
-  activeId, // Novo: receber o activeId
+  activeId,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver: isOverDroppable } = useDroppable({
     id: status,
@@ -106,7 +106,6 @@ export function KanbanColumn({
         flexShrink: 0,
       }}
     >
-
       <div className={`p-3 border-b rounded-t-lg ${getHeaderClass(status)}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -121,23 +120,25 @@ export function KanbanColumn({
 
       <div className={`flex-1 p-2 overflow-y-auto ${isColumnOver ? "bg-muted/30" : ""}`}>
         <SortableContext items={contacts.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          {contacts.map((contact) => (
-            <SortableContactCard
-              key={contact.id}
-              contact={contact}
-              onCardClick={onCardClick}
-              isUpdating={updatingContactId === contact.id}
-              isDragging={activeId === contact.id} // Passar se este card está sendo arrastado
-            />
-          ))}
+          <div className="space-y-2">
+            {contacts.map((contact) => (
+              <SortableContactCard
+                key={contact.id}
+                contact={contact}
+                onCardClick={onCardClick}
+                isUpdating={updatingContactId === contact.id}
+                isDragging={activeId === contact.id}
+              />
+            ))}
+          </div>
         </SortableContext>
 
         {contacts.length === 0 && (
           <div
             className={`
-    flex items-center justify-center h-full min-h-[200px] text-sm text-muted-foreground
-    ${isColumnOver ? "border-2 border-dashed border-primary/40 rounded-md bg-primary/5" : "border border-dashed border-muted-foreground/20 rounded-md"}
-  `}
+              flex items-center justify-center h-full min-h-[200px] text-sm text-muted-foreground
+              ${isColumnOver ? "border-2 border-dashed border-primary/40 rounded-md bg-primary/5" : "border border-dashed border-muted-foreground/20 rounded-md"}
+            `}
           >
             {isColumnOver ? (
               <div className="p-8 w-full h-full flex items-center justify-center">

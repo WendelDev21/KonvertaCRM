@@ -4,18 +4,17 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { ContactCard } from "./contact-card"
 import type { Contact } from "./kanban-board"
-import { Loader2 } from "lucide-react"
 
 interface SortableContactCardProps {
   contact: Contact
-  onCardClick: (contact: Contact) => void
+  onClick: () => void
   isUpdating?: boolean
-  isDragging?: boolean // Nova prop
+  isDragging?: boolean
 }
 
 export function SortableContactCard({
   contact,
-  onCardClick,
+  onClick,
   isUpdating = false,
   isDragging = false,
 }: SortableContactCardProps) {
@@ -28,20 +27,13 @@ export function SortableContactCard({
     isDragging: isSortableDragging,
   } = useSortable({
     id: contact.id,
-    data: {
-      type: "contact",
-      contact,
-    },
   })
-
-  // Usar isDragging da prop ou do useSortable
-  const isBeingDragged = isDragging || isSortableDragging
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isBeingDragged ? 0.4 : 1,
-    cursor: isBeingDragged ? "grabbing" : "grab",
+    opacity: isDragging || isSortableDragging ? 0.5 : 1,
+    scale: isDragging || isSortableDragging ? 1.05 : 1,
   }
 
   return (
@@ -50,26 +42,16 @@ export function SortableContactCard({
       style={style}
       {...attributes}
       {...listeners}
-      className={`touch-manipulation ${isBeingDragged ? "z-10" : ""} relative hover:z-10 mb-2`}
-      onClick={(e) => {
-        // Evitar que o clique no card inicie um drag
-        if (onCardClick && !isBeingDragged) {
-          e.preventDefault()
-          onCardClick(contact)
-        }
-      }}
+      className={`touch-none ${isUpdating ? "animate-pulse" : ""}`}
     >
       <ContactCard
         contact={contact}
-        className={`${
-          isBeingDragged ? "shadow-lg" : "shadow-lg hover:shadow-md"
-        } transition-all duration-200 transform ${isBeingDragged ? "" : "hover:-translate-y-0.5"}`}
+        onClick={onClick}
+        isDragging={isDragging || isSortableDragging}
+        className={`cursor-grab active:cursor-grabbing ${
+          isDragging || isSortableDragging ? "shadow-lg ring-2 ring-primary/50" : ""
+        }`}
       />
-      {isUpdating && (
-        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center rounded-md">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-        </div>
-      )}
     </div>
   )
 }
