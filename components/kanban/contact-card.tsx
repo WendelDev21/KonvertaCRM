@@ -10,9 +10,11 @@ import type { Contact } from "./kanban-board"
 interface ContactCardProps {
   contact: Contact
   onClick?: () => void
+  className?: string
+  isDragging?: boolean
 }
 
-export function ContactCard({ contact, onClick }: ContactCardProps) {
+export function ContactCard({ contact, onClick, className = "", isDragging = false }: ContactCardProps) {
   const formattedDate = formatDistanceToNow(new Date(contact.createdAt), {
     addSuffix: true,
     locale: ptBR,
@@ -36,8 +38,29 @@ export function ContactCard({ contact, onClick }: ContactCardProps) {
     }
   }
 
+  // Determinar a cor da linha vertical com base no status
+  const getStatusLineColor = (status: string) => {
+    switch (status) {
+      case "Novo":
+        return "border-l-sky-500"
+      case "Conversando":
+        return "border-l-amber-500"
+      case "Interessado":
+        return "border-l-violet-500"
+      case "Fechado":
+        return "border-l-emerald-500"
+      case "Perdido":
+        return "border-l-rose-500"
+      default:
+        return "border-l-slate-500"
+    }
+  }
+
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
+    <Card
+      className={`cursor-pointer hover:shadow-md transition-shadow border-l-4 ${getStatusLineColor(contact.status)} ${className}`}
+      onClick={onClick}
+    >
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-medium text-sm truncate flex-1">{contact.name}</h3>
