@@ -20,7 +20,7 @@ export default async function SuportPage() {
                         <div>
                             <h2 className="text-xl font-bold">Formas de contato</h2>
                             <ul className="list-disc pl-5 text-muted-foreground">
-                                <li>Email: <a href="mailto:konvertacrm@gmail.com" className="text-blue-600 hover:underline">konvertacrm@gmail.com</a></li>
+                                <li>Email: <a href="mailto:konvertacrm@gmail.com" target="_blank" className="text-blue-600 hover:underline">konvertacrm@gmail.com</a></li>
                                 <li>WhatsApp: <a href="https://wa.me/5579991190534" target="_blank" className="text-blue-600 hover:underline">+55 (79) 9 9119-0534</a></li>
                                 <li>Horário de atendimento: Segunda à sexta, das 9h às 18h</li>
                             </ul>
