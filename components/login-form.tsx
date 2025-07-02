@@ -3,157 +3,130 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "@/hooks/use-toast"
-import { Loader2, Mail, Lock } from "lucide-react"
-import { signIn } from "next-auth/react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react"
 
 export function LoginForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
+  const router = useRouter()
 
-  // Add this near the top of your component where you handle errors
-  const error = searchParams?.get("error")
-
-  // Login form state
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: "",
-    remember: false,
-  })
-
-  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setLoginData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleRememberChange = (checked: boolean) => {
-    setLoginData((prev) => ({ ...prev, remember: checked }))
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setFormError(null) // Clear previous errors
+    setError("")
 
     try {
       const result = await signIn("credentials", {
-        email: loginData.email,
-        password: loginData.password,
+        email,
+        password,
         redirect: false,
       })
 
       if (result?.error) {
-        // Set a more user-friendly error message
-        setFormError("Email ou senha incorretos. Verifique suas credenciais ou registre-se para criar uma conta.")
-        toast({
-          title: "Falha no login",
-          description: "Email ou senha incorretos. Verifique suas credenciais.",
-          variant: "destructive",
-        })
-        setIsLoading(false)
-        return
+        setError("Credenciais inválidas. Verifique seu email e senha.")
+      } else {
+        // Successful login
+        router.push("/dashboard")
       }
-
-      // Show success toast but don't wait for it
-      toast({
-        title: "Login realizado com sucesso",
-        description: "Redirecionando para o dashboard...",
-        variant: "success",
-      })
-
-      // Use replace instead of push for cleaner navigation history
-      // and don't call router.refresh() which might be causing the delay
-      window.location.href = callbackUrl
     } catch (error) {
-      console.error("Erro ao fazer login:", error)
-      setFormError("Ocorreu um erro ao tentar fazer login. Tente novamente.")
-      toast({
-        title: "Erro no sistema",
-        description: "Ocorreu um erro ao tentar fazer login. Tente novamente.",
-        variant: "destructive",
-      })
-      setIsLoading(false)
+      setError("Erro interno do servidor. Tente novamente.")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleLogin} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={loginData.email}
-              onChange={handleLoginChange}
-              className="pl-10"
-              required
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Senha</Label>
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="sua-senha"
-              value={loginData.password}
-              onChange={handleLoginChange}
-              className="pl-10"
-              required
-            />
-          </div>
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        <div className="flex items-center space-x-2">
-          <Checkbox id="remember" checked={loginData.remember} onCheckedChange={handleRememberChange} />
-          <label
-            htmlFor="remember"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Email
+        </Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="pl-10 h-11 bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
+            disabled={isLoading}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Senha
+        </Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="sua-senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="pl-10 pr-10 h-11 bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
+            disabled={isLoading}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            disabled={isLoading}
           >
-            Lembrar de mim
-          </label>
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
+      </div>
 
-        {error === "AccountDisabled" && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-            <p className="font-bold">Conta desativada</p>
-            <p>Sua conta foi desativada. Entre em contato com o administrador do sistema.</p>
-          </div>
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="remember"
+          checked={rememberMe}
+          onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+          disabled={isLoading}
+          className="border-slate-300 dark:border-slate-600"
+        />
+        <Label htmlFor="remember" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+          Lembrar de mim
+        </Label>
+      </div>
+
+      <Button
+        type="submit"
+        className="w-full h-11 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Entrando...
+          </>
+        ) : (
+          "Entrar"
         )}
-
-        {formError && <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">{formError}</div>}
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Entrando...
-            </>
-          ) : (
-            "Entrar"
-          )}
-        </Button>
-      </form>
-    </div>
+      </Button>
+    </form>
   )
 }
