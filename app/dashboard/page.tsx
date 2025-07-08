@@ -329,17 +329,14 @@ export default function DashboardPage() {
           ) : dashboardData ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="dashboard-card">
-                  <CardContent className="pt-6">
-                    <SimpleStatusChart data={dashboardData.statusCounts} refreshKey={refreshTrigger} />
-                  </CardContent>
-                </Card>
-
-                <Card className="dashboard-card">
-                  <CardContent className="pt-6">
-                    <SimpleSourceChart data={dashboardData.sourceCounts} refreshKey={refreshTrigger} />
-                  </CardContent>
-                </Card>
+                
+                <CardContent className="pt-6">
+                  <SimpleStatusChart data={dashboardData.statusCounts} refreshKey={refreshTrigger} />
+                </CardContent>
+          
+                <CardContent className="pt-6">
+                  <SimpleSourceChart data={dashboardData.sourceCounts} refreshKey={refreshTrigger} />
+                </CardContent>
               </div>
 
               <ActivityTimelineChart

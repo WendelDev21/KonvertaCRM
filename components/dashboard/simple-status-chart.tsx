@@ -6,7 +6,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ChartDetailModal } from "@/components/dashboard/chart-detail-modal"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, Users, BarChart3 } from "lucide-react"
+import { TrendingUp, Users, BarChart3, TrendingDown } from "lucide-react"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface SimpleStatusChartProps {
   data: Record<string, number>
@@ -16,6 +17,7 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
   const [isDataModalOpen, setIsDataModalOpen] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
   const [selectedData, setSelectedData] = useState<{ name: string; value: number } | null>(null)
+  const [viewType, setViewType] = useState<"bar" | "funnel">("bar")
 
   // Formatar dados para o gráfico
   const chartData = Object.entries(data || {}).map(([status, count]) => ({
@@ -102,7 +104,7 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
   if (chartData.length === 0) {
     return (
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10 px-3 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-muted">
               <BarChart3 className="h-5 w-5 text-muted-foreground" />
@@ -110,7 +112,7 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
             <CardTitle className="text-lg font-semibold">Distribuição por Status</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="h-[300px] sm:h-[400px] flex items-center justify-center">
+        <CardContent className="h-[300px] sm:h-[400px] flex items-center justify-center px-3 sm:px-6">
           <div className="text-center space-y-3">
             <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto">
               <Users className="h-8 w-8 text-muted-foreground" />
@@ -126,65 +128,153 @@ export function SimpleStatusChart({ data }: SimpleStatusChartProps) {
   return (
     <>
       <Card className="border-0 shadow-lg bg-gradient-to-br from-background to-muted/20 overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <BarChart3 className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-4 bg-gradient-to-r from-background to-muted/10 px-3 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
+            <div className="flex items-start sm:items-center gap-3 w-full sm:w-auto">
+              <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-base sm:text-lg font-semibold">Distribuição por Status</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Total de {total} contatos distribuídos</p>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-base sm:text-lg font-semibold">Distribuição por Status</CardTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Total de {total} contatos distribuídos</p>
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end ml-0 sm:ml-3">
+              <Badge
+                variant="secondary"
+                className="bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm flex-shrink-0"
+              >
+                <TrendingUp className="h-3 w-3 mr-1" />
+                {chartData.length} status
+              </Badge>
+              <Tabs defaultValue="bar" value={viewType} onValueChange={(v) => setViewType(v as any)}>
+                <TabsList className="h-8 sm:h-9 bg-muted/50">
+                  <TabsTrigger value="bar" className="h-6 sm:h-7 w-7 sm:w-8 p-0">
+                    <BarChart3 className="h-4 w-4" />
+                  </TabsTrigger>
+                  <TabsTrigger value="funnel" className="h-6 sm:h-7 w-7 sm:w-8 p-0">
+                    <TrendingDown className="h-4 w-4" />
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            {chartData.length} status
-          </Badge>
-        </div>
-        <CardContent className="h-[300px] sm:h-[400px] pt-4">
+        </CardHeader>
+        <CardContent className="h-[300px] sm:h-[400px] pt-4 px-2 sm:px-6">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-              onClick={(data) => data && handleBarClick(data.activePayload?.[0]?.payload)}
-            >
-              <defs>
-                {Object.entries(statusColors).map(([status, colors]) => (
-                  <linearGradient key={status} id={`gradient-${status}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={colors.primary} stopOpacity={0.9} />
-                    <stop offset="100%" stopColor={colors.primary} stopOpacity={0.6} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} horizontal={true} opacity={0.1} stroke="#94a3b8" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 8, fill: "#64748b" }} dy={5} />
-              <YAxis
-                tickCount={tickCount}
-                domain={[0, maxValue]}
-                allowDecimals={false}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 10, fill: "#64748b" }}
-                dx={-5}
-              />
-              <Tooltip content={customTooltip} />
-              <Bar
-                dataKey="value"
-                radius={[4, 4, 0, 0]}
-                cursor="pointer"
-                className="transition-all duration-200 hover:opacity-80"
+            {viewType === "bar" ? (
+              <BarChart
+                data={chartData}
+                margin={{ top: 10, right: 5, left: 0, bottom: 10 }}
+                onClick={(data) => data && handleBarClick(data.activePayload?.[0]?.payload)}
               >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={`url(#gradient-${entry.name})`}
-                    stroke={entry.name === selectedStatus ? statusColors[entry.name]?.primary : "transparent"}
-                    strokeWidth={entry.name === selectedStatus ? 3 : 0}
-                    className="transition-all duration-200 hover:brightness-110"
-                  />
-                ))}
-              </Bar>
-            </BarChart>
+                <defs>
+                  {Object.entries(statusColors).map(([status, colors]) => (
+                    <linearGradient key={status} id={`gradient-${status}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={colors.primary} stopOpacity={0.9} />
+                      <stop offset="100%" stopColor={colors.primary} stopOpacity={0.6} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  horizontal={true}
+                  opacity={0.1}
+                  stroke="#94a3b8"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 9, fill: "#64748b" }}
+                  dy={5}
+                />
+                <YAxis
+                  tickCount={tickCount}
+                  domain={[0, maxValue]}
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: "#64748b" }}
+                  dx={-5}
+                  width={25}
+                />
+                <Tooltip content={customTooltip} />
+                <Bar
+                  dataKey="value"
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  className="transition-all duration-200 hover:opacity-80"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={`url(#gradient-${entry.name})`}
+                      stroke={entry.name === selectedStatus ? statusColors[entry.name]?.primary : "transparent"}
+                      strokeWidth={entry.name === selectedStatus ? 3 : 0}
+                      className="transition-all duration-200 hover:brightness-110"
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            ) : (
+              <div className="w-full h-full flex flex-col justify-center items-center p-2 sm:p-4">
+                {/* Funil customizado */}
+                <div className="w-full max-w-md space-y-2">
+                  {/* Ordenar dados para o funil: Novo -> Conversando -> Interessado -> Fechado -> Perdido */}
+                  {["Novo", "Conversando", "Interessado", "Fechado", "Perdido"]
+                    .map((status) => chartData.find((item) => item.name === status))
+                    .filter(Boolean)
+                    .map((item, index, array) => {
+                      const maxWidth = Math.max(...array.map((i) => i!.value))
+                      const widthPercentage = (item!.value / maxWidth) * 100
+                      const percentage = ((item!.value / total) * 100).toFixed(1)
+
+                      return (
+                        <div
+                          key={item!.name}
+                          className="flex flex-col items-center cursor-pointer transition-all duration-200 hover:scale-105"
+                          onClick={() => handleBarClick(item)}
+                        >
+                          <div className="w-full flex justify-center mb-1">
+                            <div
+                              className="h-12 rounded-lg shadow-lg flex items-center justify-center text-white font-bold text-sm transition-all duration-300 hover:brightness-110"
+                              style={{
+                                width: `${Math.max(widthPercentage, 20)}%`,
+                                background: statusColors[item!.name]?.gradient || "#8884d8",
+                                minWidth: "120px",
+                              }}
+                            >
+                              <span className="text-center px-2">
+                                {item!.name}: {item!.value}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">{percentage}% do total</div>
+                        </div>
+                      )
+                    })}
+                </div>
+
+                {/* Setas conectoras */}
+                <style jsx>{`
+                  .funnel-item:not(:last-child)::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -8px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 0;
+                    height: 0;
+                    border-left: 6px solid transparent;
+                    border-right: 6px solid transparent;
+                    border-top: 8px solid #94a3b8;
+                    opacity: 0.5;
+                  }
+                `}</style>
+              </div>
+            )}
           </ResponsiveContainer>
         </CardContent>
       </Card>
