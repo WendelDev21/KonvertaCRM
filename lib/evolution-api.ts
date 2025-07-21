@@ -100,6 +100,30 @@ export async function deleteEvolutionInstance(instanceName: string) {
   }
 }
 
+// Logout from WhatsApp instance
+export async function logoutEvolutionInstance(instanceName: string) {
+  console.log(`[Evolution API] Logging out instance: ${instanceName}`)
+
+  try {
+    const response = await fetch(`${EVOLUTION_API_URL}/instance/logout/${instanceName}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(`Evolution API error: ${errorData.message || response.statusText}`)
+    }
+
+    const data = await response.json()
+    console.log(`[Evolution API] Logout response:`, data)
+    return data
+  } catch (error) {
+    console.error("[Evolution API] Error logging out instance:", error)
+    throw error
+  }
+}
+
 // Get instance status
 export async function getEvolutionInstanceStatus(instanceName: string) {
   console.log(`[Evolution API] Getting status for instance: ${instanceName}`)

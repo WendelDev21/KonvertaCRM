@@ -15,7 +15,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Wifi, WifiOff, QrCode, Trash2, RefreshCw, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react"
+import {
+  Wifi,
+  WifiOff,
+  QrCode,
+  Trash2,
+  RefreshCw,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Loader2,
+  LogOut,
+} from "lucide-react"
 import { toast } from "sonner"
 
 interface WhatsAppInstance {
@@ -36,6 +47,7 @@ interface WhatsAppInstanceCardProps {
 export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDeleted }: WhatsAppInstanceCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -105,6 +117,34 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar instância")
     } finally {
       setIsRefreshing(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      console.log(`[Instance Card] Logging out instance: ${instance.instanceName}`)
+
+      const response = await fetch(`/api/whatsapp/instances/${instance.instanceName}/logout`, {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("[Instance Card] Logout error response:", errorData)
+        throw new Error(errorData.error || "Erro ao desconectar instância")
+      }
+
+      const data = await response.json()
+      console.log("[Instance Card] Logout success response:", data)
+
+      toast.success(`Instância "${instance.instanceName}" desconectada com sucesso!`)
+      onInstanceUpdated()
+    } catch (error) {
+      console.error("Error logging out instance:", error)
+      toast.error(error instanceof Error ? error.message : "Erro ao desconectar instância")
+    } finally {
+      setIsLoggingOut(false)
     }
   }
 
@@ -235,6 +275,19 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
             {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Atualizar Status
           </Button>
+
+          {instance.status === "CONNECTED" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="bg-transparent border-orange-300 text-orange-600 hover:bg-orange-50"
+            >
+              {isLoggingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
+              Desconectar
+            </Button>
+          )}
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
