@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Kanban, Menu, Phone, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle, DollarSign, FileText } from "lucide-react"
+import { LayoutDashboard, Kanban, Menu, Phone, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle, DollarSign, FileText, MessageCircle } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserAvatar } from "@/components/user-avatar"
@@ -55,9 +55,9 @@ export function DashboardHeader() {
       icon: DollarSign,
     },
     {
-      name: "Integrações",
-      path: "/integrations",
-      icon: Puzzle,
+      name: "Chats",
+      path: "/whatsapp",
+      icon: MessageCircle,
     },
   ]
 
@@ -76,6 +76,11 @@ export function DashboardHeader() {
       name: "Configurações",
       path: "/settings",
       icon: Settings,
+    },
+    {
+      name: "Integrações",
+      path: "/integrations",
+      icon: Puzzle,
     },
     {
       name: "Upgrades",

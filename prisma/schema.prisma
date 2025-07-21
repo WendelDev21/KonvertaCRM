@@ -23,6 +23,7 @@ model User {
   isActive             Boolean   @default(true)
   theme                String?   @default("light")
   notificationSettings String?   @default("{}")
+  whatsappInstances    WhatsAppInstance[]
 
   accounts      Account[]
   sessions      Session[]
@@ -123,3 +124,32 @@ model Report {
   createdAt       DateTime @default(now())
 }
 
+model WhatsAppInstance {
+  id           String   @id @default(cuid())
+  instanceName String   @unique
+  status       String   @default("DISCONNECTED") // ex: CONNECTED, DISCONNECTED, QR_UPDATED, CREATED
+  qrCode       String?  // QR code base64 opcional
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  messages     WhatsAppMessage[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([instanceName, userId]) // Ensure unique instance name per user
+}
+
+model WhatsAppMessage {
+  id            String   @id @default(cuid())
+  instanceId    String
+  instance      WhatsAppInstance @relation(fields: [instanceId], references: [id])
+
+  fromMe        Boolean
+  remoteJid     String
+  messageId     String @unique
+  messageType   String
+  messageText   String?
+  rawPayload    Json
+
+  createdAt     DateTime @default(now())
+}

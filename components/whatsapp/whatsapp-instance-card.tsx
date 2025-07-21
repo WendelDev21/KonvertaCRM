@@ -1,0 +1,268 @@
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Wifi, WifiOff, QrCode, Trash2, RefreshCw, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+
+interface WhatsAppInstance {
+  id: string
+  instanceName: string
+  status: string
+  qrCode: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+interface WhatsAppInstanceCardProps {
+  instance: WhatsAppInstance
+  onInstanceUpdated: () => void
+  onInstanceDeleted: () => void
+}
+
+export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDeleted }: WhatsAppInstanceCardProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case "CONNECTED":
+        return {
+          label: "Conectado",
+          icon: <CheckCircle className="h-4 w-4" />,
+          color: "bg-green-500 text-white",
+          variant: "default" as const,
+        }
+      case "CONNECTING":
+        return {
+          label: "Conectando",
+          icon: <Loader2 className="h-4 w-4 animate-spin" />,
+          color: "bg-yellow-500 text-white",
+          variant: "secondary" as const,
+        }
+      case "QR_UPDATED":
+        return {
+          label: "QR Code Disponível",
+          icon: <QrCode className="h-4 w-4" />,
+          color: "bg-blue-500 text-white",
+          variant: "secondary" as const,
+        }
+      case "DISCONNECTED":
+        return {
+          label: "Desconectado",
+          icon: <WifiOff className="h-4 w-4" />,
+          color: "bg-red-500 text-white",
+          variant: "destructive" as const,
+        }
+      case "CREATED":
+        return {
+          label: "Criado",
+          icon: <Clock className="h-4 w-4" />,
+          color: "bg-gray-500 text-white",
+          variant: "outline" as const,
+        }
+      default:
+        return {
+          label: "Desconhecido",
+          icon: <AlertCircle className="h-4 w-4" />,
+          color: "bg-gray-500 text-white",
+          variant: "outline" as const,
+        }
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      console.log(`[Instance Card] Refreshing instance: ${instance.instanceName}`)
+      const response = await fetch(`/api/whatsapp/instances/${instance.instanceName}`)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Erro ao atualizar instância")
+      }
+
+      const data = await response.json()
+      console.log(`[Instance Card] Refresh response:`, data)
+
+      toast.success("Status atualizado com sucesso!")
+      onInstanceUpdated()
+    } catch (error) {
+      console.error("Error refreshing instance:", error)
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar instância")
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      console.log(`[Instance Card] Deleting instance: ${instance.instanceName}`)
+
+      const response = await fetch(
+        `/api/whatsapp/instances?instanceName=${encodeURIComponent(instance.instanceName)}`,
+        {
+          method: "DELETE",
+        },
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("[Instance Card] Delete error response:", errorData)
+        throw new Error(errorData.error || "Erro ao deletar instância")
+      }
+
+      const data = await response.json()
+      console.log("[Instance Card] Delete success response:", data)
+
+      toast.success(`Instância "${instance.instanceName}" deletada com sucesso!`)
+      onInstanceDeleted()
+    } catch (error) {
+      console.error("Error deleting instance:", error)
+      toast.error(error instanceof Error ? error.message : "Erro ao deletar instância")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const statusInfo = getStatusInfo(instance.status)
+
+  return (
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg font-semibold">{instance.instanceName}</CardTitle>
+        <div className="flex items-center gap-2">
+          <Badge className={statusInfo.color}>
+            {statusInfo.icon}
+            <span className="ml-1">{statusInfo.label}</span>
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* QR Code Display */}
+        {instance.qrCode && instance.status !== "CONNECTED" && (
+          <div className="flex flex-col items-center space-y-2">
+            <p className="text-sm text-muted-foreground text-center font-medium">
+              Escaneie o QR Code com seu WhatsApp para conectar:
+            </p>
+            <div className="bg-white p-4 rounded-lg border-2 border-dashed border-blue-300">
+              <img
+                src={`data:image/png;base64,${instance.qrCode}`}
+                alt="QR Code para conectar WhatsApp"
+                className="w-48 h-48 object-contain"
+                onError={(e) => {
+                  console.error("Error loading QR code image")
+                  e.currentTarget.style.display = "none"
+                }}
+                onLoad={() => {
+                  console.log("QR code image loaded successfully")
+                }}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground text-center space-y-1">
+              <p className="font-medium">Como conectar:</p>
+              <p>1. Abra o WhatsApp no seu celular</p>
+              <p>2. Vá em Menu (⋮) → Dispositivos conectados</p>
+              <p>3. Toque em "Conectar um dispositivo"</p>
+              <p>4. Escaneie este código QR</p>
+            </div>
+          </div>
+        )}
+
+        {/* Connected Status */}
+        {instance.status === "CONNECTED" && (
+          <div className="flex flex-col items-center space-y-2 p-6 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex items-center gap-2 text-green-700">
+              <div className="relative">
+                <Wifi className="h-8 w-8" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-3 h-3 text-white" />
+                </div>
+              </div>
+              <span className="font-semibold text-lg">WhatsApp Conectado!</span>
+            </div>
+            <p className="text-sm text-green-600 text-center">
+              Sua instância está online e pronta para enviar e receber mensagens.
+            </p>
+            <div className="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+              Status: Online
+            </div>
+          </div>
+        )}
+
+        {/* No QR Code Available */}
+        {!instance.qrCode && instance.status !== "CONNECTED" && (
+          <div className="flex flex-col items-center space-y-2 p-6 text-muted-foreground">
+            <QrCode className="h-12 w-12" />
+            <p className="font-medium">QR Code não disponível</p>
+            <p className="text-sm text-center">
+              {instance.status === "CREATED"
+                ? "Instância criada. Clique em 'Atualizar Status' para gerar o QR Code."
+                : "Clique em 'Atualizar Status' para verificar a conexão."}
+            </p>
+          </div>
+        )}
+
+        {/* Instance Info */}
+        <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+          <p>Criado: {new Date(instance.createdAt).toLocaleString("pt-BR")}</p>
+          <p>Atualizado: {new Date(instance.updatedAt).toLocaleString("pt-BR")}</p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex-1 bg-transparent"
+          >
+            {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Atualizar Status
+          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={isDeleting}>
+                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Deletar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja deletar a instância <strong>"{instance.instanceName}"</strong>?
+                  <br />
+                  <br />
+                  Esta ação não pode ser desfeita e todas as mensagens associadas serão perdidas permanentemente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                  Deletar Instância
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
