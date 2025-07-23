@@ -1,5 +1,5 @@
-const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "https://evolution.konverta.com.br"
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "AE0yhUn7lqI4FoTRWmYT4HwQkZgc0YI5"
+const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL
+const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY
 
 // Base headers for Evolution API requests
 const getHeaders = () => ({
@@ -11,7 +11,7 @@ const getHeaders = () => ({
 export async function createEvolutionInstance(instanceName: string) {
   console.log(`[Evolution API] Creating instance: ${instanceName}`)
 
-  const webhookUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const webhookUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL
   const fullWebhookUrl = `${webhookUrl}/api/whatsapp/webhook`
 
   console.log(`[Evolution API] Using webhook URL: ${fullWebhookUrl}`)
