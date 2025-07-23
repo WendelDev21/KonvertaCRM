@@ -30,6 +30,8 @@ model User {
   contacts      Contact[]
   apiTokens     ApiToken[]
   webhooks      Webhook[]
+  chatQueues    ChatQueue[]
+  chatTickets   ChatTicket[]
 }
 
 model Account {
@@ -79,6 +81,10 @@ model Contact {
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Novos relacionamentos para chat
+  chatTickets ChatTicket[]
+  messages    WhatsAppMessage[]
 }
 
 model ApiToken {
@@ -132,6 +138,7 @@ model WhatsAppInstance {
   userId       String
   user         User     @relation(fields: [userId], references: [id])
   messages     WhatsAppMessage[]
+  chatTickets  ChatTicket[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -151,5 +158,70 @@ model WhatsAppMessage {
   messageText   String?
   rawPayload    Json
 
+  // Novos campos para relacionamento com contatos e tickets
+  contactId     String?
+  contact       Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  ticketId      String?
+  ticket        ChatTicket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+  isRead        Boolean @default(false)
+  readAt        DateTime?
+
   createdAt     DateTime @default(now())
+
+  @@index([contactId])
+  @@index([ticketId])
+  @@index([remoteJid])
+  @@index([isRead])
+}
+
+// Nova tabela para filas de atendimento
+model ChatQueue {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tickets     ChatTicket[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Nova tabela para tickets/atendimentos
+model ChatTicket {
+  id            String   @id @default(uuid())
+  contactId     String
+  contact       Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  instanceId    String
+  instance      WhatsAppInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  queueId       String
+  queue         ChatQueue @relation(fields: [queueId], references: [id], onDelete: Restrict)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status        String   @default("NOVO") // NOVO, CONVERSANDO, INTERESSADO, FECHADO, PERDIDO
+  priority      Int      @default(1) // 1=baixa, 2=média, 3=alta
+  subject       String?
+  lastMessageAt DateTime?
+  closedAt      DateTime?
+  closedBy      String?
+  notes         String?
+  tags          String?
+  
+  messages      WhatsAppMessage[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([contactId])
+  @@index([instanceId])
+  @@index([queueId])
+  @@index([userId])
+  @@index([status])
+  @@index([lastMessageAt])
 }
