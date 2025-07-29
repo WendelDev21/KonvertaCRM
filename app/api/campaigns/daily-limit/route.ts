@@ -1,32 +1,45 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 
-export async function GET(request: NextRequest) {
+const prisma = new PrismaClient()
+
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const dailyLimit = await prisma.dailyLimit.findFirst({
+    const dailyLimit = await prisma.dailyLimit.findUnique({
       where: {
-        userId: session.user.id,
-        date: today,
+        userId_date: {
+          userId: user.id,
+          date: today,
+        },
       },
     })
 
     return NextResponse.json({
       sentCount: dailyLimit?.sentCount || 0,
       limit: 100,
-      date: today.toISOString(),
+      date: today.toISOString().split("T")[0],
     })
   } catch (error) {
     console.error("Error fetching daily limit:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }

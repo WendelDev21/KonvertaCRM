@@ -14,8 +14,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw } from "lucide-react"
+import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, Trash2 } from "lucide-react"
 
 interface Contact {
   id: string
@@ -57,6 +68,7 @@ export default function DisparadorPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [dailyLimit, setDailyLimit] = useState<DailyLimit>({ sentCount: 0, limit: 100, date: "" })
   const [loading, setLoading] = useState(false)
+  const [deletingCampaign, setDeletingCampaign] = useState<string | null>(null)
 
   // Form states
   const [campaignName, setCampaignName] = useState("")
@@ -230,7 +242,8 @@ export default function DisparadorPage() {
         toast.success("Campanha pausada")
         loadCampaigns()
       } else {
-        toast.error("Erro ao pausar campanha")
+        const error = await response.json()
+        toast.error(error.message || "Erro ao pausar campanha")
       }
     } catch (error) {
       console.error("Error pausing campaign:", error)
@@ -248,11 +261,36 @@ export default function DisparadorPage() {
         toast.success("Campanha retomada")
         loadCampaigns()
       } else {
-        toast.error("Erro ao retomar campanha")
+        const error = await response.json()
+        toast.error(error.message || "Erro ao retomar campanha")
       }
     } catch (error) {
       console.error("Error resuming campaign:", error)
       toast.error("Erro ao retomar campanha")
+    }
+  }
+
+  const deleteCampaign = async (campaignId: string) => {
+    setDeletingCampaign(campaignId)
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast.success("Campanha deletada com sucesso")
+        loadCampaigns()
+        loadDailyLimit() // Recarregar limite diário caso tenha mudado
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Erro ao deletar campanha")
+      }
+    } catch (error) {
+      console.error("Error deleting campaign:", error)
+      toast.error("Erro ao deletar campanha")
+    } finally {
+      setDeletingCampaign(null)
     }
   }
 
@@ -274,6 +312,10 @@ export default function DisparadorPage() {
         {config.label}
       </Badge>
     )
+  }
+
+  const canDeleteCampaign = (status: string) => {
+    return status !== "RUNNING"
   }
 
   const remainingLimit = dailyLimit.limit - dailyLimit.sentCount
@@ -492,17 +534,57 @@ export default function DisparadorPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         {getStatusBadge(campaign.status)}
+
                         {campaign.status === "RUNNING" && (
                           <Button variant="outline" size="sm" onClick={() => pauseCampaign(campaign.id)}>
                             <Pause className="w-4 h-4 mr-1" />
                             Pausar
                           </Button>
                         )}
+
                         {campaign.status === "PAUSED" && (
                           <Button variant="outline" size="sm" onClick={() => resumeCampaign(campaign.id)}>
                             <Play className="w-4 h-4 mr-1" />
                             Retomar
                           </Button>
+                        )}
+
+                        {canDeleteCampaign(campaign.status) && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                                disabled={deletingCampaign === campaign.id}
+                              >
+                                {deletingCampaign === campaign.id ? (
+                                  <RotateCcw className="w-4 h-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                )}
+                                Deletar
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja deletar a campanha "{campaign.name}"? Esta ação não pode ser
+                                  desfeita e todos os dados relacionados serão perdidos.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteCampaign(campaign.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Deletar Campanha
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                       </div>
                     </div>

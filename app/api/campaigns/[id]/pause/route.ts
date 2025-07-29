@@ -1,12 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -15,16 +18,23 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const campaign = await prisma.campaign.findFirst({
       where: {
         id: campaignId,
-        userId: session.user.id,
+        user: {
+          email: session.user.email,
+        },
       },
     })
 
     if (!campaign) {
-      return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
+      return NextResponse.json({ error: "Campanha não encontrada" }, { status: 404 })
     }
 
     if (campaign.status !== "RUNNING") {
-      return NextResponse.json({ error: "Campaign is not running" }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Apenas campanhas em execução podem ser pausadas",
+        },
+        { status: 400 },
+      )
     }
 
     await prisma.campaign.update({
@@ -32,9 +42,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       data: { status: "PAUSED" },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: "Campanha pausada com sucesso" })
   } catch (error) {
     console.error("Error pausing campaign:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }

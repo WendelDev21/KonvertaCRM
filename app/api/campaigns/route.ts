@@ -1,18 +1,23 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { PrismaClient } from "@prisma/client"
 
-export async function GET(request: NextRequest) {
+const prisma = new PrismaClient()
+
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const campaigns = await prisma.campaign.findMany({
       where: {
-        userId: session.user.id,
+        user: {
+          email: session.user.email,
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -22,31 +27,47 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(campaigns)
   } catch (error) {
     console.error("Error fetching campaigns:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { name, message, instanceId, contactIds } = await request.json()
 
     if (!name || !message || !instanceId || !contactIds || contactIds.length === 0) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Todos os campos são obrigatórios",
+        },
+        { status: 400 },
+      )
     }
 
-    // Check daily limit
+    // Verificar limite diário
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const dailyLimit = await prisma.dailyLimit.findFirst({
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    const dailyLimit = await prisma.dailyLimit.findUnique({
       where: {
-        userId: session.user.id,
-        date: today,
+        userId_date: {
+          userId: user.id,
+          date: today,
+        },
       },
     })
 
@@ -55,37 +76,44 @@ export async function POST(request: NextRequest) {
 
     if (currentSent + contactIds.length > maxDaily) {
       return NextResponse.json(
-        { error: `Daily limit exceeded. You can send ${maxDaily - currentSent} more messages today.` },
+        {
+          error: `Limite diário excedido. Você pode enviar apenas ${maxDaily - currentSent} mensagens hoje.`,
+        },
         { status: 400 },
       )
     }
 
-    // Verify instance exists and is connected
+    // Verificar se a instância existe e está conectada
     const instance = await prisma.whatsAppInstance.findFirst({
       where: {
         id: instanceId,
-        userId: session.user.id,
+        userId: user.id,
         status: "CONNECTED",
       },
     })
 
     if (!instance) {
-      return NextResponse.json({ error: "WhatsApp instance not found or not connected" }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Instância não encontrada ou não conectada",
+        },
+        { status: 400 },
+      )
     }
 
-    // Create campaign
+    // Criar a campanha
     const campaign = await prisma.campaign.create({
       data: {
         name,
         message,
-        userId: session.user.id,
+        userId: user.id,
         instanceId,
         totalContacts: contactIds.length,
         status: "PENDING",
       },
     })
 
-    // Create campaign sends
+    // Criar os registros de envio
     const campaignSends = contactIds.map((contactId: string) => ({
       campaignId: campaign.id,
       contactId,
@@ -96,14 +124,14 @@ export async function POST(request: NextRequest) {
       data: campaignSends,
     })
 
-    // Create batches (20 contacts per batch)
+    // Criar lotes de 20 contatos cada
     const batchSize = 20
     const batches = []
 
     for (let i = 0; i < contactIds.length; i += batchSize) {
       const batchContacts = contactIds.slice(i, i + batchSize)
       const batchNumber = Math.floor(i / batchSize) + 1
-      const scheduledAt = new Date(Date.now() + (batchNumber - 1) * 60 * 60 * 1000) // 1 hour intervals
+      const scheduledAt = new Date(Date.now() + (batchNumber - 1) * 60 * 60 * 1000) // 1 hora de intervalo
 
       batches.push({
         campaignId: campaign.id,
@@ -118,7 +146,10 @@ export async function POST(request: NextRequest) {
       data: batches,
     })
 
-    // Update campaign status to RUNNING and schedule first batch
+    // Iniciar processamento da campanha (primeiro lote imediatamente)
+    // await processCampaignBatch(campaign.id, 1)
+
+    // Atualizar campanha para RUNNING
     await prisma.campaign.update({
       where: { id: campaign.id },
       data: {
@@ -127,17 +158,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Process first batch immediately (in background)
-    processCampaignBatch(campaign.id, 1)
+    // Processar primeiro lote imediatamente
+    setTimeout(() => {
+      processCampaignBatch(campaign.id, 1)
+    }, 1000) // 1 segundo de delay para garantir que a transação foi commitada
 
     return NextResponse.json(campaign)
   } catch (error) {
     console.error("Error creating campaign:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
 
-// Background function to process campaign batches
 async function processCampaignBatch(campaignId: string, batchNumber: number) {
   try {
     const batch = await prisma.campaignBatch.findFirst({
@@ -159,7 +191,7 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
       return
     }
 
-    // Update batch status
+    // Marcar lote como processando
     await prisma.campaignBatch.update({
       where: { id: batch.id },
       data: {
@@ -168,7 +200,23 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
       },
     })
 
-    // Get instance details
+    // Buscar contatos do lote
+    const contacts = await prisma.contact.findMany({
+      where: {
+        id: {
+          in: batch.contactIds,
+        },
+      },
+    })
+
+    const evolutionApiUrl = process.env.EVOLUTION_API_URL
+    const evolutionApiKey = process.env.EVOLUTION_API_KEY
+
+    if (!evolutionApiUrl || !evolutionApiKey) {
+      throw new Error("Evolution API não configurada")
+    }
+
+    // Buscar dados da instância
     const instance = await prisma.whatsAppInstance.findFirst({
       where: {
         id: batch.campaign.instanceId,
@@ -177,33 +225,20 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
     })
 
     if (!instance) {
-      await prisma.campaignBatch.update({
-        where: { id: batch.id },
-        data: { status: "FAILED" },
-      })
-      return
+      throw new Error("Instância não encontrada ou desconectada")
     }
 
-    // Get contacts for this batch
-    const contacts = await prisma.contact.findMany({
-      where: {
-        id: { in: batch.contactIds },
-        userId: batch.campaign.userId,
-      },
-    })
+    let successCount = 0
+    let failCount = 0
 
-    let sentCount = 0
-    let failedCount = 0
-
-    // Send messages to each contact
+    // Enviar mensagens com delay
     for (const contact of contacts) {
       try {
-        // Send message via Evolution API
-        const response = await fetch(`${process.env.EVOLUTION_API_URL}/message/sendText/${instance.instanceName}`, {
+        const response = await fetch(`${evolutionApiUrl}/message/sendText/${instance.instanceName}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            apikey: process.env.EVOLUTION_API_KEY || "",
+            apikey: evolutionApiKey,
           },
           body: JSON.stringify({
             number: contact.contact,
@@ -214,7 +249,6 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
         if (response.ok) {
           const result = await response.json()
 
-          // Update campaign send status
           await prisma.campaignSend.update({
             where: {
               campaignId_contactId: {
@@ -225,18 +259,15 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
             data: {
               status: "SENT",
               sentAt: new Date(),
-              messageId: result.key?.id || null,
+              messageId: result.key?.id || result.messageId || null,
             },
           })
 
-          sentCount++
+          successCount++
         } else {
-          throw new Error(`API error: ${response.statusText}`)
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
         }
       } catch (error) {
-        console.error(`Error sending message to ${contact.contact}:`, error)
-
-        // Update campaign send status
         await prisma.campaignSend.update({
           where: {
             campaignId_contactId: {
@@ -246,33 +277,39 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
           },
           data: {
             status: "FAILED",
-            errorMessage: error instanceof Error ? error.message : "Unknown error",
+            errorMessage: error instanceof Error ? error.message : "Erro desconhecido",
           },
         })
 
-        failedCount++
+        failCount++
       }
 
-      // Add delay between messages (1.2 seconds as per Evolution API recommendation)
+      // Delay de 1.2 segundos entre mensagens
       await new Promise((resolve) => setTimeout(resolve, 1200))
     }
 
-    // Update batch status
+    // Marcar lote como concluído
     await prisma.campaignBatch.update({
       where: { id: batch.id },
-      data: { status: "COMPLETED" },
-    })
-
-    // Update campaign counters
-    await prisma.campaign.update({
-      where: { id: campaignId },
       data: {
-        sentCount: { increment: sentCount },
-        failedCount: { increment: failedCount },
+        status: "COMPLETED",
       },
     })
 
-    // Update daily limit
+    // Atualizar contadores da campanha
+    await prisma.campaign.update({
+      where: { id: campaignId },
+      data: {
+        sentCount: {
+          increment: successCount,
+        },
+        failedCount: {
+          increment: failCount,
+        },
+      },
+    })
+
+    // Atualizar limite diário
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -284,28 +321,36 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
         },
       },
       update: {
-        sentCount: { increment: sentCount },
+        sentCount: {
+          increment: successCount,
+        },
       },
       create: {
         userId: batch.campaign.userId,
         date: today,
-        sentCount: sentCount,
+        sentCount: successCount,
       },
     })
 
-    // Check if campaign is complete
-    const totalBatches = await prisma.campaignBatch.count({
-      where: { campaignId },
-    })
-
-    const completedBatches = await prisma.campaignBatch.count({
+    // Verificar se há próximo lote
+    const nextBatch = await prisma.campaignBatch.findFirst({
       where: {
         campaignId,
-        status: { in: ["COMPLETED", "FAILED"] },
+        batchNumber: batchNumber + 1,
+        status: "PENDING",
       },
     })
 
-    if (completedBatches >= totalBatches) {
+    if (nextBatch) {
+      // Agendar próximo lote para 1 hora
+      setTimeout(
+        () => {
+          processCampaignBatch(campaignId, batchNumber + 1)
+        },
+        60 * 60 * 1000,
+      ) // 1 hora
+    } else {
+      // Marcar campanha como concluída
       await prisma.campaign.update({
         where: { id: campaignId },
         data: {
@@ -313,30 +358,11 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
           completedAt: new Date(),
         },
       })
-    } else {
-      // Schedule next batch
-      const nextBatch = await prisma.campaignBatch.findFirst({
-        where: {
-          campaignId,
-          status: "PENDING",
-        },
-        orderBy: { batchNumber: "asc" },
-      })
-
-      if (nextBatch) {
-        // Schedule next batch to run in 1 hour
-        setTimeout(
-          () => {
-            processCampaignBatch(campaignId, nextBatch.batchNumber)
-          },
-          60 * 60 * 1000,
-        ) // 1 hour
-      }
     }
   } catch (error) {
     console.error("Error processing campaign batch:", error)
 
-    // Update batch status to failed
+    // Marcar lote como falhou
     await prisma.campaignBatch.updateMany({
       where: {
         campaignId,
@@ -345,5 +371,15 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
       },
       data: { status: "FAILED" },
     })
+
+    // Marcar campanha como falhou se for o primeiro lote
+    if (batchNumber === 1) {
+      await prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          status: "FAILED",
+        },
+      })
+    }
   }
 }
