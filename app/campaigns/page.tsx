@@ -362,12 +362,12 @@ export default function CampaignsPage() {
           </Button>
         </div>
 
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="max-w-2xl w-full">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-600">
-                <Crown className="h-10 w-10 text-white" />
-              </div>
+        <div className="max-w-4xl mx-auto">
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20">
+          <CardHeader className="text-center pb-6">
+            <div className="mx-auto w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mb-4">
+              <Crown className="h-8 w-8 text-primary" />
+            </div>
               <CardTitle className="text-2xl">Funcionalidade Premium</CardTitle>
               <CardDescription className="text-lg">
                 As campanhas de mensagens em massa estão disponíveis apenas no plano Business
