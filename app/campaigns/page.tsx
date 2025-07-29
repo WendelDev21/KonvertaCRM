@@ -26,7 +26,24 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, Trash2, MessageCircle } from "lucide-react"
+import {
+  Send,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Play,
+  Pause,
+  RotateCcw,
+  ArrowLeft,
+  Trash2,
+  MessageCircle,
+  Crown,
+  Zap,
+  Star,
+} from "lucide-react"
+import Link from "next/link" 
 
 interface Contact {
   id: string
@@ -61,7 +78,7 @@ interface DailyLimit {
   date: string
 }
 
-export default function CampaingnsPage() {
+export default function CampaignsPage() {
   const { data: session } = useSession()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [instances, setInstances] = useState<WhatsAppInstance[]>([])
@@ -76,6 +93,10 @@ export default function CampaingnsPage() {
   const [selectedInstance, setSelectedInstance] = useState("")
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [filterStatus, setFilterStatus] = useState<string>("all")
+
+  // Verificar se o usuário tem plano Business
+  const userPlan = session?.user ? (session.user as any).plan || "Starter" : "Starter"
+  const hasBusinessAccess = userPlan === "Business"
 
   // Load data
   useEffect(() => {
@@ -320,6 +341,116 @@ export default function CampaingnsPage() {
 
   const remainingLimit = dailyLimit.limit - dailyLimit.sentCount
   const limitPercentage = (dailyLimit.sentCount / dailyLimit.limit) * 100
+
+  // Componente de upgrade para usuários não Business
+  const UpgradeToBusinessPage = () => {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center space-x-2">
+              <MessageCircle className="h-8 w-8 text-primary" />
+              <span>Campanhas</span>
+            </h1>
+            <p className="text-muted-foreground">Dispare campanhas de mensagens em massa para seus contatos</p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href="/dashboard">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Link>
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="max-w-2xl w-full">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-600">
+                <Crown className="h-10 w-10 text-white" />
+              </div>
+              <CardTitle className="text-2xl">Funcionalidade Premium</CardTitle>
+              <CardDescription className="text-lg">
+                As campanhas de mensagens em massa estão disponíveis apenas no plano Business
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4">
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    <Send className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Campanhas Ilimitadas</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Crie e execute campanhas de mensagens em massa sem limites
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Segmentação Avançada</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Selecione contatos por status, fonte e outros critérios
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Envio Programado</h3>
+                    <p className="text-sm text-muted-foreground">Agende suas campanhas para o melhor momento</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex-shrink-0">
+                    <Zap className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Controle Total</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Pause, retome e monitore suas campanhas em tempo real
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Alert>
+                <Star className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Plano Business:</strong> Tenha acesso a todas as funcionalidades avançadas de marketing e
+                  automação.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <Button asChild className="flex-1">
+                  <Link href="/settings/upgrades">
+                    <Crown className="mr-2 h-4 w-4" />
+                    Fazer Upgrade para Business
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/dashboard">Voltar ao Dashboard</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasBusinessAccess) {
+    return <UpgradeToBusinessPage />
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
