@@ -182,9 +182,9 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
   const statusInfo = getStatusInfo(instance.status)
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-md">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-lg font-semibold">{instance.instanceName}</CardTitle>
+        <CardTitle className="text-lg font-semibold truncate">{instance.instanceName}</CardTitle>
         <div className="flex items-center gap-2">
           <Badge className={statusInfo.color}>
             {statusInfo.icon}
@@ -225,20 +225,20 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
 
         {/* Connected Status */}
         {instance.status === "CONNECTED" && (
-          <div className="flex flex-col items-center space-y-2 p-6 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg border">
+          <div className="flex flex-col items-center space-y-2 p-4 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg border">
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <div className="relative">
-                <Wifi className="h-8 w-8" />
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-3 h-3 text-white" />
+                <Wifi className="h-6 w-6" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-2 h-2 text-white" />
                 </div>
               </div>
-              <span className="font-semibold text-lg">WhatsApp Conectado!</span>
+              <span className="font-semibold">WhatsApp Conectado!</span>
             </div>
             <p className="text-sm text-green-700 dark:text-green-400 text-center">
               Sua instância está online e pronta para enviar e receber mensagens.
             </p>
-            <div className="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+            <div className="mt-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
               Status: Online
             </div>
           </div>
@@ -246,10 +246,10 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
 
         {/* No QR Code Available */}
         {!instance.qrCode && instance.status !== "CONNECTED" && (
-          <div className="flex flex-col items-center space-y-2 p-6 text-muted-foreground">
-            <QrCode className="h-12 w-12" />
-            <p className="font-medium">QR Code não disponível</p>
-            <p className="text-sm text-center">
+          <div className="flex flex-col items-center space-y-2 p-4 text-muted-foreground">
+            <QrCode className="h-8 w-8" />
+            <p className="font-medium text-sm">QR Code não disponível</p>
+            <p className="text-xs text-center">
               {instance.status === "CREATED"
                 ? "Instância criada. Clique em 'Atualizar Status' para gerar o QR Code."
                 : "Clique em 'Atualizar Status' para verificar a conexão."}
@@ -263,57 +263,66 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
           <p>Atualizado: {new Date(instance.updatedAt).toLocaleString("pt-BR")}</p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-2">
+        {/* Action Buttons - Compact layout */}
+        <div className="space-y-2 pt-2 border-t">
+          {/* Primary Action Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex-1 bg-transparent"
+            className="w-full h-8 text-xs bg-transparent"
           >
-            {isRefreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            {isRefreshing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
             Atualizar Status
           </Button>
 
-          {instance.status === "CONNECTED" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="bg-transparent border-orange-300 text-orange-600 hover:bg-orange-50"
-            >
-              {isLoggingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
-              Desconectar
-            </Button>
-          )}
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={isDeleting}>
-                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                Deletar
+          {/* Secondary Actions */}
+          <div className="grid grid-cols-2 gap-2">
+            {instance.status === "CONNECTED" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="h-8 text-xs border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-950 bg-transparent"
+              >
+                {isLoggingOut ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <LogOut className="mr-1 h-3 w-3" />}
+                Desconectar
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja deletar a instância <strong>"{instance.instanceName}"</strong>?
-                  <br />
-                  <br />
-                  Esta ação não pode ser desfeita e todas as mensagens associadas serão perdidas permanentemente.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                  Deletar Instância
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            )}
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={isDeleting}
+                  className={`h-8 text-xs ${instance.status === "CONNECTED" ? "" : "col-span-2"}`}
+                >
+                  {isDeleting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Trash2 className="mr-1 h-3 w-3" />}
+                  Deletar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja deletar a instância <strong>"{instance.instanceName}"</strong>?
+                    <br />
+                    <br />
+                    Esta ação não pode ser desfeita e todas as mensagens associadas serão perdidas permanentemente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Deletar Instância
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </CardContent>
     </Card>
