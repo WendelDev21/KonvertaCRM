@@ -228,3 +228,40 @@ export async function POST(request: NextRequest) {
     }
   })
 }
+
+// DELETE /api/contacts - Exclui todos os contatos do usuário
+export async function DELETE(request: NextRequest) {
+  return apiAuthMiddleware(request, async (req, userId) => {
+    try {
+      console.log("DELETE /api/contacts - Deleting all contacts for user:", userId)
+
+      // Contar quantos contatos serão excluídos
+      const contactCount = await prisma.contact.count({
+        where: { userId },
+      })
+
+      if (contactCount === 0) {
+        return NextResponse.json({ message: "Nenhum contato encontrado para excluir" }, { status: 200 })
+      }
+
+      // Excluir todos os contatos do usuário
+      const result = await prisma.contact.deleteMany({
+        where: { userId },
+      })
+
+      console.log(`Deleted ${result.count} contacts for user ${userId}`)
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: `${result.count} contato${result.count !== 1 ? "s" : ""} excluído${result.count !== 1 ? "s" : ""} com sucesso`,
+          deletedCount: result.count,
+        },
+        { status: 200 },
+      )
+    } catch (error) {
+      console.error("Error deleting all contacts:", error)
+      return NextResponse.json({ error: "Erro ao excluir todos os contatos" }, { status: 500 })
+    }
+  })
+}
