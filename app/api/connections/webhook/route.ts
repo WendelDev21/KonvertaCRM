@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getWhatsAppInstanceByName, updateWhatsAppInstance, createWhatsAppMessage } from "@/lib/whatsapp-db"
 
-// POST /api/whatsapp/webhook - Handle webhooks from Evolution API
+// POST /api/connections/webhook - Handle webhooks from Evolution API
 export async function POST(request: NextRequest) {
   console.log("[WhatsApp Webhook] Received webhook")
 
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/whatsapp/webhook - Health check
+// GET /api/connections/webhook - Health check
 export async function GET() {
   return NextResponse.json({ message: "WhatsApp webhook endpoint is active" })
 }

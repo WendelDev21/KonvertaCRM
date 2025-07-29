@@ -27,7 +27,7 @@ export default function WhatsAppPage() {
   const fetchInstances = useCallback(async () => {
     try {
       console.log("[WhatsApp Page] Fetching instances...")
-      const response = await fetch("/api/whatsapp/instances")
+      const response = await fetch("/api/connections/instances")
 
       if (!response.ok) {
         const errorData = await response.json()

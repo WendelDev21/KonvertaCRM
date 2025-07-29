@@ -100,7 +100,7 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
     setIsRefreshing(true)
     try {
       console.log(`[Instance Card] Refreshing instance: ${instance.instanceName}`)
-      const response = await fetch(`/api/whatsapp/instances/${instance.instanceName}`)
+      const response = await fetch(`/api/connections/instances/${instance.instanceName}`)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -125,7 +125,7 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
     try {
       console.log(`[Instance Card] Logging out instance: ${instance.instanceName}`)
 
-      const response = await fetch(`/api/whatsapp/instances/${instance.instanceName}/logout`, {
+      const response = await fetch(`/api/connections/instances/${instance.instanceName}/logout`, {
         method: "POST",
       })
 
@@ -154,7 +154,7 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
       console.log(`[Instance Card] Deleting instance: ${instance.instanceName}`)
 
       const response = await fetch(
-        `/api/whatsapp/instances?instanceName=${encodeURIComponent(instance.instanceName)}`,
+        `/api/connections/instances?instanceName=${encodeURIComponent(instance.instanceName)}`,
         {
           method: "DELETE",
         },

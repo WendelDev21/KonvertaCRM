@@ -47,7 +47,7 @@ export function CreateInstanceDialog({ onInstanceCreated }: CreateInstanceDialog
     try {
       console.log(`[Create Instance] Creating instance: ${instanceName}`)
 
-      const response = await fetch("/api/whatsapp/instances", {
+      const response = await fetch("/api/connections/instances", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

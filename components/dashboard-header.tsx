@@ -40,8 +40,8 @@ export function DashboardHeader() {
       icon: LayoutDashboard,
     },
     {
-      name: "Atendimentos",
-      path: "/whatsapp/atendimentos",
+      name: "Campanhas",
+      path: "/campaigns",
       icon: MessageCircle,
     },
     {
@@ -85,7 +85,7 @@ export function DashboardHeader() {
     },
     {
       name: "Conexões",
-      path: "/whatsapp",
+      path: "/connections",
       icon: Share2,
     },
     {

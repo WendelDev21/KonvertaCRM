@@ -61,7 +61,7 @@ interface DailyLimit {
   date: string
 }
 
-export default function DisparadorPage() {
+export default function CampaingnsPage() {
   const { data: session } = useSession()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [instances, setInstances] = useState<WhatsAppInstance[]>([])
@@ -101,7 +101,7 @@ export default function DisparadorPage() {
 
   const loadInstances = async () => {
     try {
-      const response = await fetch("/api/whatsapp/instances")
+      const response = await fetch("/api/connections/instances")
       if (response.ok) {
         const data = await response.json()
         setInstances(data.filter((instance: WhatsAppInstance) => instance.status === "CONNECTED"))

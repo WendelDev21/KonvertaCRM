@@ -53,7 +53,7 @@ export function UserAvatar() {
           <Puzzle className="mr-2 h-4 w-4" />
           <span>Integrações</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/whatsapp")}>
+        <DropdownMenuItem onClick={() => router.push("/connections")}>
           <Share2 className="mr-2 h-4 w-4" />
           <span>Conexões</span>
         </DropdownMenuItem>

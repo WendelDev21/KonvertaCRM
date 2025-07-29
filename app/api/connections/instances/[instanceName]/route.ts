@@ -3,7 +3,7 @@ import { apiAuthMiddleware } from "@/middleware/api-auth"
 import { getEvolutionInstanceQrCode, getEvolutionInstanceStatus } from "@/lib/evolution-api"
 import { getWhatsAppInstance, updateWhatsAppInstance } from "@/lib/whatsapp-db"
 
-// GET /api/whatsapp/instances/[instanceName] - Get QR code and status for a specific instance
+// GET /api/connections/instances/[instanceName] - Get QR code and status for a specific instance
 export async function GET(request: NextRequest, { params }: { params: { instanceName: string } }) {
   return apiAuthMiddleware(request, async (req, userId) => {
     const { instanceName } = params

@@ -3,7 +3,7 @@ import { apiAuthMiddleware } from "@/middleware/api-auth"
 import { createEvolutionInstance, deleteEvolutionInstance } from "@/lib/evolution-api"
 import { createWhatsAppInstance, getAllWhatsAppInstances, deleteWhatsAppInstance } from "@/lib/whatsapp-db"
 
-// GET /api/whatsapp/instances - Get all instances for the user
+// GET /api/connections/instances - Get all instances for the user
 export async function GET(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     console.log(`[WhatsApp API] GET instances for user: ${userId}`)
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   })
 }
 
-// POST /api/whatsapp/instances - Create a new instance
+// POST /api/connections/instances - Create a new instance
 export async function POST(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     console.log(`[WhatsApp API] POST create instance for user: ${userId}`)
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   })
 }
 
-// DELETE /api/whatsapp/instances - Delete an instance
+// DELETE /api/connections/instances - Delete an instance
 export async function DELETE(request: NextRequest) {
   return apiAuthMiddleware(request, async (req, userId) => {
     const { searchParams } = new URL(req.url)

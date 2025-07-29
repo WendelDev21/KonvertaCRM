@@ -3,7 +3,7 @@ import { apiAuthMiddleware } from "@/middleware/api-auth"
 import { logoutEvolutionInstance } from "@/lib/evolution-api"
 import { updateWhatsAppInstance } from "@/lib/whatsapp-db"
 
-// POST /api/whatsapp/instances/[instanceName]/logout - Logout from WhatsApp instance
+// POST /api/connections/instances/[instanceName]/logout - Logout from WhatsApp instance
 export async function POST(request: NextRequest, { params }: { params: { instanceName: string } }) {
   return apiAuthMiddleware(request, async (req, userId) => {
     const { instanceName } = params

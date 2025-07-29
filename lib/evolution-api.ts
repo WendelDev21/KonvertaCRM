@@ -12,7 +12,7 @@ export async function createEvolutionInstance(instanceName: string) {
   console.log(`[Evolution API] Creating instance: ${instanceName}`)
 
   const webhookUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL
-  const fullWebhookUrl = `${webhookUrl}/api/whatsapp/webhook`
+  const fullWebhookUrl = `${webhookUrl}/api/connections/webhook`
 
   console.log(`[Evolution API] Using webhook URL: ${fullWebhookUrl}`)
 
