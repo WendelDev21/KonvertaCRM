@@ -23,12 +23,14 @@ model User {
   isActive             Boolean   @default(true)
   theme                String?   @default("light")
   notificationSettings String?   @default("{}")
-
-  accounts      Account[]
-  sessions      Session[]
-  contacts      Contact[]
-  apiTokens     ApiToken[]
-  webhooks      Webhook[]
+  whatsappInstances    WhatsAppInstance[]
+  accounts             Account[]
+  sessions             Session[]
+  contacts             Contact[]
+  apiTokens            ApiToken[]
+  webhooks             Webhook[]
+  campaigns            Campaign[]
+  dailyLimits          DailyLimit[]
 }
 
 model Account {
@@ -78,6 +80,7 @@ model Contact {
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignSends CampaignSend[]
 }
 
 model ApiToken {
@@ -123,3 +126,91 @@ model Report {
   createdAt       DateTime @default(now())
 }
 
+model WhatsAppInstance {
+  id           String   @id @default(cuid())
+  instanceName String   @unique
+  status       String   @default("DISCONNECTED") // ex: CONNECTED, DISCONNECTED, QR_UPDATED, CREATED
+  qrCode       String?  // QR code base64 opcional
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([instanceName, userId]) // Ensure unique instance name per user
+}
+
+model Campaign {
+  id          String   @id @default(uuid())
+  name        String
+  message     String   @db.Text
+  userId      String
+  instanceId  String
+  status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, PAUSED, FAILED
+  totalContacts Int    @default(0)
+  sentCount   Int      @default(0)
+  failedCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  scheduledAt DateTime?
+  completedAt DateTime?
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batches     CampaignBatch[]
+  sends       CampaignSend[]
+}
+
+model CampaignBatch {
+  id         String   @id @default(uuid())
+  campaignId String
+  batchNumber Int
+  status     String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  scheduledAt DateTime
+  processedAt DateTime?
+  contactIds String[] // Array of contact IDs for this batch
+  
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@unique([campaignId, batchNumber])
+}
+
+model CampaignSend {
+  id         String   @id @default(uuid())
+  campaignId String
+  contactId  String
+  status     String   @default("PENDING") // PENDING, SENT, FAILED, DELIVERED
+  sentAt     DateTime?
+  errorMessage String?
+  messageId  String?
+  
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  @@unique([campaignId, contactId])
+}
+
+model DailyLimit {
+  id        String   @id @default(uuid())
+  userId    String
+  date      DateTime @db.Date
+  sentCount Int      @default(0)
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+}
+
+model WhatsAppMessage {
+  id          String   @id @default(cuid())
+  instanceId  String
+  fromMe      Boolean  @default(false)
+  remoteJid   String   // Phone number or group ID
+  messageId   String   @unique
+  messageType String   // text, image, audio, etc.
+  messageText String?  @db.Text
+  timestamp   DateTime @default(now())
+  rawPayload  Json?    // Store the complete webhook payload
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

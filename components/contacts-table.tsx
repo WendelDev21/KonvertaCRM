@@ -80,6 +80,8 @@ export function ContactsTable() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false)
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
 
   // Buscar contatos da API
   const fetchContacts = useCallback(async () => {
@@ -179,6 +181,40 @@ export function ContactsTable() {
     }
   }
 
+  const handleDeleteAllContacts = async () => {
+    setIsDeletingAll(true)
+    try {
+      const response = await fetch("/api/contacts", {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Erro ao excluir todos os contatos")
+      }
+
+      const result = await response.json()
+
+      // Limpar o estado local
+      setContacts([])
+
+      toast({
+        title: "Contatos excluídos",
+        description: result.message || "Todos os contatos foram excluídos com sucesso.",
+      })
+    } catch (error) {
+      console.error("Erro ao excluir todos os contatos:", error)
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Não foi possível excluir todos os contatos.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeletingAll(false)
+      setIsDeleteAllDialogOpen(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
@@ -217,7 +253,20 @@ export function ContactsTable() {
         <div className="text-sm text-muted-foreground">
           {contacts.length} contato{contacts.length !== 1 ? "s" : ""} encontrado{contacts.length !== 1 ? "s" : ""}
         </div>
-        <ExportData contacts={contacts} />
+        <div className="flex gap-2">
+          {contacts.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsDeleteAllDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir Todos
+            </Button>
+          )}
+          <ExportData contacts={contacts} />
+        </div>
       </div>
 
       <div className="table-container">
@@ -336,6 +385,37 @@ export function ContactsTable() {
                 </>
               ) : (
                 "Excluir"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir todos os contatos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir TODOS os {contacts.length} contatos? Esta ação não pode ser desfeita e
+              todos os dados serão perdidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAllContacts}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+              disabled={isDeletingAll}
+            >
+              {isDeletingAll ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir Todos ({contacts.length})
+                </>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

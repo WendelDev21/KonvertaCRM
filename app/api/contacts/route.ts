@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
             continue
           }
 
-          // Verificar limite para plano Starter
+          // Verificar limite de contatos baseado no plano
           if (user.plan === "Starter") {
             const totalContactsAfterCreation = currentContactCount + results.length + 1
 
@@ -149,6 +149,21 @@ export async function POST(request: NextRequest) {
                 limit: 100,
                 current: currentContactCount + results.length,
                 plan: "Starter",
+              })
+              continue
+            }
+          } else if (user.plan === "Pro") {
+            const totalContactsAfterCreation = currentContactCount + results.length + 1
+
+            if (totalContactsAfterCreation > 500) {
+              errors.push({
+                index: i,
+                error: "Limite de contatos atingido",
+                message:
+                  "Você atingiu o limite de 500 contatos do plano Pro. Faça upgrade para o plano Business para contatos ilimitados.",
+                limit: 500,
+                current: currentContactCount + results.length,
+                plan: "Pro",
               })
               continue
             }
@@ -225,6 +240,43 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error("Error creating contact(s):", error)
       return NextResponse.json({ error: "Error creating contact(s)" }, { status: 500 })
+    }
+  })
+}
+
+// DELETE /api/contacts - Exclui todos os contatos do usuário
+export async function DELETE(request: NextRequest) {
+  return apiAuthMiddleware(request, async (req, userId) => {
+    try {
+      console.log("DELETE /api/contacts - Deleting all contacts for user:", userId)
+
+      // Contar quantos contatos serão excluídos
+      const contactCount = await prisma.contact.count({
+        where: { userId },
+      })
+
+      if (contactCount === 0) {
+        return NextResponse.json({ message: "Nenhum contato encontrado para excluir" }, { status: 200 })
+      }
+
+      // Excluir todos os contatos do usuário
+      const result = await prisma.contact.deleteMany({
+        where: { userId },
+      })
+
+      console.log(`Deleted ${result.count} contacts for user ${userId}`)
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: `${result.count} contato${result.count !== 1 ? "s" : ""} excluído${result.count !== 1 ? "s" : ""} com sucesso`,
+          deletedCount: result.count,
+        },
+        { status: 200 },
+      )
+    } catch (error) {
+      console.error("Error deleting all contacts:", error)
+      return NextResponse.json({ error: "Erro ao excluir todos os contatos" }, { status: 500 })
     }
   })
 }

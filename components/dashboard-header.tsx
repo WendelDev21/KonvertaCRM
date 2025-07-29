@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Kanban, Menu, Phone, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle, DollarSign, FileText } from "lucide-react"
+import { LayoutDashboard, Kanban, Menu, Phone, Puzzle, Settings, PlusCircle, ShieldAlert, Wallet, HelpCircle, DollarSign, FileText, MessageCircle, Share2 } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserAvatar } from "@/components/user-avatar"
@@ -40,6 +40,11 @@ export function DashboardHeader() {
       icon: LayoutDashboard,
     },
     {
+      name: "Campanhas",
+      path: "/campaigns",
+      icon: MessageCircle,
+    },
+    {
       name: "Contatos",
       path: "/contacts",
       icon: Phone,
@@ -54,11 +59,7 @@ export function DashboardHeader() {
       path: "/financial",
       icon: DollarSign,
     },
-    {
-      name: "Integrações",
-      path: "/integrations",
-      icon: Puzzle,
-    },
+    
   ]
 
   // Adicionar link de administração apenas para admins
@@ -76,6 +77,16 @@ export function DashboardHeader() {
       name: "Configurações",
       path: "/settings",
       icon: Settings,
+    },
+    {
+      name: "Integrações",
+      path: "/integrations",
+      icon: Puzzle,
+    },
+    {
+      name: "Conexões",
+      path: "/connections",
+      icon: Share2,
     },
     {
       name: "Upgrades",
