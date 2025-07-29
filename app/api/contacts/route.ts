@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
             continue
           }
 
-          // Verificar limite para plano Starter
+          // Verificar limite de contatos baseado no plano
           if (user.plan === "Starter") {
             const totalContactsAfterCreation = currentContactCount + results.length + 1
 
@@ -149,6 +149,21 @@ export async function POST(request: NextRequest) {
                 limit: 100,
                 current: currentContactCount + results.length,
                 plan: "Starter",
+              })
+              continue
+            }
+          } else if (user.plan === "Pro") {
+            const totalContactsAfterCreation = currentContactCount + results.length + 1
+
+            if (totalContactsAfterCreation > 500) {
+              errors.push({
+                index: i,
+                error: "Limite de contatos atingido",
+                message:
+                  "Você atingiu o limite de 500 contatos do plano Pro. Faça upgrade para o plano Business para contatos ilimitados.",
+                limit: 500,
+                current: currentContactCount + results.length,
+                plan: "Pro",
               })
               continue
             }

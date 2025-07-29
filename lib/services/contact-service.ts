@@ -168,25 +168,28 @@ export async function checkContactLimit(userId: string) {
       throw new Error("User not found")
     }
 
-    // Se o plano for Starter, verificar o limite
-    if (user.plan === "Starter") {
-      const contactCount = await prisma.contact.count({
-        where: { userId },
-      })
+    const contactCount = await prisma.contact.count({
+      where: { userId },
+    })
 
+    // Verificar limites baseados no plano
+    if (user.plan === "Starter") {
       return {
         plan: user.plan,
         count: contactCount,
         limit: 100,
         hasReachedLimit: contactCount >= 100,
       }
+    } else if (user.plan === "Pro") {
+      return {
+        plan: user.plan,
+        count: contactCount,
+        limit: 500,
+        hasReachedLimit: contactCount >= 500,
+      }
     }
 
-    // Para planos Pro e Business, não há limite
-    const contactCount = await prisma.contact.count({
-      where: { userId },
-    })
-
+    // Para plano Business, não há limite
     return {
       plan: user.plan,
       count: contactCount,
