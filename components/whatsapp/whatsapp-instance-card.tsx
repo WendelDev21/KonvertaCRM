@@ -225,8 +225,8 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
 
         {/* Connected Status */}
         {instance.status === "CONNECTED" && (
-          <div className="flex flex-col items-center space-y-2 p-6 bg-green-50 rounded-lg border border-green-200">
-            <div className="flex items-center gap-2 text-green-700">
+          <div className="flex flex-col items-center space-y-2 p-6 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg border">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <div className="relative">
                 <Wifi className="h-8 w-8" />
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
@@ -235,7 +235,7 @@ export function WhatsAppInstanceCard({ instance, onInstanceUpdated, onInstanceDe
               </div>
               <span className="font-semibold text-lg">WhatsApp Conectado!</span>
             </div>
-            <p className="text-sm text-green-600 text-center">
+            <p className="text-sm text-green-700 dark:text-green-400 text-center">
               Sua instância está online e pronta para enviar e receber mensagens.
             </p>
             <div className="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">

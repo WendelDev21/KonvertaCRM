@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { CreateInstanceDialog } from "@/components/whatsapp/create-instance-dialog"
 import { WhatsAppInstanceCard } from "@/components/whatsapp/whatsapp-instance-card"
-import { MessageSquare, Smartphone, Wifi, WifiOff, RefreshCw, Loader2 } from "lucide-react"
+import { MessageSquare, Smartphone, Wifi, WifiOff, RefreshCw, Loader2, Share2 } from "lucide-react"
 import { toast } from "sonner"
 
 interface WhatsAppInstance {
@@ -86,7 +86,10 @@ export default function WhatsAppPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">WhatsApp Integration</h1>
+          <h1 className="text-3xl font-bold flex items-center space-x-2">
+            <Share2 className="h-8 w-8 text-primary" />
+            <span>Conexões</span>
+          </h1>
           <p className="text-muted-foreground">Gerencie suas instâncias do WhatsApp e conecte números para automação</p>
         </div>
         <div className="flex items-center gap-2">
@@ -209,7 +212,7 @@ export default function WhatsAppPage() {
             <div>
               <h4 className="font-medium mb-2">3. Enviar Mensagens</h4>
               <p className="text-sm text-muted-foreground">
-                Use a API ou automações para enviar mensagens através da instância conectada.
+                Use a página de campanhas para enviar mensagens através da instância conectada.
               </p>
             </div>
             <div>

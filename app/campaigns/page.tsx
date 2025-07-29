@@ -26,7 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, Trash2 } from "lucide-react"
+import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, Trash2, MessageCircle } from "lucide-react"
 
 interface Contact {
   id: string
@@ -325,8 +325,11 @@ export default function CampaingnsPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Disparador de Mensagens</h1>
-          <p className="text-muted-foreground">Envie mensagens em massa para seus contatos via WhatsApp</p>
+          <h1 className="text-3xl font-bold flex items-center space-x-2">
+            <MessageCircle className="h-8 w-8 text-primary" />
+            <span>Campanhas</span>
+          </h1>
+          <p className="text-muted-foreground">Dispare campanhas de mensagens em massa para seus contatos</p>
         </div>
       </div>
 
