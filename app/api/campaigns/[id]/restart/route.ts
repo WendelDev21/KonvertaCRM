@@ -5,54 +5,13 @@ import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-export async function GET() {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-
-    const campaigns = await prisma.campaign.findMany({
-      where: {
-        user: {
-          email: session.user.email,
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
-
-    return NextResponse.json(campaigns)
-  } catch (error) {
-    console.error("Error fetching campaigns:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const { name, message, instanceId, contactIds } = await request.json()
-
-    if (!name || !message || !instanceId || !contactIds || contactIds.length === 0) {
-      return NextResponse.json(
-        {
-          error: "Todos os campos são obrigatórios",
-        },
-        { status: 400 },
-      )
-    }
-
-    // Verificar limite diário
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -61,6 +20,28 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
+
+    const campaign = await prisma.campaign.findFirst({
+      where: {
+        id: params.id,
+        userId: user.id,
+      },
+    })
+
+    if (!campaign) {
+      return NextResponse.json({ error: "Campanha não encontrada" }, { status: 404 })
+    }
+
+    if (campaign.status !== "COMPLETED" && campaign.status !== "FAILED") {
+      return NextResponse.json(
+        { error: "Apenas campanhas concluídas ou falhadas podem ser reiniciadas" },
+        { status: 400 },
+      )
+    }
+
+    // Verificar limite diário
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
     const dailyLimit = await prisma.dailyLimit.findUnique({
       where: {
@@ -71,87 +52,50 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const dailyLimitValue = 500 // Aumentado de 100 para 500
     const currentSent = dailyLimit?.sentCount || 0
-    const maxDaily = 500 // Aumentado de 100 para 500
 
-    if (currentSent + contactIds.length > maxDaily) {
-      return NextResponse.json(
-        {
-          error: `Limite diário excedido. Você pode enviar apenas ${maxDaily - currentSent} mensagens hoje.`,
-        },
-        { status: 400 },
-      )
+    if (currentSent >= dailyLimitValue) {
+      return NextResponse.json({ error: "Limite diário de mensagens atingido" }, { status: 400 })
     }
 
-    // Verificar se a instância existe e está conectada
-    const instance = await prisma.whatsAppInstance.findFirst({
-      where: {
-        id: instanceId,
-        userId: user.id,
-        status: "CONNECTED",
-      },
-    })
-
-    if (!instance) {
-      return NextResponse.json(
-        {
-          error: "Instância não encontrada ou não conectada",
+    // Resetar a campanha
+    await prisma.$transaction(async (tx) => {
+      // Resetar contadores da campanha
+      await tx.campaign.update({
+        where: { id: params.id },
+        data: {
+          status: "PENDING",
+          sentCount: 0,
+          failedCount: 0,
+          completedAt: null,
         },
-        { status: 400 },
-      )
-    }
-
-    // Criar a campanha
-    const campaign = await prisma.campaign.create({
-      data: {
-        name,
-        message,
-        userId: user.id,
-        instanceId,
-        totalContacts: contactIds.length,
-        status: "PENDING",
-      },
-    })
-
-    // Criar os registros de envio
-    const campaignSends = contactIds.map((contactId: string) => ({
-      campaignId: campaign.id,
-      contactId,
-      status: "PENDING",
-    }))
-
-    await prisma.campaignSend.createMany({
-      data: campaignSends,
-    })
-
-    // Criar lotes de 50 contatos cada (aumentado de 20 para 50)
-    const batchSize = 50
-    const batches = []
-
-    for (let i = 0; i < contactIds.length; i += batchSize) {
-      const batchContacts = contactIds.slice(i, i + batchSize)
-      const batchNumber = Math.floor(i / batchSize) + 1
-      const scheduledAt = new Date(Date.now() + (batchNumber - 1) * 60 * 60 * 1000) // 1 hora de intervalo
-
-      batches.push({
-        campaignId: campaign.id,
-        batchNumber,
-        contactIds: batchContacts,
-        scheduledAt,
-        status: "PENDING",
       })
-    }
 
-    await prisma.campaignBatch.createMany({
-      data: batches,
+      // Resetar status dos envios
+      await tx.campaignSend.updateMany({
+        where: { campaignId: params.id },
+        data: {
+          status: "PENDING",
+          sentAt: null,
+          errorMessage: null,
+          messageId: null,
+        },
+      })
+
+      // Resetar batches
+      await tx.campaignBatch.updateMany({
+        where: { campaignId: params.id },
+        data: {
+          status: "PENDING",
+          processedAt: null,
+        },
+      })
     })
-
-    // Iniciar processamento da campanha (primeiro lote imediatamente)
-    // await processCampaignBatch(campaign.id, 1)
 
     // Atualizar campanha para RUNNING
     await prisma.campaign.update({
-      where: { id: campaign.id },
+      where: { id: params.id },
       data: {
         status: "RUNNING",
         scheduledAt: new Date(),
@@ -160,12 +104,20 @@ export async function POST(request: NextRequest) {
 
     // Processar primeiro lote imediatamente
     setTimeout(() => {
-      processCampaignBatch(campaign.id, 1)
-    }, 1000) // 1 segundo de delay para garantir que a transação foi commitada
+      processCampaignBatch(params.id, 1)
+    }, 1000)
 
-    return NextResponse.json(campaign)
+    const updatedCampaign = await prisma.campaign.findUnique({
+      where: { id: params.id },
+      include: {
+        sends: true,
+        batches: true,
+      },
+    })
+
+    return NextResponse.json(updatedCampaign)
   } catch (error) {
-    console.error("Error creating campaign:", error)
+    console.error("Error restarting campaign:", error)
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
