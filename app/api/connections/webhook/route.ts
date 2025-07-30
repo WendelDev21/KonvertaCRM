@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
               console.log("[WhatsApp Webhook] Processing message:", message.key?.id)
 
               await createWhatsAppMessage({
-                instanceName: instance,
+                instanceId: instance,
                 messageId: message.key?.id || `msg_${Date.now()}`,
                 fromNumber: message.key?.remoteJid || "unknown",
                 toNumber: message.key?.participant || instance,
