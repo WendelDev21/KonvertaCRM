@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,8 +51,19 @@ import {
   Crown,
   Zap,
   Star,
+  Save,
+  FileText,
+  Copy,
+  RefreshCw,
+  Plus,
+  Search,
+  Grid,
+  List,
+  Edit,
+  MoreHorizontal,
 } from "lucide-react"
-import Link from "next/link" 
+import Link from "next/link"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface Contact {
   id: string
@@ -72,6 +92,15 @@ interface Campaign {
   completedAt?: string
 }
 
+interface MessageTemplate {
+  id: string
+  name: string
+  message: string
+  category: string
+  usageCount: number
+  createdAt: string
+}
+
 interface DailyLimit {
   sentCount: number
   limit: number
@@ -83,9 +112,11 @@ export default function CampaignsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [instances, setInstances] = useState<WhatsAppInstance[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [templates, setTemplates] = useState<MessageTemplate[]>([])
   const [dailyLimit, setDailyLimit] = useState<DailyLimit>({ sentCount: 0, limit: 100, date: "" })
   const [loading, setLoading] = useState(false)
   const [deletingCampaign, setDeletingCampaign] = useState<string | null>(null)
+  const [restartingCampaign, setRestartingCampaign] = useState<string | null>(null)
 
   // Form states
   const [campaignName, setCampaignName] = useState("")
@@ -93,6 +124,19 @@ export default function CampaignsPage() {
   const [selectedInstance, setSelectedInstance] = useState("")
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [filterStatus, setFilterStatus] = useState<string>("all")
+
+  // Template states
+  const [templateName, setTemplateName] = useState("")
+  const [templateCategory, setTemplateCategory] = useState("Geral")
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("")
+  const [templateSearch, setTemplateSearch] = useState("")
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
+  const [showUseTemplateDialog, setShowUseTemplateDialog] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null)
+  const [templateToUse, setTemplateToUse] = useState<MessageTemplate | null>(null)
+
+  // View states
+  const [campaignView, setCampaignView] = useState<"grid" | "list">("grid")
 
   // Verificar se o usuário tem plano Business
   const userPlan = session?.user ? (session.user as any).plan || "Starter" : "Starter"
@@ -104,6 +148,7 @@ export default function CampaignsPage() {
       loadContacts()
       loadInstances()
       loadCampaigns()
+      loadTemplates()
       loadDailyLimit()
     }
   }, [session])
@@ -144,6 +189,18 @@ export default function CampaignsPage() {
     }
   }
 
+  const loadTemplates = async () => {
+    try {
+      const response = await fetch("/api/templates")
+      if (response.ok) {
+        const data = await response.json()
+        setTemplates(data)
+      }
+    } catch (error) {
+      console.error("Error loading templates:", error)
+    }
+  }
+
   const loadDailyLimit = async () => {
     try {
       const response = await fetch("/api/campaigns/daily-limit")
@@ -157,6 +214,13 @@ export default function CampaignsPage() {
   }
 
   const filteredContacts = contacts.filter((contact) => filterStatus === "all" || contact.status === filterStatus)
+
+  const filteredTemplates = templates.filter(
+    (template) =>
+      template.name.toLowerCase().includes(templateSearch.toLowerCase()) ||
+      template.message.toLowerCase().includes(templateSearch.toLowerCase()) ||
+      template.category.toLowerCase().includes(templateSearch.toLowerCase()),
+  )
 
   const handleContactSelection = (contactId: string, checked: boolean) => {
     if (checked) {
@@ -183,6 +247,156 @@ export default function CampaignsPage() {
 
     const newSelected = [...selectedContacts, ...contactsToAdd.map((c) => c.id)]
     setSelectedContacts([...new Set(newSelected)])
+  }
+
+  const saveTemplate = async () => {
+    if (!templateName.trim()) {
+      toast.error("Nome do template é obrigatório")
+      return
+    }
+
+    if (!message.trim()) {
+      toast.error("Mensagem é obrigatória")
+      return
+    }
+
+    try {
+      const url = editingTemplate ? `/api/templates/${editingTemplate.id}` : "/api/templates"
+      const method = editingTemplate ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: templateName,
+          message,
+          category: templateCategory,
+        }),
+      })
+
+      if (response.ok) {
+        toast.success(editingTemplate ? "Template atualizado com sucesso!" : "Template salvo com sucesso!")
+        setTemplateName("")
+        setTemplateCategory("Geral")
+        setShowTemplateDialog(false)
+        setEditingTemplate(null)
+        loadTemplates()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Erro ao salvar template")
+      }
+    } catch (error) {
+      console.error("Error saving template:", error)
+      toast.error("Erro ao salvar template")
+    }
+  }
+
+  const useTemplate = async (template: MessageTemplate) => {
+    setMessage(template.message)
+    setCampaignName(template.name)
+
+    // Incrementar contador de uso
+    try {
+      await fetch(`/api/templates/${template.id}`, {
+        method: "POST",
+      })
+      loadTemplates() // Recarregar para atualizar contador
+    } catch (error) {
+      console.error("Error updating template usage:", error)
+    }
+
+    toast.success(`Template "${template.name}" aplicado!`)
+  }
+
+  const useTemplateWithContacts = async (template: MessageTemplate) => {
+    setTemplateToUse(template)
+    setShowUseTemplateDialog(true)
+  }
+
+  const createCampaignFromTemplate = async () => {
+    if (!templateToUse) return
+
+    if (!selectedInstance) {
+      toast.error("Selecione uma instância do WhatsApp")
+      return
+    }
+
+    if (selectedContacts.length === 0) {
+      toast.error("Selecione pelo menos um contato")
+      return
+    }
+
+    if (selectedContacts.length > dailyLimit.limit - dailyLimit.sentCount) {
+      toast.error(
+        `Limite diário excedido. Você pode enviar apenas ${dailyLimit.limit - dailyLimit.sentCount} mensagens hoje.`,
+      )
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: templateToUse.name,
+          message: templateToUse.message,
+          instanceId: selectedInstance,
+          contactIds: selectedContacts,
+        }),
+      })
+
+      if (response.ok) {
+        // Incrementar contador de uso do template
+        await fetch(`/api/templates/${templateToUse.id}`, {
+          method: "POST",
+        })
+
+        toast.success("Campanha criada com sucesso! O envio será iniciado em breve.")
+
+        // Reset form
+        setSelectedContacts([])
+        setTemplateToUse(null)
+        setShowUseTemplateDialog(false)
+
+        // Reload data
+        loadCampaigns()
+        loadTemplates()
+        loadDailyLimit()
+      } else {
+        const error = await response.json()
+        toast.error(error.message || "Erro ao criar campanha")
+      }
+    } catch (error) {
+      console.error("Error creating campaign:", error)
+      toast.error("Erro ao criar campanha")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteTemplate = async (templateId: string) => {
+    try {
+      const response = await fetch(`/api/templates/${templateId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast.success("Template deletado com sucesso!")
+        loadTemplates()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Erro ao deletar template")
+      }
+    } catch (error) {
+      console.error("Error deleting template:", error)
+      toast.error("Erro ao deletar template")
+    }
   }
 
   const createCampaign = async () => {
@@ -291,6 +505,30 @@ export default function CampaignsPage() {
     }
   }
 
+  const restartCampaign = async (campaignId: string) => {
+    setRestartingCampaign(campaignId)
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/restart`, {
+        method: "POST",
+      })
+
+      if (response.ok) {
+        toast.success("Campanha reiniciada com sucesso!")
+        loadCampaigns()
+        loadDailyLimit()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Erro ao reiniciar campanha")
+      }
+    } catch (error) {
+      console.error("Error restarting campaign:", error)
+      toast.error("Erro ao reiniciar campanha")
+    } finally {
+      setRestartingCampaign(null)
+    }
+  }
+
   const deleteCampaign = async (campaignId: string) => {
     setDeletingCampaign(campaignId)
 
@@ -302,7 +540,7 @@ export default function CampaignsPage() {
       if (response.ok) {
         toast.success("Campanha deletada com sucesso")
         loadCampaigns()
-        loadDailyLimit() // Recarregar limite diário caso tenha mudado
+        loadDailyLimit()
       } else {
         const error = await response.json()
         toast.error(error.error || "Erro ao deletar campanha")
@@ -339,6 +577,10 @@ export default function CampaignsPage() {
     return status !== "RUNNING"
   }
 
+  const canRestartCampaign = (status: string) => {
+    return status === "COMPLETED" || status === "FAILED"
+  }
+
   const remainingLimit = dailyLimit.limit - dailyLimit.sentCount
   const limitPercentage = (dailyLimit.sentCount / dailyLimit.limit) * 100
 
@@ -349,7 +591,7 @@ export default function CampaignsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center space-x-2">
-              <MessageCircle className="h-8 w-8 text-primary" />
+              <Send className="h-8 w-8 text-primary" />
               <span>Campanhas</span>
             </h1>
             <p className="text-muted-foreground">Dispare campanhas de mensagens em massa para seus contatos</p>
@@ -363,11 +605,11 @@ export default function CampaignsPage() {
         </div>
 
         <div className="max-w-4xl mx-auto">
-        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20">
-          <CardHeader className="text-center pb-6">
-            <div className="mx-auto w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mb-4">
-              <Crown className="h-8 w-8 text-primary" />
-            </div>
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20">
+            <CardHeader className="text-center pb-6">
+              <div className="mx-auto w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mb-4">
+                <Crown className="h-8 w-8 text-primary" />
+              </div>
               <CardTitle className="text-2xl">Funcionalidade Premium</CardTitle>
               <CardDescription className="text-lg">
                 As campanhas de mensagens em massa estão disponíveis apenas no plano Business
@@ -452,12 +694,44 @@ export default function CampaignsPage() {
     return <UpgradeToBusinessPage />
   }
 
+  const TemplateActions = ({ template }: { template: MessageTemplate }) => {
+    const handleUseTemplate = useCallback(() => useTemplate(template), [template, useTemplate])
+    const handleUseTemplateWithContacts = useCallback(
+      () => useTemplateWithContacts(template),
+      [template, useTemplateWithContacts],
+    )
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={handleUseTemplate}>
+            <Copy className="h-4 w-4 mr-2" />
+            Usar na Criação
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleUseTemplateWithContacts}>
+            <Send className="h-4 w-4 mr-2" />
+            Usar com Contatos
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => deleteTemplate(template.id)} className="text-red-600">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center space-x-2">
-            <MessageCircle className="h-8 w-8 text-primary" />
+            <Send className="h-8 w-8 text-primary" />
             <span>Campanhas</span>
           </h1>
           <p className="text-muted-foreground">Dispare campanhas de mensagens em massa para seus contatos</p>
@@ -465,300 +739,782 @@ export default function CampaignsPage() {
       </div>
 
       {/* Daily Limit Alert */}
-      <Alert>
+      <Alert className="border-l-4 border-l-primary">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span>
+              <span className="font-medium">
                 Limite diário de envios: {dailyLimit.sentCount}/{dailyLimit.limit}
               </span>
               <span className="text-sm text-muted-foreground">Restam {remainingLimit} envios hoje</span>
             </div>
-            <Progress value={limitPercentage} className="w-full" />
+            <Progress value={limitPercentage} className="w-full h-2" />
           </div>
         </AlertDescription>
       </Alert>
 
       <Tabs defaultValue="create" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="create">Criar Campanha</TabsTrigger>
-          <TabsTrigger value="campaigns">Campanhas</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="create" className="flex items-center space-x-2">
+            <Plus className="w-4 h-4" />
+            <span>Criar</span>
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center space-x-2">
+            <FileText className="w-4 h-4" />
+            <span>Templates</span>
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" className="flex items-center space-x-2">
+            <Send className="w-4 h-4" />
+            <span>Campanhas</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center space-x-2">
+            <Zap className="w-4 h-4" />
+            <span>Analytics</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="create" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Campaign Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Nova Campanha</CardTitle>
-                <CardDescription>Configure sua campanha de mensagens em massa</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="campaignName">Nome da Campanha</Label>
-                  <Input
-                    id="campaignName"
-                    placeholder="Ex: Promoção Black Friday"
-                    value={campaignName}
-                    onChange={(e) => setCampaignName(e.target.value)}
-                  />
-                </div>
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Send className="w-5 h-5" />
+                    <span>Nova Campanha</span>
+                  </CardTitle>
+                  <CardDescription>Configure sua campanha de mensagens em massa</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="campaignName">Nome da Campanha</Label>
+                      <Input
+                        id="campaignName"
+                        placeholder="Ex: Promoção Black Friday"
+                        value={campaignName}
+                        onChange={(e) => setCampaignName(e.target.value)}
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="instance">Instância WhatsApp</Label>
-                  <Select value={selectedInstance} onValueChange={setSelectedInstance}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma instância" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {instances.map((instance) => (
-                        <SelectItem key={instance.id} value={instance.id}>
-                          {instance.instanceName} - {instance.status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {instances.length === 0 && (
-                    <p className="text-sm text-red-500">Nenhuma instância conectada encontrada</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="message">Mensagem</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Digite sua mensagem aqui..."
-                    rows={4}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground">{message.length} caracteres</p>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Contatos Selecionados</Label>
-                    <Badge variant="outline">{selectedContacts.length} selecionados</Badge>
+                    <div className="space-y-2">
+                      <Label htmlFor="instance">Instância WhatsApp</Label>
+                      <Select value={selectedInstance} onValueChange={setSelectedInstance}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma instância" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {instances.map((instance) => (
+                            <SelectItem key={instance.id} value={instance.id}>
+                              {instance.instanceName} - {instance.status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {instances.length === 0 && (
+                        <p className="text-sm text-red-500">Nenhuma instância conectada encontrada</p>
+                      )}
+                    </div>
                   </div>
 
-                  {selectedContacts.length > 0 && (
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Os envios serão divididos em lotes de 20 mensagens com intervalo de 1 hora entre cada lote.
-                        Tempo estimado: {Math.ceil(selectedContacts.length / 20)} horas
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="message">Mensagem</Label>
+                      <div className="flex space-x-2">
+                        <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={!message.trim()}>
+                              <Save className="w-4 h-4 mr-1" />
+                              Salvar Template
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Salvar como Template</DialogTitle>
+                              <DialogDescription>
+                                Salve esta mensagem como template para reutilização futura
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="templateName">Nome do Template</Label>
+                                <Input
+                                  id="templateName"
+                                  placeholder="Ex: Promoção Padrão"
+                                  value={templateName}
+                                  onChange={(e) => setTemplateName(e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="templateCategory">Categoria</Label>
+                                <Select value={templateCategory} onValueChange={setTemplateCategory}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Geral">Geral</SelectItem>
+                                    <SelectItem value="Promoção">Promoção</SelectItem>
+                                    <SelectItem value="Cobrança">Cobrança</SelectItem>
+                                    <SelectItem value="Suporte">Suporte</SelectItem>
+                                    <SelectItem value="Marketing">Marketing</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>
+                                Cancelar
+                              </Button>
+                              <Button onClick={saveTemplate}>
+                                <Save className="w-4 h-4 mr-1" />
+                                Salvar Template
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
+                    <Textarea
+                      id="message"
+                      placeholder="Digite sua mensagem aqui..."
+                      rows={6}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className="resize-none"
+                    />
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>{message.length} caracteres</span>
+                      {message.length > 0 && (
+                        <span>
+                          ≈ {Math.ceil(message.length / 160)} SMS{message.length > 160 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-                <Button
-                  onClick={createCampaign}
-                  disabled={loading || instances.length === 0 || remainingLimit === 0}
-                  className="w-full"
-                >
-                  {loading ? (
-                    <>
-                      <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
-                      Criando Campanha...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Criar e Iniciar Campanha
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Contatos Selecionados</Label>
+                      <Badge variant="outline" className="bg-primary/10">
+                        {selectedContacts.length} selecionados
+                      </Badge>
+                    </div>
+
+                    {selectedContacts.length > 0 && (
+                      <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-800 dark:text-blue-200">
+                          <strong>Cronograma de envio:</strong> Os envios serão divididos em lotes de 20 mensagens com
+                          intervalo de 1 hora entre cada lote. Tempo estimado:{" "}
+                          <strong>{Math.ceil(selectedContacts.length / 20)} horas</strong>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={createCampaign}
+                    disabled={loading || instances.length === 0 || remainingLimit === 0}
+                    className="w-full h-12 text-lg"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <>
+                        <RotateCcw className="w-5 h-5 mr-2 animate-spin" />
+                        Criando Campanha...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5 mr-2" />
+                        Criar e Iniciar Campanha
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Contact Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Selecionar Contatos</CardTitle>
-                <CardDescription>Escolha os contatos que receberão a mensagem</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Filtrar por Status</Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os Status</SelectItem>
-                      <SelectItem value="Novo">Novo</SelectItem>
-                      <SelectItem value="Conversando">Conversando</SelectItem>
-                      <SelectItem value="Interessado">Interessado</SelectItem>
-                      <SelectItem value="Fechado">Fechado</SelectItem>
-                      <SelectItem value="Perdido">Perdido</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="w-5 h-5" />
+                    <span>Selecionar Contatos</span>
+                  </CardTitle>
+                  <CardDescription>Escolha os contatos que receberão a mensagem</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Filtrar por Status</Label>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os Status</SelectItem>
+                        <SelectItem value="Novo">Novo</SelectItem>
+                        <SelectItem value="Conversando">Conversando</SelectItem>
+                        <SelectItem value="Interessado">Interessado</SelectItem>
+                        <SelectItem value="Fechado">Fechado</SelectItem>
+                        <SelectItem value="Perdido">Perdido</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Quick Select Buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleSelectAllByStatus("Novo")}>
-                    Todos Novos ({contacts.filter((c) => c.status === "Novo").length})
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleSelectAllByStatus("Interessado")}>
-                    Todos Interessados ({contacts.filter((c) => c.status === "Interessado").length})
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setSelectedContacts([])}>
-                    Limpar Seleção
-                  </Button>
-                </div>
-
-                <Separator />
-
-                {/* Contact List */}
-                <div className="max-h-96 overflow-y-auto space-y-2">
-                  {filteredContacts.map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="flex items-center space-x-3 p-2 border rounded-lg hover:bg-muted/50"
+                  {/* Quick Select Buttons */}
+                  <div className="grid grid-cols-1 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSelectAllByStatus("Novo")}
+                      className="justify-between"
                     >
-                      <Checkbox
-                        checked={selectedContacts.includes(contact.id)}
-                        onCheckedChange={(checked) => handleContactSelection(contact.id, checked as boolean)}
-                        disabled={!selectedContacts.includes(contact.id) && selectedContacts.length >= remainingLimit}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{contact.name}</p>
-                        <p className="text-sm text-muted-foreground truncate">{contact.contact}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">{contact.status}</Badge>
-                        <Badge variant="secondary">{contact.source}</Badge>
-                      </div>
-                    </div>
-                  ))}
+                      <span>Todos Novos</span>
+                      <Badge variant="secondary">{contacts.filter((c) => c.status === "Novo").length}</Badge>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSelectAllByStatus("Interessado")}
+                      className="justify-between"
+                    >
+                      <span>Todos Interessados</span>
+                      <Badge variant="secondary">{contacts.filter((c) => c.status === "Interessado").length}</Badge>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedContacts([])}>
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Limpar Seleção
+                    </Button>
+                  </div>
 
-                  {filteredContacts.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>Nenhum contato encontrado</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  <Separator />
+
+                  {/* Contact List */}
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {filteredContacts.map((contact) => (
+                      <div
+                        key={contact.id}
+                        className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors ${
+                          selectedContacts.includes(contact.id) ? "bg-primary/5 border-primary/20" : ""
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedContacts.includes(contact.id)}
+                          onCheckedChange={(checked) => handleContactSelection(contact.id, checked as boolean)}
+                          disabled={!selectedContacts.includes(contact.id) && selectedContacts.length >= remainingLimit}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{contact.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{contact.contact}</p>
+                        </div>
+                        <div className="flex flex-col items-end space-y-1">
+                          <Badge variant="outline" className="text-xs">
+                            {contact.status}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {contact.source}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+
+                    {filteredContacts.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p>Nenhum contato encontrado</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="campaigns">
+        <TabsContent value="templates">
           <Card>
             <CardHeader>
-              <CardTitle>Campanhas</CardTitle>
-              <CardDescription>Gerencie suas campanhas de mensagens em massa</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <FileText className="w-5 h-5" />
+                    <span>Templates de Mensagens</span>
+                  </CardTitle>
+                  <CardDescription>Gerencie seus templates de mensagens reutilizáveis</CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder="Buscar templates..."
+                      value={templateSearch}
+                      onChange={(e) => setTemplateSearch(e.target.value)}
+                      className="pl-10 w-64"
+                    />
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {campaigns.map((campaign) => (
-                  <div key={campaign.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">{campaign.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Criada em {new Date(campaign.createdAt).toLocaleString()}
-                        </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredTemplates.map((template) => (
+                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{template.name}</CardTitle>
+                          <Badge variant="outline" className="mt-1">
+                            {template.category}
+                          </Badge>
+                        </div>
+                        <TemplateActions template={template} />
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {getStatusBadge(campaign.status)}
-
-                        {campaign.status === "RUNNING" && (
-                          <Button variant="outline" size="sm" onClick={() => pauseCampaign(campaign.id)}>
-                            <Pause className="w-4 h-4 mr-1" />
-                            Pausar
-                          </Button>
-                        )}
-
-                        {campaign.status === "PAUSED" && (
-                          <Button variant="outline" size="sm" onClick={() => resumeCampaign(campaign.id)}>
-                            <Play className="w-4 h-4 mr-1" />
-                            Retomar
-                          </Button>
-                        )}
-
-                        {canDeleteCampaign(campaign.status) && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
-                                disabled={deletingCampaign === campaign.id}
-                              >
-                                {deletingCampaign === campaign.id ? (
-                                  <RotateCcw className="w-4 h-4 mr-1 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4 mr-1" />
-                                )}
-                                Deletar
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Tem certeza que deseja deletar a campanha "{campaign.name}"? Esta ação não pode ser
-                                  desfeita e todos os dados relacionados serão perdidos.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteCampaign(campaign.id)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Deletar Campanha
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-3">
+                        <div className="bg-muted/50 p-3 rounded text-sm max-h-24 overflow-y-auto">
+                          {template.message}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{template.message.length} caracteres</span>
+                          <span>Usado {template.usageCount} vezes</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(template.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="bg-muted/50 p-3 rounded">
-                      <p className="text-sm">{campaign.message}</p>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Total</p>
-                        <p className="font-semibold">{campaign.totalContacts}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Enviadas</p>
-                        <p className="font-semibold text-green-600">{campaign.sentCount}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Falharam</p>
-                        <p className="font-semibold text-red-600">{campaign.failedCount}</p>
-                      </div>
-                    </div>
-
-                    {campaign.totalContacts > 0 && (
-                      <Progress value={(campaign.sentCount / campaign.totalContacts) * 100} className="w-full" />
-                    )}
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))}
 
-                {campaigns.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Send className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhuma campanha criada ainda</p>
+                {filteredTemplates.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">Nenhum template encontrado</h3>
+                    <p>Crie seu primeiro template na aba "Criar Campanha"</p>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="campaigns">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Send className="w-5 h-5" />
+                    <span>Campanhas</span>
+                  </CardTitle>
+                  <CardDescription>Gerencie suas campanhas de mensagens em massa</CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCampaignView(campaignView === "grid" ? "list" : "grid")}
+                  >
+                    {campaignView === "grid" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className={campaignView === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
+                {campaigns.map((campaign) => (
+                  <Card key={campaign.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{campaign.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            Criada em {new Date(campaign.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">{getStatusBadge(campaign.status)}</div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
+                        <div className="bg-muted/50 p-3 rounded text-sm max-h-20 overflow-y-auto">
+                          {campaign.message}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="text-center">
+                            <p className="text-muted-foreground">Total</p>
+                            <p className="font-semibold text-lg">{campaign.totalContacts}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-muted-foreground">Enviadas</p>
+                            <p className="font-semibold text-lg text-green-600">{campaign.sentCount}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-muted-foreground">Falharam</p>
+                            <p className="font-semibold text-lg text-red-600">{campaign.failedCount}</p>
+                          </div>
+                        </div>
+
+                        {campaign.totalContacts > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Progresso</span>
+                              <span>{Math.round((campaign.sentCount / campaign.totalContacts) * 100)}%</span>
+                            </div>
+                            <Progress value={(campaign.sentCount / campaign.totalContacts) * 100} className="h-2" />
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-2">
+                          {campaign.status === "RUNNING" && (
+                            <Button variant="outline" size="sm" onClick={() => pauseCampaign(campaign.id)}>
+                              <Pause className="w-4 h-4 mr-1" />
+                              Pausar
+                            </Button>
+                          )}
+
+                          {campaign.status === "PAUSED" && (
+                            <Button variant="outline" size="sm" onClick={() => resumeCampaign(campaign.id)}>
+                              <Play className="w-4 h-4 mr-1" />
+                              Retomar
+                            </Button>
+                          )}
+
+                          {canRestartCampaign(campaign.status) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => restartCampaign(campaign.id)}
+                              disabled={restartingCampaign === campaign.id}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              {restartingCampaign === campaign.id ? (
+                                <RotateCcw className="w-4 h-4 mr-1 animate-spin" />
+                              ) : (
+                                <RefreshCw className="w-4 h-4 mr-1" />
+                              )}
+                              Reiniciar
+                            </Button>
+                          )}
+
+                          {canDeleteCampaign(campaign.status) && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                                  disabled={deletingCampaign === campaign.id}
+                                >
+                                  {deletingCampaign === campaign.id ? (
+                                    <RotateCcw className="w-4 h-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                  )}
+                                  Deletar
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja deletar a campanha "{campaign.name}"? Esta ação não pode ser
+                                    desfeita e todos os dados relacionados serão perdidos.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteCampaign(campaign.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Deletar Campanha
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {campaigns.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    <Send className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold mb-2">Nenhuma campanha criada ainda</h3>
+                    <p>Crie sua primeira campanha na aba "Criar"</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total de Campanhas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{campaigns.length}</div>
+                <p className="text-xs text-muted-foreground">campanhas criadas</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Campanhas Ativas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {campaigns.filter((c) => c.status === "RUNNING").length}
+                </div>
+                <p className="text-xs text-muted-foreground">em execução</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Mensagens Enviadas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {campaigns.reduce((acc, campaign) => acc + campaign.sentCount, 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">mensagens enviadas</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Sucesso</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {campaigns.length > 0
+                    ? Math.round(
+                        (campaigns.reduce((acc, campaign) => acc + campaign.sentCount, 0) /
+                          campaigns.reduce((acc, campaign) => acc + campaign.totalContacts, 0)) *
+                          100,
+                      )
+                    : 0}
+                  %
+                </div>
+                <p className="text-xs text-muted-foreground">de sucesso</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Campanhas Recentes</CardTitle>
+                <CardDescription>Últimas campanhas criadas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {campaigns.slice(0, 5).map((campaign) => (
+                    <div key={campaign.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{campaign.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {campaign.sentCount}/{campaign.totalContacts} enviadas
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">{getStatusBadge(campaign.status)}</div>
+                    </div>
+                  ))}
+                  {campaigns.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Send className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhuma campanha encontrada</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Templates Mais Usados</CardTitle>
+                <CardDescription>Templates salvos para reutilização</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {templates
+                    .sort((a, b) => b.usageCount - a.usageCount)
+                    .slice(0, 5)
+                    .map((template) => (
+                      <div key={template.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">{template.name}</p>
+                          <p className="text-sm text-muted-foreground">{template.category}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline">{template.usageCount} usos</Badge>
+                          <Button variant="outline" size="sm" onClick={() => useTemplateWithContacts(template)}>
+                            <Send className="w-4 h-4 mr-1" />
+                            Usar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  {templates.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhum template encontrado</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* Dialog para usar template com seleção de contatos */}
+      <Dialog open={showUseTemplateDialog} onOpenChange={setShowUseTemplateDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Usar Template: {templateToUse?.name}</DialogTitle>
+            <DialogDescription>Selecione os contatos e a instância para enviar esta mensagem</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Preview da mensagem */}
+            <div className="space-y-2">
+              <Label>Mensagem do Template</Label>
+              <div className="bg-muted/50 p-4 rounded-lg text-sm max-h-32 overflow-y-auto">
+                {templateToUse?.message}
+              </div>
+            </div>
+
+            {/* Seleção de instância */}
+            <div className="space-y-2">
+              <Label>Instância WhatsApp</Label>
+              <Select value={selectedInstance} onValueChange={setSelectedInstance}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma instância" />
+                </SelectTrigger>
+                <SelectContent>
+                  {instances.map((instance) => (
+                    <SelectItem key={instance.id} value={instance.id}>
+                      {instance.instanceName} - {instance.status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro de contatos */}
+            <div className="space-y-2">
+              <Label>Filtrar Contatos</Label>
+              <div className="flex gap-2">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    <SelectItem value="Novo">Novo</SelectItem>
+                    <SelectItem value="Conversando">Conversando</SelectItem>
+                    <SelectItem value="Interessado">Interessado</SelectItem>
+                    <SelectItem value="Fechado">Fechado</SelectItem>
+                    <SelectItem value="Perdido">Perdido</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => handleSelectAllByStatus("Novo")}>
+                  Todos Novos
+                </Button>
+                <Button variant="outline" onClick={() => handleSelectAllByStatus("Interessado")}>
+                  Interessados
+                </Button>
+                <Button variant="outline" onClick={() => setSelectedContacts([])}>
+                  Limpar
+                </Button>
+              </div>
+            </div>
+
+            {/* Lista de contatos */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Contatos ({selectedContacts.length} selecionados)</Label>
+                <Badge variant="outline">Limite: {remainingLimit} restantes</Badge>
+              </div>
+              <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-2">
+                {filteredContacts.map((contact) => (
+                  <div
+                    key={contact.id}
+                    className={`flex items-center space-x-3 p-2 border rounded hover:bg-muted/50 transition-colors ${
+                      selectedContacts.includes(contact.id) ? "bg-primary/5 border-primary/20" : ""
+                    }`}
+                  >
+                    <Checkbox
+                      checked={selectedContacts.includes(contact.id)}
+                      onCheckedChange={(checked) => handleContactSelection(contact.id, checked as boolean)}
+                      disabled={!selectedContacts.includes(contact.id) && selectedContacts.length >= remainingLimit}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{contact.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{contact.contact}</p>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Badge variant="outline" className="text-xs">
+                        {contact.status}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {contact.source}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Informações do envio */}
+            {selectedContacts.length > 0 && (
+              <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                <Clock className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 dark:text-blue-200">
+                  <strong>Cronograma:</strong> {selectedContacts.length} mensagens serão enviadas em{" "}
+                  {Math.ceil(selectedContacts.length / 20)} lote(s) com intervalo de 1 hora.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUseTemplateDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={createCampaignFromTemplate}
+              disabled={loading || !selectedInstance || selectedContacts.length === 0}
+            >
+              {loading ? (
+                <>
+                  <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Criar Campanha ({selectedContacts.length} contatos)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

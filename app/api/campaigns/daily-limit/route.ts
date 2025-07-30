@@ -35,7 +35,7 @@ export async function GET() {
 
     return NextResponse.json({
       sentCount: dailyLimit?.sentCount || 0,
-      limit: 100,
+      limit: 500, // Aumentado de 100 para 500
       date: today.toISOString().split("T")[0],
     })
   } catch (error) {
