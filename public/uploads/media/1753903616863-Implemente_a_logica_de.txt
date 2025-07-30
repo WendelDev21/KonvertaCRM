@@ -1,0 +1,10 @@
+Implemente a logica de envio e recebimento de mensagens de texto apenas(por enquanto), via API com as rotas da Evolution API. Configurei para que ao criar a instancia, automaticamente tambem é criado um webhook, no arquivo evolution-api.ts. Implemente a logica para esse webhook receber os dados enviados pela evolution e exibir na tela como resposta do contato(se o parametro "fromMe"=False). Salve todas as mensagens enviadas e recebidas no banco de dados para ter um historico de chat ao usuario consultar novamente o chat de determinado contato. Analise o banco de dados para fazer as chamadas certas, não se guie pelos arquivos e sim pelo banco de dados.
+
+Rota para enviar mensagens via api e apikey
+POST {{EVOLUTION_API_URL}}/message/sendText/{{instance}}
+apikey:AE0yhUn7lqI4FoTRWmYT4HwQkZgc0YI5
+
+{
+    "number": "{{remoteJid}}",
+    "text": "teste de envio"
+}

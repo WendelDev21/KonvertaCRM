@@ -18,7 +18,7 @@ export async function GET() {
     })
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
     const templates = await prisma.messageTemplate.findMany({
@@ -33,7 +33,7 @@ export async function GET() {
     return NextResponse.json(templates)
   } catch (error) {
     console.error("Error fetching templates:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
 
@@ -45,32 +45,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { name, message, category, mediaUrl, mediaType, fileName, caption } = await request.json()
+
+    if (!name.trim()) {
+      return NextResponse.json({ error: "Nome do template é obrigatório" }, { status: 400 })
+    }
+
+    if (!message.trim() && !mediaUrl) {
+      return NextResponse.json({ error: "Mensagem ou mídia é obrigatória" }, { status: 400 })
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     })
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const { name, message, category } = await request.json()
-
-    if (!name || !message) {
-      return NextResponse.json({ error: "Name and message are required" }, { status: 400 })
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
     const template = await prisma.messageTemplate.create({
       data: {
         name,
-        message,
+        message: message || "",
         category: category || "Geral",
         userId: user.id,
+        mediaUrl,
+        mediaType,
+        fileName,
+        caption,
       },
     })
 
     return NextResponse.json(template)
   } catch (error) {
     console.error("Error creating template:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }

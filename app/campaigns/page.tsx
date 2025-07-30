@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -47,7 +49,6 @@ import {
   RotateCcw,
   ArrowLeft,
   Trash2,
-  MessageCircle,
   Crown,
   Zap,
   Star,
@@ -59,8 +60,11 @@ import {
   Search,
   Grid,
   List,
-  Edit,
   MoreHorizontal,
+  File,
+  X,
+  Download,
+  ImageIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -90,6 +94,10 @@ interface Campaign {
   createdAt: string
   scheduledAt?: string
   completedAt?: string
+  mediaUrl?: string
+  mediaType?: string
+  fileName?: string
+  caption?: string
 }
 
 interface MessageTemplate {
@@ -99,12 +107,24 @@ interface MessageTemplate {
   category: string
   usageCount: number
   createdAt: string
+  mediaUrl?: string
+  mediaType?: string
+  fileName?: string
+  caption?: string
 }
 
 interface DailyLimit {
   sentCount: number
   limit: number
   date: string
+}
+
+interface UploadedFile {
+  url: string
+  fileName: string
+  mediaType: string
+  size: number
+  mimeType: string
 }
 
 export default function CampaignsPage() {
@@ -117,6 +137,7 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(false)
   const [deletingCampaign, setDeletingCampaign] = useState<string | null>(null)
   const [restartingCampaign, setRestartingCampaign] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   // Form states
   const [campaignName, setCampaignName] = useState("")
@@ -124,6 +145,8 @@ export default function CampaignsPage() {
   const [selectedInstance, setSelectedInstance] = useState("")
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null)
+  const [caption, setCaption] = useState("")
 
   // Template states
   const [templateName, setTemplateName] = useState("")
@@ -213,6 +236,42 @@ export default function CampaignsPage() {
     }
   }
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (response.ok) {
+        const uploadResult = await response.json()
+        setUploadedFile(uploadResult)
+        toast.success("Arquivo enviado com sucesso!")
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Erro ao enviar arquivo")
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error)
+      toast.error("Erro ao enviar arquivo")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeUploadedFile = () => {
+    setUploadedFile(null)
+    setCaption("")
+  }
+
   const filteredContacts = contacts.filter((contact) => filterStatus === "all" || contact.status === filterStatus)
 
   const filteredTemplates = templates.filter(
@@ -255,8 +314,8 @@ export default function CampaignsPage() {
       return
     }
 
-    if (!message.trim()) {
-      toast.error("Mensagem é obrigatória")
+    if (!message.trim() && !uploadedFile) {
+      toast.error("Mensagem ou mídia é obrigatória")
       return
     }
 
@@ -273,6 +332,10 @@ export default function CampaignsPage() {
           name: templateName,
           message,
           category: templateCategory,
+          mediaUrl: uploadedFile?.url,
+          mediaType: uploadedFile?.mediaType,
+          fileName: uploadedFile?.fileName,
+          caption: caption || message,
         }),
       })
 
@@ -280,6 +343,8 @@ export default function CampaignsPage() {
         toast.success(editingTemplate ? "Template atualizado com sucesso!" : "Template salvo com sucesso!")
         setTemplateName("")
         setTemplateCategory("Geral")
+        setUploadedFile(null)
+        setCaption("")
         setShowTemplateDialog(false)
         setEditingTemplate(null)
         loadTemplates()
@@ -296,6 +361,17 @@ export default function CampaignsPage() {
   const useTemplate = async (template: MessageTemplate) => {
     setMessage(template.message)
     setCampaignName(template.name)
+    setCaption(template.caption || "")
+
+    if (template.mediaUrl) {
+      setUploadedFile({
+        url: template.mediaUrl,
+        fileName: template.fileName || "media",
+        mediaType: template.mediaType || "image",
+        size: 0,
+        mimeType: "",
+      })
+    }
 
     // Incrementar contador de uso
     try {
@@ -348,6 +424,10 @@ export default function CampaignsPage() {
           message: templateToUse.message,
           instanceId: selectedInstance,
           contactIds: selectedContacts,
+          mediaUrl: templateToUse.mediaUrl,
+          mediaType: templateToUse.mediaType,
+          fileName: templateToUse.fileName,
+          caption: templateToUse.caption,
         }),
       })
 
@@ -405,8 +485,8 @@ export default function CampaignsPage() {
       return
     }
 
-    if (!message.trim()) {
-      toast.error("Mensagem é obrigatória")
+    if (!message.trim() && !uploadedFile) {
+      toast.error("Mensagem ou mídia é obrigatória")
       return
     }
 
@@ -440,6 +520,10 @@ export default function CampaignsPage() {
           message,
           instanceId: selectedInstance,
           contactIds: selectedContacts,
+          mediaUrl: uploadedFile?.url,
+          mediaType: uploadedFile?.mediaType,
+          fileName: uploadedFile?.fileName,
+          caption: caption || message,
         }),
       })
 
@@ -451,6 +535,8 @@ export default function CampaignsPage() {
         setCampaignName("")
         setMessage("")
         setSelectedContacts([])
+        setUploadedFile(null)
+        setCaption("")
 
         // Reload data
         loadCampaigns()
@@ -695,11 +781,8 @@ export default function CampaignsPage() {
   }
 
   const TemplateActions = ({ template }: { template: MessageTemplate }) => {
-    const handleUseTemplate = useCallback(() => useTemplate(template), [template, useTemplate])
-    const handleUseTemplateWithContacts = useCallback(
-      () => useTemplateWithContacts(template),
-      [template, useTemplateWithContacts],
-    )
+    const handleUseTemplate = useCallback(() => useTemplate(template), [template])
+    const handleUseTemplateWithContacts = useCallback(() => useTemplateWithContacts(template), [template])
 
     return (
       <DropdownMenu>
@@ -818,13 +901,101 @@ export default function CampaignsPage() {
                     </div>
                   </div>
 
+                  {/* File Upload Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Mídia (Opcional)</Label>
+                      <Badge variant="outline" className="text-xs">
+                        Imagens, Documentos - Máx. 16MB
+                      </Badge>
+                    </div>
+
+                    {!uploadedFile ? (
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                        <div className="text-center space-y-2">
+                          <div className="flex justify-center space-x-2">
+                            <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                            <File className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <Label htmlFor="file-upload" className="cursor-pointer">
+                              <div className="text-sm text-muted-foreground">
+                                <span className="font-medium text-primary hover:text-primary/80">
+                                  Clique para enviar
+                                </span>{" "}
+                                ou arraste e solte
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                JPG, PNG, GIF, PDF, DOC, XLS, etc.
+                              </div>
+                            </Label>
+                            <Input
+                              id="file-upload"
+                              type="file"
+                              className="hidden"
+                              accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
+                              onChange={handleFileUpload}
+                              disabled={uploading}
+                            />
+                          </div>
+                          {uploading && (
+                            <div className="flex items-center justify-center space-x-2">
+                              <RotateCcw className="h-4 w-4 animate-spin" />
+                              <span className="text-sm">Enviando...</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border rounded-lg p-4 bg-muted/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            {uploadedFile.mediaType === "image" ? (
+                              <ImageIcon className="h-8 w-8 text-blue-500" />
+                            ) : (
+                              <File className="h-8 w-8 text-green-500" />
+                            )}
+                            <div>
+                              <p className="font-medium text-sm">{uploadedFile.fileName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {uploadedFile.mediaType} • {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => window.open(uploadedFile.url, "_blank")}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={removeUploadedFile}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {uploadedFile && (
+                      <div className="space-y-2">
+                        <Label htmlFor="caption">Legenda da Mídia</Label>
+                        <Textarea
+                          id="caption"
+                          placeholder="Digite uma legenda para a mídia..."
+                          rows={3}
+                          value={caption}
+                          onChange={(e) => setCaption(e.target.value)}
+                          className="resize-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="message">Mensagem</Label>
+                      <Label htmlFor="message">Mensagem {uploadedFile ? "(Opcional)" : ""}</Label>
                       <div className="flex space-x-2">
                         <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" disabled={!message.trim()}>
+                            <Button variant="outline" size="sm" disabled={!message.trim() && !uploadedFile}>
                               <Save className="w-4 h-4 mr-1" />
                               Salvar Template
                             </Button>
@@ -877,7 +1048,7 @@ export default function CampaignsPage() {
                     </div>
                     <Textarea
                       id="message"
-                      placeholder="Digite sua mensagem aqui..."
+                      placeholder={uploadedFile ? "Mensagem opcional..." : "Digite sua mensagem aqui..."}
                       rows={6}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
@@ -907,9 +1078,9 @@ export default function CampaignsPage() {
                       <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
                         <Clock className="h-4 w-4 text-blue-600" />
                         <AlertDescription className="text-blue-800 dark:text-blue-200">
-                          <strong>Cronograma de envio:</strong> Os envios serão divididos em lotes de 20 mensagens com
+                          <strong>Cronograma de envio:</strong> Os envios serão divididos em lotes de 50 mensagens com
                           intervalo de 1 hora entre cada lote. Tempo estimado:{" "}
-                          <strong>{Math.ceil(selectedContacts.length / 20)} horas</strong>
+                          <strong>{Math.ceil(selectedContacts.length / 50)} horas</strong>
                         </AlertDescription>
                       </Alert>
                     )}
@@ -1076,11 +1247,25 @@ export default function CampaignsPage() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="space-y-3">
-                        <div className="bg-muted/50 p-3 rounded text-sm max-h-24 overflow-y-auto">
-                          {template.message}
-                        </div>
+                        {template.mediaUrl && (
+                          <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
+                            {template.mediaType === "image" ? (
+                              <ImageIcon className="h-4 w-4 text-blue-500" />
+                            ) : (
+                              <File className="h-4 w-4 text-green-500" />
+                            )}
+                            <span className="text-xs text-muted-foreground truncate">{template.fileName}</span>
+                          </div>
+                        )}
+
+                        {(template.message || template.caption) && (
+                          <div className="bg-muted/50 p-3 rounded text-sm max-h-24 overflow-y-auto">
+                            {template.caption || template.message}
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{template.message.length} caracteres</span>
+                          <span>{(template.message || template.caption || "").length} caracteres</span>
                           <span>Usado {template.usageCount} vezes</span>
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -1142,9 +1327,25 @@ export default function CampaignsPage() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="space-y-4">
-                        <div className="bg-muted/50 p-3 rounded text-sm max-h-20 overflow-y-auto">
-                          {campaign.message}
-                        </div>
+                        {campaign.mediaUrl && (
+                          <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
+                            {campaign.mediaType === "image" ? (
+                              <ImageIcon className="h-4 w-4 text-blue-500" />
+                            ) : (
+                              <File className="h-4 w-4 text-green-500" />
+                            )}
+                            <span className="text-xs text-muted-foreground truncate">{campaign.fileName}</span>
+                            <Button variant="ghost" size="sm" onClick={() => window.open(campaign.mediaUrl, "_blank")}>
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+
+                        {(campaign.message || campaign.caption) && (
+                          <div className="bg-muted/50 p-3 rounded text-sm max-h-20 overflow-y-auto">
+                            {campaign.caption || campaign.message}
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-3 gap-4 text-sm">
                           <div className="text-center">
@@ -1392,10 +1593,27 @@ export default function CampaignsPage() {
           <div className="space-y-6">
             {/* Preview da mensagem */}
             <div className="space-y-2">
-              <Label>Mensagem do Template</Label>
-              <div className="bg-muted/50 p-4 rounded-lg text-sm max-h-32 overflow-y-auto">
-                {templateToUse?.message}
-              </div>
+              <Label>Conteúdo do Template</Label>
+
+              {templateToUse?.mediaUrl && (
+                <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
+                  {templateToUse.mediaType === "image" ? (
+                    <ImageIcon className="h-4 w-4 text-blue-500" />
+                  ) : (
+                    <File className="h-4 w-4 text-green-500" />
+                  )}
+                  <span className="text-sm text-muted-foreground">{templateToUse.fileName}</span>
+                  <Button variant="ghost" size="sm" onClick={() => window.open(templateToUse.mediaUrl, "_blank")}>
+                    <Download className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+
+              {(templateToUse?.message || templateToUse?.caption) && (
+                <div className="bg-muted/50 p-4 rounded-lg text-sm max-h-32 overflow-y-auto">
+                  {templateToUse?.caption || templateToUse?.message}
+                </div>
+              )}
             </div>
 
             {/* Seleção de instância */}
@@ -1486,7 +1704,7 @@ export default function CampaignsPage() {
                 <Clock className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800 dark:text-blue-200">
                   <strong>Cronograma:</strong> {selectedContacts.length} mensagens serão enviadas em{" "}
-                  {Math.ceil(selectedContacts.length / 20)} lote(s) com intervalo de 1 hora.
+                  {Math.ceil(selectedContacts.length / 50)} lote(s) com intervalo de 1 hora.
                 </AlertDescription>
               </Alert>
             )}
