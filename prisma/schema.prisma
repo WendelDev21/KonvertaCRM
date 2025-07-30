@@ -144,7 +144,13 @@ model WhatsAppInstance {
 model Campaign {
   id          String   @id @default(uuid())
   name        String
-  message     String   @db.Text
+  message     String?  @db.Text
+  messageType String   @default("text") // text, image, audio, video, document
+  mediaUrl    String?  // URL for media files
+  fileName    String?  // Original filename for documents
+  fileSize    Int?     // File size in bytes
+  mimeType    String?  // MIME type of the file
+  caption     String?  @db.Text // Caption for media files
   userId      String
   instanceId  String
   status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, PAUSED, FAILED
@@ -179,10 +185,13 @@ model CampaignSend {
   id         String   @id @default(uuid())
   campaignId String
   contactId  String
-  status     String   @default("PENDING") // PENDING, SENT, FAILED, DELIVERED
+  status     String   @default("PENDING") // PENDING, SENT, FAILED, DELIVERED, READ
   sentAt     DateTime?
+  deliveredAt DateTime?
+  readAt     DateTime?
   errorMessage String?
   messageId  String?
+  mediaDelivered Boolean? @default(false) // Track if media was successfully delivered
   
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
@@ -219,7 +228,12 @@ model WhatsAppMessage {
 model MessageTemplate {
   id          String   @id @default(uuid())
   name        String
-  message     String   @db.Text
+  message     String?  @db.Text
+  messageType String   @default("text") // text, image, audio, video, document
+  mediaUrl    String?  // URL for media files
+  fileName    String?  // Original filename for documents
+  mimeType    String?  // MIME type of the file
+  caption     String?  @db.Text // Caption for media files
   category    String   @default("Geral")
   userId      String
   usageCount  Int      @default(0)
