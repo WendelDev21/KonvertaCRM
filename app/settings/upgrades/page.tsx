@@ -194,7 +194,7 @@ export default async function UpgradesPage() {
           {/* Informações adicionais */}
           <div className="mt-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Todos os planos incluem 30 dias. Cancele a qualquer momento.
+              Todos os planos incluem 30 dias.
             </p>
           </div>
         </div>

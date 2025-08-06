@@ -37,7 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, ArrowLeft, Trash2, Crown, Zap, Star, Save, FileText, Copy, RefreshCw, Plus, Search, Grid, List, MoreHorizontal, File, X, Download, ImageIcon } from 'lucide-react'
+import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, ArrowLeft, Trash2, Crown, Zap, Star, Save, FileText, Copy, RefreshCw, Plus, Search, Grid, List, MoreHorizontal, File, X, Download, ImageIcon, Edit, Calendar } from 'lucide-react'
 import Link from "next/link"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -119,6 +119,8 @@ export default function CampaignsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null)
   const [caption, setCaption] = useState("")
+  const [scheduledAt, setScheduledAt] = useState("")
+  const [isScheduled, setIsScheduled] = useState(false)
 
   // Template states
   const [templateName, setTemplateName] = useState("")
@@ -129,6 +131,17 @@ export default function CampaignsPage() {
   const [showUseTemplateDialog, setShowUseTemplateDialog] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null)
   const [templateToUse, setTemplateToUse] = useState<MessageTemplate | null>(null)
+
+  // Edit campaign states
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editCampaignName, setEditCampaignName] = useState("")
+  const [editMessage, setEditMessage] = useState("")
+  const [editCaption, setEditCaption] = useState("")
+  const [editScheduledAt, setEditScheduledAt] = useState("")
+  const [editIsScheduled, setEditIsScheduled] = useState(false)
+  const [editSelectedContacts, setEditSelectedContacts] = useState<string[]>([])
+  const [editUploadedFile, setEditUploadedFile] = useState<UploadedFile | null>(null)
 
   // View states
   const [campaignView, setCampaignView] = useState<"grid" | "list">("grid")
@@ -215,7 +228,7 @@ export default function CampaignsPage() {
     // Verificar tamanho do arquivo (100MB)
     const maxSize = 100 * 1024 * 1024
     if (file.size > maxSize) {
-      toast.error(`Arquivo muito grande. Tamanho máximo permitido: 100MB`)
+      toast.error(`Arquivo muito grande. Tamanho máximo permitido: 3MB`)
       return
     }
 
@@ -246,9 +259,52 @@ export default function CampaignsPage() {
     }
   }
 
+  const handleEditFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Verificar tamanho do arquivo (100MB)
+    const maxSize = 100 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error(`Arquivo muito grande. Tamanho máximo permitido: 3MB`)
+      return
+    }
+
+    setUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (response.ok) {
+        const uploadResult = await response.json()
+        setEditUploadedFile(uploadResult)
+        toast.success("Arquivo enviado com sucesso!")
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Erro ao enviar arquivo")
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error)
+      toast.error("Erro ao enviar arquivo")
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const removeUploadedFile = () => {
     setUploadedFile(null)
     setCaption("")
+  }
+
+  const removeEditUploadedFile = () => {
+    setEditUploadedFile(null)
+    setEditCaption("")
   }
 
   const filteredContacts = contacts.filter((contact) => filterStatus === "all" || contact.status === filterStatus)
@@ -274,6 +330,20 @@ export default function CampaignsPage() {
     }
   }
 
+  const handleEditContactSelection = (contactId: string, checked: boolean) => {
+    if (checked) {
+      if (editSelectedContacts.length + 1 > dailyLimit.limit - dailyLimit.sentCount) {
+        toast.error(
+          `Limite diário excedido. Você pode enviar apenas ${dailyLimit.limit - dailyLimit.sentCount} mensagens hoje.`,
+        )
+        return
+      }
+      setEditSelectedContacts([...editSelectedContacts, contactId])
+    } else {
+      setEditSelectedContacts(editSelectedContacts.filter((id) => id !== contactId))
+    }
+  }
+
   const handleSelectAllByStatus = (status: string) => {
     const statusContacts = contacts.filter((contact) => contact.status === status)
     const availableSlots = dailyLimit.limit - dailyLimit.sentCount
@@ -285,6 +355,19 @@ export default function CampaignsPage() {
 
     const newSelected = [...selectedContacts, ...contactsToAdd.map((c) => c.id)]
     setSelectedContacts([...new Set(newSelected)])
+  }
+
+  const handleEditSelectAllByStatus = (status: string) => {
+    const statusContacts = contacts.filter((contact) => contact.status === status)
+    const availableSlots = dailyLimit.limit - dailyLimit.sentCount
+    const contactsToAdd = statusContacts.slice(0, availableSlots)
+
+    if (statusContacts.length > availableSlots) {
+      toast.warning(`Apenas ${availableSlots} contatos foram selecionados devido ao limite diário.`)
+    }
+
+    const newSelected = [...editSelectedContacts, ...contactsToAdd.map((c) => c.id)]
+    setEditSelectedContacts([...new Set(newSelected)])
   }
 
   const saveTemplate = async () => {
@@ -486,6 +569,16 @@ export default function CampaignsPage() {
       return
     }
 
+    if (isScheduled && !scheduledAt) {
+      toast.error("Data e hora de agendamento são obrigatórias")
+      return
+    }
+
+    if (isScheduled && new Date(scheduledAt) <= new Date()) {
+      toast.error("Data de agendamento deve ser no futuro")
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -503,12 +596,17 @@ export default function CampaignsPage() {
           mediaType: uploadedFile?.mediaType,
           fileName: uploadedFile?.fileName,
           caption: caption || message,
+          scheduledAt: isScheduled ? scheduledAt : null,
         }),
       })
 
       if (response.ok) {
         const campaign = await response.json()
-        toast.success("Campanha criada com sucesso! O envio será iniciado em breve.")
+        toast.success(
+          isScheduled 
+            ? "Campanha agendada com sucesso!" 
+            : "Campanha criada com sucesso! O envio será iniciado em breve."
+        )
 
         // Reset form
         setCampaignName("")
@@ -516,6 +614,8 @@ export default function CampaignsPage() {
         setSelectedContacts([])
         setUploadedFile(null)
         setCaption("")
+        setScheduledAt("")
+        setIsScheduled(false)
 
         // Reload data
         loadCampaigns()
@@ -527,6 +627,101 @@ export default function CampaignsPage() {
     } catch (error) {
       console.error("Error creating campaign:", error)
       toast.error("Erro ao criar campanha")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const editCampaign = async (campaign: Campaign) => {
+    setEditingCampaign(campaign)
+    setEditCampaignName(campaign.name)
+    setEditMessage(campaign.message)
+    setEditCaption(campaign.caption || "")
+    setEditScheduledAt(campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : "")
+    setEditIsScheduled(campaign.status === "SCHEDULED")
+    
+    if (campaign.mediaUrl) {
+      setEditUploadedFile({
+        url: campaign.mediaUrl,
+        fileName: campaign.fileName || "media",
+        mediaType: campaign.mediaType || "image",
+        size: 0,
+        mimeType: "",
+      })
+    } else {
+      setEditUploadedFile(null)
+    }
+
+    // Carregar contatos da campanha
+    try {
+      const response = await fetch(`/api/campaigns/${campaign.id}`)
+      if (response.ok) {
+        const campaignData = await response.json()
+        const contactIds = campaignData.sends.map((send: any) => send.contactId)
+        setEditSelectedContacts(contactIds)
+      }
+    } catch (error) {
+      console.error("Error loading campaign contacts:", error)
+    }
+
+    setShowEditDialog(true)
+  }
+
+  const updateCampaign = async () => {
+    if (!editingCampaign) return
+
+    if (!editCampaignName.trim()) {
+      toast.error("Nome da campanha é obrigatório")
+      return
+    }
+
+    if (!editMessage.trim() && !editUploadedFile) {
+      toast.error("Mensagem ou mídia é obrigatória")
+      return
+    }
+
+    if (editIsScheduled && !editScheduledAt) {
+      toast.error("Data e hora de agendamento são obrigatórias")
+      return
+    }
+
+    if (editIsScheduled && new Date(editScheduledAt) <= new Date()) {
+      toast.error("Data de agendamento deve ser no futuro")
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/campaigns/${editingCampaign.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: editCampaignName,
+          message: editMessage,
+          contactIds: editSelectedContacts,
+          mediaUrl: editUploadedFile?.url,
+          mediaType: editUploadedFile?.mediaType,
+          fileName: editUploadedFile?.fileName,
+          caption: editCaption || editMessage,
+          scheduledAt: editIsScheduled ? editScheduledAt : null,
+        }),
+      })
+
+      if (response.ok) {
+        toast.success("Campanha atualizada com sucesso!")
+        setShowEditDialog(false)
+        setEditingCampaign(null)
+        loadCampaigns()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || "Erro ao atualizar campanha")
+      }
+    } catch (error) {
+      console.error("Error updating campaign:", error)
+      toast.error("Erro ao atualizar campanha")
     } finally {
       setLoading(false)
     }
@@ -621,6 +816,7 @@ export default function CampaignsPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       PENDING: { color: "bg-yellow-500", label: "Pendente", icon: Clock },
+      SCHEDULED: { color: "bg-purple-500", label: "Agendada", icon: Calendar },
       RUNNING: { color: "bg-blue-500", label: "Executando", icon: Play },
       COMPLETED: { color: "bg-green-500", label: "Concluída", icon: CheckCircle },
       PAUSED: { color: "bg-orange-500", label: "Pausada", icon: Pause },
@@ -639,6 +835,11 @@ export default function CampaignsPage() {
   }
 
   const canDeleteCampaign = (status: string) => {
+    return status !== "RUNNING"
+  }
+
+  const canEditCampaign = (status: string) => {
+    // Permite editar campanhas em qualquer status exceto RUNNING
     return status !== "RUNNING"
   }
 
@@ -880,6 +1081,37 @@ export default function CampaignsPage() {
                     </div>
                   </div>
 
+                  {/* Scheduling Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="schedule"
+                        checked={isScheduled}
+                        onCheckedChange={(checked) => setIsScheduled(checked as boolean)}
+                      />
+                      <Label htmlFor="schedule" className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>Agendar campanha</span>
+                      </Label>
+                    </div>
+
+                    {isScheduled && (
+                      <div className="space-y-2">
+                        <Label htmlFor="scheduledAt">Data e Hora do Envio</Label>
+                        <Input
+                          id="scheduledAt"
+                          type="datetime-local"
+                          value={scheduledAt}
+                          onChange={(e) => setScheduledAt(e.target.value)}
+                          min={new Date().toISOString().slice(0, 16)}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          A campanha será executada automaticamente na data e hora especificadas
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   {/* File Upload Section */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -938,9 +1170,6 @@ export default function CampaignsPage() {
                               <p className="font-medium text-sm">{uploadedFile.fileName}</p>
                               <p className="text-xs text-muted-foreground">
                                 {uploadedFile.mediaType} • {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                              <p className="text-xs text-orange-600">
-                                Será convertido para Base64 no envio
                               </p>
                             </div>
                           </div>
@@ -1065,6 +1294,12 @@ export default function CampaignsPage() {
                           <strong>{Math.ceil(selectedContacts.length / 50) * 0.5} horas</strong>
                           <br />
                           <strong>Método:</strong> Arquivos serão convertidos para Base64 automaticamente
+                          {isScheduled && (
+                            <>
+                              <br />
+                              <strong>Agendamento:</strong> Campanha iniciará em {new Date(scheduledAt).toLocaleString()}
+                            </>
+                          )}
                         </AlertDescription>
                       </Alert>
                     )}
@@ -1079,12 +1314,21 @@ export default function CampaignsPage() {
                     {loading ? (
                       <>
                         <RotateCcw className="w-5 h-5 mr-2 animate-spin" />
-                        Criando Campanha...
+                        {isScheduled ? "Agendando Campanha..." : "Criando Campanha..."}
                       </>
                     ) : (
                       <>
-                        <Send className="w-5 h-5 mr-2" />
-                        Criar e Iniciar Campanha
+                        {isScheduled ? (
+                          <>
+                            <Calendar className="w-5 h-5 mr-2" />
+                            Agendar Campanha
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-5 h-5 mr-2" />
+                            Criar e Iniciar Campanha
+                          </>
+                        )}
                       </>
                     )}
                   </Button>
@@ -1305,6 +1549,11 @@ export default function CampaignsPage() {
                           <p className="text-sm text-muted-foreground">
                             Criada em {new Date(campaign.createdAt).toLocaleString()}
                           </p>
+                          {campaign.scheduledAt && (
+                            <p className="text-sm text-purple-600">
+                              {campaign.status === "SCHEDULED" ? "Agendada para" : "Executada em"}: {new Date(campaign.scheduledAt).toLocaleString()}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2">{getStatusBadge(campaign.status)}</div>
                       </div>
@@ -1357,6 +1606,13 @@ export default function CampaignsPage() {
                         )}
 
                         <div className="flex flex-wrap gap-2">
+                          {canEditCampaign(campaign.status) && (
+                            <Button variant="outline" size="sm" onClick={() => editCampaign(campaign)}>
+                              <Edit className="w-4 h-4 mr-1" />
+                              Editar
+                            </Button>
+                          )}
+
                           {campaign.status === "RUNNING" && (
                             <Button variant="outline" size="sm" onClick={() => pauseCampaign(campaign.id)}>
                               <Pause className="w-4 h-4 mr-1" />
@@ -1469,13 +1725,13 @@ export default function CampaignsPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Mensagens Enviadas</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Campanhas Agendadas</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {campaigns.reduce((acc, campaign) => acc + campaign.sentCount, 0)}
+                <div className="text-2xl font-bold text-purple-600">
+                  {campaigns.filter((c) => c.status === "SCHEDULED").length}
                 </div>
-                <p className="text-xs text-muted-foreground">mensagens enviadas</p>
+                <p className="text-xs text-muted-foreground">agendadas</p>
               </CardContent>
             </Card>
 
@@ -1514,6 +1770,11 @@ export default function CampaignsPage() {
                         <p className="text-sm text-muted-foreground">
                           {campaign.sentCount}/{campaign.totalContacts} enviadas
                         </p>
+                        {campaign.scheduledAt && campaign.status === "SCHEDULED" && (
+                          <p className="text-xs text-purple-600">
+                            Agendada para {new Date(campaign.scheduledAt).toLocaleString()}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2">{getStatusBadge(campaign.status)}</div>
                     </div>
@@ -1713,6 +1974,263 @@ export default function CampaignsPage() {
                 <>
                   <Send className="w-4 h-4 mr-2" />
                   Criar Campanha ({selectedContacts.length} contatos)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar campanha */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Campanha: {editingCampaign?.name}</DialogTitle>
+            <DialogDescription>Modifique os dados da campanha</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Nome da campanha */}
+            <div className="space-y-2">
+              <Label htmlFor="editCampaignName">Nome da Campanha</Label>
+              <Input
+                id="editCampaignName"
+                placeholder="Ex: Promoção Black Friday"
+                value={editCampaignName}
+                onChange={(e) => setEditCampaignName(e.target.value)}
+              />
+            </div>
+
+            {/* Agendamento */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="editSchedule"
+                  checked={editIsScheduled}
+                  onCheckedChange={(checked) => setEditIsScheduled(checked as boolean)}
+                />
+                <Label htmlFor="editSchedule" className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>Agendar campanha</span>
+                </Label>
+              </div>
+
+              {editIsScheduled && (
+                <div className="space-y-2">
+                  <Label htmlFor="editScheduledAt">Data e Hora do Envio</Label>
+                  <Input
+                    id="editScheduledAt"
+                    type="datetime-local"
+                    value={editScheduledAt}
+                    onChange={(e) => setEditScheduledAt(e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Upload de arquivo */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Mídia (Opcional)</Label>
+                <Badge variant="outline" className="text-xs">
+                  Imagens, Documentos - Máx. 3MB
+                </Badge>
+              </div>
+
+              {!editUploadedFile ? (
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                  <div className="text-center space-y-2">
+                    <div className="flex justify-center space-x-2">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      <File className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-file-upload" className="cursor-pointer">
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium text-primary hover:text-primary/80">
+                            Clique para enviar
+                          </span>{" "}
+                          ou arraste e solte
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          JPG, PNG, GIF, PDF, DOC, XLS, etc. (Máx. 3MB)
+                        </div>
+                      </Label>
+                      <Input
+                        id="edit-file-upload"
+                        type="file"
+                        className="hidden"
+                        accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
+                        onChange={handleEditFileUpload}
+                        disabled={uploading}
+                      />
+                    </div>
+                    {uploading && (
+                      <div className="flex items-center justify-center space-x-2">
+                        <RotateCcw className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Enviando...</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {editUploadedFile.mediaType === "image" ? (
+                        <ImageIcon className="h-8 w-8 text-blue-500" />
+                      ) : (
+                        <File className="h-8 w-8 text-green-500" />
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{editUploadedFile.fileName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {editUploadedFile.mediaType}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => window.open(editUploadedFile.url, "_blank")}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={removeEditUploadedFile}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editUploadedFile && (
+                <div className="space-y-2">
+                  <Label htmlFor="editCaption">Legenda da Mídia</Label>
+                  <Textarea
+                    id="editCaption"
+                    placeholder="Digite uma legenda para a mídia..."
+                    rows={3}
+                    value={editCaption}
+                    onChange={(e) => setEditCaption(e.target.value)}
+                    className="resize-none"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Mensagem */}
+            <div className="space-y-2">
+              <Label htmlFor="editMessage">Mensagem {editUploadedFile ? "(Opcional)" : ""}</Label>
+              <Textarea
+                id="editMessage"
+                placeholder={editUploadedFile ? "Mensagem opcional..." : "Digite sua mensagem aqui..."}
+                rows={6}
+                value={editMessage}
+                onChange={(e) => setEditMessage(e.target.value)}
+                className="resize-none"
+              />
+            </div>
+
+            {/* Seleção de contatos */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Contatos Selecionados</Label>
+                <Badge variant="outline" className="bg-primary/10">
+                  {editSelectedContacts.length} selecionados
+                </Badge>
+              </div>
+
+              {/* Filtro de contatos */}
+              <div className="flex gap-2">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    <SelectItem value="Novo">Novo</SelectItem>
+                    <SelectItem value="Conversando">Conversando</SelectItem>
+                    <SelectItem value="Interessado">Interessado</SelectItem>
+                    <SelectItem value="Fechado">Fechado</SelectItem>
+                    <SelectItem value="Perdido">Perdido</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => handleEditSelectAllByStatus("Novo")}>
+                  Todos Novos
+                </Button>
+                <Button variant="outline" onClick={() => handleEditSelectAllByStatus("Interessado")}>
+                  Interessados
+                </Button>
+                <Button variant="outline" onClick={() => setEditSelectedContacts([])}>
+                  Limpar
+                </Button>
+              </div>
+
+              {/* Lista de contatos */}
+              <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-2">
+                {filteredContacts.map((contact) => (
+                  <div
+                    key={contact.id}
+                    className={`flex items-center space-x-3 p-2 border rounded hover:bg-muted/50 transition-colors ${
+                      editSelectedContacts.includes(contact.id) ? "bg-primary/5 border-primary/20" : ""
+                    }`}
+                  >
+                    <Checkbox
+                      checked={editSelectedContacts.includes(contact.id)}
+                      onCheckedChange={(checked) => handleEditContactSelection(contact.id, checked as boolean)}
+                      disabled={!editSelectedContacts.includes(contact.id) && editSelectedContacts.length >= remainingLimit}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{contact.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{contact.contact}</p>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Badge variant="outline" className="text-xs">
+                        {contact.status}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {contact.source}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Informações do envio */}
+            {editSelectedContacts.length > 0 && (
+              <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                <Clock className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 dark:text-blue-200">
+                  <strong>Cronograma:</strong> {editSelectedContacts.length} mensagens serão enviadas em{" "}
+                  {Math.ceil(editSelectedContacts.length / 50)} lote(s) com intervalo de 30 minutos.
+                  {editIsScheduled && editScheduledAt && (
+                    <>
+                      <br />
+                      <strong>Agendamento:</strong> Campanha iniciará em {new Date(editScheduledAt).toLocaleString()}
+                    </>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={updateCampaign}
+              disabled={loading || editSelectedContacts.length === 0}
+            >
+              {loading ? (
+                <>
+                  <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+                  Atualizando...
+                </>
+              ) : (
+                <>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Atualizar Campanha ({editSelectedContacts.length} contatos)
                 </>
               )}
             </Button>

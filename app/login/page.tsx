@@ -200,7 +200,7 @@ function LoginPageContent() {
         {/* Footer */}
         <div className="p-4 text-center">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            &copy; {new Date().getFullYear()} Konverta. Todos os direitos reservados. v1.2.3
+            &copy; {new Date().getFullYear()} Konverta. Todos os direitos reservados. v1.2.4
           </p>
         </div>
       </div>

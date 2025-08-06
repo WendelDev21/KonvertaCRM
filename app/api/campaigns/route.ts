@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { name, message, instanceId, contactIds, mediaUrl, mediaType, fileName, caption } = await request.json()
+    const { name, message, instanceId, contactIds, mediaUrl, mediaType, fileName, caption, scheduledAt } = await request.json()
 
     if (!name || (!message && !mediaUrl) || !instanceId || !contactIds || contactIds.length === 0) {
       return NextResponse.json(
@@ -150,6 +150,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Determinar status inicial da campanha
+    const isScheduled = scheduledAt && new Date(scheduledAt) > new Date()
+    const initialStatus = isScheduled ? "SCHEDULED" : "PENDING"
+
     // Criar a campanha
     const campaign = await prisma.campaign.create({
       data: {
@@ -158,11 +162,12 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         instanceId,
         totalContacts: contactIds.length,
-        status: "PENDING",
+        status: initialStatus,
         mediaUrl: processedMediaUrl,
         mediaType,
         fileName,
         caption,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
       },
     })
 
@@ -183,16 +188,18 @@ export async function POST(request: NextRequest) {
     console.log(`[Campaign] Using fixed batch size: ${batchSize}`)
 
     const batches = []
+    const baseTime = scheduledAt ? new Date(scheduledAt) : new Date()
+    
     for (let i = 0; i < contactIds.length; i += batchSize) {
       const batchContacts = contactIds.slice(i, i + batchSize)
       const batchNumber = Math.floor(i / batchSize) + 1
-      const scheduledAt = new Date(Date.now() + (batchNumber - 1) * 30 * 60 * 1000) // 30 minutos fixo
+      const batchScheduledAt = new Date(baseTime.getTime() + (batchNumber - 1) * 30 * 60 * 1000) // 30 minutos fixo
 
       batches.push({
         campaignId: campaign.id,
         batchNumber,
         contactIds: batchContacts,
-        scheduledAt,
+        scheduledAt: batchScheduledAt,
         status: "PENDING",
       })
     }
@@ -201,24 +208,54 @@ export async function POST(request: NextRequest) {
       data: batches,
     })
 
-    // Atualizar campanha para RUNNING
-    await prisma.campaign.update({
-      where: { id: campaign.id },
-      data: {
-        status: "RUNNING",
-        scheduledAt: new Date(),
-      },
-    })
+    // Se não é agendada, atualizar para RUNNING e processar imediatamente
+    if (!isScheduled) {
+      await prisma.campaign.update({
+        where: { id: campaign.id },
+        data: {
+          status: "RUNNING",
+        },
+      })
 
-    // Processar primeiro lote imediatamente
-    setTimeout(() => {
-      processCampaignBatch(campaign.id, 1)
-    }, 1000)
+      // Processar primeiro lote imediatamente
+      setTimeout(() => {
+        processCampaignBatch(campaign.id, 1)
+      }, 1000)
+    } else {
+      // Agendar execução da campanha
+      const delay = new Date(scheduledAt).getTime() - Date.now()
+      if (delay > 0) {
+        setTimeout(() => {
+          startScheduledCampaign(campaign.id)
+        }, delay)
+      }
+    }
 
     return NextResponse.json(campaign)
   } catch (error) {
     console.error("Error creating campaign:", error)
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+  }
+}
+
+async function startScheduledCampaign(campaignId: string) {
+  try {
+    console.log(`[Campaign] Starting scheduled campaign ${campaignId}`)
+    
+    // Atualizar status para RUNNING
+    await prisma.campaign.update({
+      where: { id: campaignId },
+      data: {
+        status: "RUNNING",
+      },
+    })
+
+    // Processar primeiro lote
+    setTimeout(() => {
+      processCampaignBatch(campaignId, 1)
+    }, 1000)
+  } catch (error) {
+    console.error("Error starting scheduled campaign:", error)
   }
 }
 
