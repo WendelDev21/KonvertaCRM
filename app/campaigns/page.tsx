@@ -37,35 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import {
-  Send,
-  Users,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Play,
-  Pause,
-  RotateCcw,
-  ArrowLeft,
-  Trash2,
-  Crown,
-  Zap,
-  Star,
-  Save,
-  FileText,
-  Copy,
-  RefreshCw,
-  Plus,
-  Search,
-  Grid,
-  List,
-  MoreHorizontal,
-  File,
-  X,
-  Download,
-  ImageIcon,
-} from "lucide-react"
+import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, ArrowLeft, Trash2, Crown, Zap, Star, Save, FileText, Copy, RefreshCw, Plus, Search, Grid, List, MoreHorizontal, File, X, Download, ImageIcon } from 'lucide-react'
 import Link from "next/link"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -240,6 +212,13 @@ export default function CampaignsPage() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    // Verificar tamanho do arquivo (100MB)
+    const maxSize = 100 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error(`Arquivo muito grande. Tamanho máximo permitido: 100MB`)
+      return
+    }
+
     setUploading(true)
 
     try {
@@ -254,7 +233,7 @@ export default function CampaignsPage() {
       if (response.ok) {
         const uploadResult = await response.json()
         setUploadedFile(uploadResult)
-        toast.success("Arquivo enviado com sucesso!")
+        toast.success("Arquivo enviado com sucesso! Será convertido para base64 no envio.")
       } else {
         const error = await response.json()
         toast.error(error.error || "Erro ao enviar arquivo")
@@ -906,7 +885,7 @@ export default function CampaignsPage() {
                     <div className="flex items-center justify-between">
                       <Label>Mídia (Opcional)</Label>
                       <Badge variant="outline" className="text-xs">
-                        Imagens, Documentos - Máx. 16MB
+                        Imagens, Documentos - Máx. 3MB
                       </Badge>
                     </div>
 
@@ -926,7 +905,7 @@ export default function CampaignsPage() {
                                 ou arraste e solte
                               </div>
                               <div className="text-xs text-muted-foreground mt-1">
-                                JPG, PNG, GIF, PDF, DOC, XLS, etc.
+                                JPG, PNG, GIF, PDF, DOC, XLS, etc. (Máx. 3MB)
                               </div>
                             </Label>
                             <Input
@@ -959,6 +938,9 @@ export default function CampaignsPage() {
                               <p className="font-medium text-sm">{uploadedFile.fileName}</p>
                               <p className="text-xs text-muted-foreground">
                                 {uploadedFile.mediaType} • {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                              <p className="text-xs text-orange-600">
+                                Será convertido para Base64 no envio
                               </p>
                             </div>
                           </div>
@@ -1079,8 +1061,10 @@ export default function CampaignsPage() {
                         <Clock className="h-4 w-4 text-blue-600" />
                         <AlertDescription className="text-blue-800 dark:text-blue-200">
                           <strong>Cronograma de envio:</strong> Os envios serão divididos em lotes de 50 mensagens com
-                          intervalo de 1 hora entre cada lote. Tempo estimado:{" "}
-                          <strong>{Math.ceil(selectedContacts.length / 50)} horas</strong>
+                          intervalo de 30 minutos entre cada lote. Tempo estimado:{" "}
+                          <strong>{Math.ceil(selectedContacts.length / 50) * 0.5} horas</strong>
+                          <br />
+                          <strong>Método:</strong> Arquivos serão convertidos para Base64 automaticamente
                         </AlertDescription>
                       </Alert>
                     )}
@@ -1704,7 +1688,9 @@ export default function CampaignsPage() {
                 <Clock className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-800 dark:text-blue-200">
                   <strong>Cronograma:</strong> {selectedContacts.length} mensagens serão enviadas em{" "}
-                  {Math.ceil(selectedContacts.length / 50)} lote(s) com intervalo de 1 hora.
+                  {Math.ceil(selectedContacts.length / 50)} lote(s) com intervalo de 30 minutos.
+                  <br />
+                  <strong>Método:</strong> Arquivos serão convertidos para Base64 automaticamente
                 </AlertDescription>
               </Alert>
             )}

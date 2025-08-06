@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar tamanho do arquivo (máximo 100MB)
-    const maxSize = 100 * 1024 * 1024 // 100MB
+    const maxSize = 200 * 1024 * 1024 // 100MB
     if (file.size > maxSize) {
       return NextResponse.json({ error: "Arquivo muito grande. Máximo 100MB." }, { status: 400 })
     }

@@ -9,9 +9,9 @@ import sharp from "sharp"
 const prisma = new PrismaClient()
 
 // Limite de 100MB para arquivos
-const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB em bytes
-// Limite de 5MB para base64 (arquivos maiores usarão apenas URL)
-const BASE64_THRESHOLD = 100 * 1024 * 1024 // 5MB em bytes
+const MAX_FILE_SIZE = 200 * 1024 * 1024
+// Limite de 200MB para base64 (considerando aumento de 33%)
+const BASE64_THRESHOLD = 200 * 1024 * 1024
 
 export async function GET() {
   try {
@@ -177,30 +177,16 @@ export async function POST(request: NextRequest) {
       data: campaignSends,
     })
 
-    // Ajustar tamanho do lote baseado no tamanho do arquivo
-    let batchSize = 50 // Padrão para texto
-    if (fileSize > 0) {
-      if (fileSize > 50 * 1024 * 1024) {
-        // > 50MB
-        batchSize = 5
-      } else if (fileSize > 20 * 1024 * 1024) {
-        // > 20MB
-        batchSize = 10
-      } else if (fileSize > 100 * 1024 * 1024) {
-        // > 5MB
-        batchSize = 20
-      } else {
-        batchSize = 30
-      }
-    }
+    // Tamanho fixo do lote: 50 mensagens
+    const batchSize = 50
 
-    console.log(`[Campaign] Using batch size: ${batchSize} for file size: ${(fileSize / 1024 / 1024).toFixed(2)}MB`)
+    console.log(`[Campaign] Using fixed batch size: ${batchSize}`)
 
     const batches = []
     for (let i = 0; i < contactIds.length; i += batchSize) {
       const batchContacts = contactIds.slice(i, i + batchSize)
       const batchNumber = Math.floor(i / batchSize) + 1
-      const scheduledAt = new Date(Date.now() + (batchNumber - 1) * 30 * 60 * 1000) // 30 minutos
+      const scheduledAt = new Date(Date.now() + (batchNumber - 1) * 30 * 60 * 1000) // 30 minutos fixo
 
       batches.push({
         campaignId: campaign.id,
@@ -311,7 +297,7 @@ async function fileToBase64(filePath: string): Promise<string> {
 
     if (fileStats.size > BASE64_THRESHOLD) {
       throw new Error(
-        `Arquivo muito grande para base64: ${(fileStats.size / 1024 / 1024).toFixed(2)}MB. Usando método URL.`,
+        `Arquivo muito grande para base64: ${(fileStats.size / 1024 / 1024).toFixed(2)}MB. Limite máximo: ${(BASE64_THRESHOLD / 1024 / 1024).toFixed(0)}MB`,
       )
     }
 
@@ -443,77 +429,44 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
     let successCount = 0
     let failCount = 0
 
-    // Determinar método de envio baseado no tamanho do arquivo
-    let sendMethod: "url" | "base64" | "text" = "text"
+    // Preparar dados para envio de mídia (apenas base64)
     let mediaBase64: string | null = null
     let mimetype: string | null = null
     let mediaTypeForApi: string | null = null
-    let fileSize = 0
 
     if (batch.campaign.mediaUrl) {
       try {
-        const fullPath = join(process.cwd(), "public", batch.campaign.mediaUrl)
-        const fileStats = await stat(fullPath)
-        fileSize = fileStats.size
-
         mimetype = getMimeTypeFromExtension(batch.campaign.fileName || "")
         mediaTypeForApi = getMediaTypeFromMime(mimetype)
 
-        console.log(
-          `[Campaign] File size: ${(fileSize / 1024 / 1024).toFixed(2)}MB, mimetype: ${mimetype}, mediaType: ${mediaTypeForApi}`,
-        )
+        console.log(`[Campaign] Processing media file, mimetype: ${mimetype}, mediaType: ${mediaTypeForApi}`)
 
-        // Decidir método baseado no tamanho
-        if (fileSize <= BASE64_THRESHOLD) {
-          // Arquivos pequenos: tentar base64 primeiro, URL como fallback
-          sendMethod = "base64"
-          try {
-            mediaBase64 = await fileToBase64(batch.campaign.mediaUrl)
-            console.log(`[Campaign] Will use base64 method for small file`)
-          } catch (error) {
-            console.log(`[Campaign] Base64 failed, will use URL method`)
-            sendMethod = "url"
-          }
-        } else {
-          // Arquivos grandes: usar apenas URL
-          sendMethod = "url"
-          console.log(`[Campaign] Will use URL method for large file (${(fileSize / 1024 / 1024).toFixed(2)}MB)`)
-        }
+        // Converter para base64
+        mediaBase64 = await fileToBase64(batch.campaign.mediaUrl)
+        console.log(`[Campaign] File converted to base64 successfully`)
       } catch (error) {
-        console.error("[Campaign] Error analyzing media file:", error)
-        throw new Error("Erro ao analisar arquivo de mídia")
+        console.error("[Campaign] Error processing media file:", error)
+        throw new Error("Erro ao processar arquivo de mídia: " + (error instanceof Error ? error.message : "Erro desconhecido"))
       }
     }
 
-    // Calcular delay baseado no tamanho do arquivo
-    let delayBetweenMessages = 2000 // 2 segundos padrão
-    if (fileSize > 50 * 1024 * 1024) {
-      // > 50MB
-      delayBetweenMessages = 10000 // 10 segundos
-    } else if (fileSize > 20 * 1024 * 1024) {
-      // > 20MB
-      delayBetweenMessages = 6000 // 6 segundos
-    } else if (fileSize > 100 * 1024 * 1024) {
-      // > 5MB
-      delayBetweenMessages = 4000 // 4 segundos
-    }
+    // Delay fixo entre mensagens: 2 segundos
+    const delayBetweenMessages = 2000
 
-    console.log(`[Campaign] Using ${delayBetweenMessages}ms delay between messages`)
+    console.log(`[Campaign] Using fixed ${delayBetweenMessages}ms delay between messages`)
 
     // Enviar mensagens com delay
     for (let i = 0; i < contacts.length; i++) {
       const contact = contacts[i]
 
       try {
-        console.log(
-          `[Campaign] Sending message ${i + 1}/${contacts.length} to ${contact.contact} using ${sendMethod} method`,
-        )
+        console.log(`[Campaign] Sending message ${i + 1}/${contacts.length} to ${contact.contact}`)
 
         let response
         let success = false
 
-        if (sendMethod === "base64" && mediaBase64) {
-          // Método Base64
+        if (mediaBase64) {
+          // Envio de mídia via base64
           const base64Payload = {
             number: contact.contact,
             mediatype: mediaTypeForApi,
@@ -532,50 +485,12 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
             body: JSON.stringify(base64Payload),
           })
 
-          if (response.ok) {
-            success = true
-            console.log(`[Campaign] Base64 method successful for ${contact.contact}`)
-          } else {
-            console.log(`[Campaign] Base64 method failed, trying URL fallback...`)
-            sendMethod = "url" // Switch to URL for remaining contacts
+          success = response.ok
+          if (success) {
+            console.log(`[Campaign] Media message sent successfully to ${contact.contact}`)
           }
-        }
-
-        if ((sendMethod === "url" || !success) && batch.campaign.mediaUrl) {
-          // Método URL
-          if (process.env.NEXT_PUBLIC_APP_URL) {
-            const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL}${batch.campaign.mediaUrl}`
-
-            const urlPayload = {
-              number: contact.contact,
-              mediatype: mediaTypeForApi,
-              caption: batch.campaign.caption || batch.campaign.message || "",
-              media: publicUrl,
-              fileName: batch.campaign.fileName || "media",
-            }
-
-            console.log(`[Campaign] Trying URL method with: ${publicUrl}`)
-
-            response = await fetch(`${evolutionApiUrl}/message/sendMedia/${instance.instanceName}`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: evolutionApiKey,
-              },
-              body: JSON.stringify(urlPayload),
-            })
-
-            if (response.ok) {
-              success = true
-              console.log(`[Campaign] URL method successful for ${contact.contact}`)
-            }
-          } else {
-            throw new Error("NEXT_PUBLIC_APP_URL não configurada para método URL")
-          }
-        }
-
-        if (sendMethod === "text") {
-          // Enviar texto
+        } else {
+          // Envio de texto
           const textPayload = {
             number: contact.contact,
             text: batch.campaign.message,
@@ -591,11 +506,13 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
           })
 
           success = response.ok
+          if (success) {
+            console.log(`[Campaign] Text message sent successfully to ${contact.contact}`)
+          }
         }
 
         if (success && response) {
           const result = await response.json()
-          console.log(`[Campaign] Message sent successfully to ${contact.contact}`)
 
           await prisma.campaignSend.update({
             where: {
@@ -697,15 +614,8 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
     })
 
     if (nextBatch) {
-      // Calcular intervalo baseado no tamanho do arquivo
-      let intervalMinutes = 30 // Padrão
-      if (fileSize > 50 * 1024 * 1024) {
-        // > 50MB
-        intervalMinutes = 60 // 1 hora
-      } else if (fileSize > 20 * 1024 * 1024) {
-        // > 20MB
-        intervalMinutes = 45 // 45 minutos
-      }
+      // Intervalo fixo de 30 minutos entre lotes
+      const intervalMinutes = 30
 
       console.log(`[Campaign] Scheduling next batch ${batchNumber + 1} in ${intervalMinutes} minutes`)
       setTimeout(
