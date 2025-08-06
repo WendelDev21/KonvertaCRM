@@ -20,6 +20,8 @@ model User {
   isActive             Boolean            @default(true)
   theme                String?            @default("light")
   notificationSettings String?            @default("{}")
+  credits              Decimal               @default(0.00) @db.Decimal(10, 2) // New field for credits
+  
   accounts             Account[]
   apiTokens            ApiToken[]
   campaigns            Campaign[]

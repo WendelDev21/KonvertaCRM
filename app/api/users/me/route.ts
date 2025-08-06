@@ -2,54 +2,45 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { hash, compare } from "bcryptjs"
 import { apiAuthMiddleware } from "@/middleware/api-auth"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { getUserById } from "@/lib/services/user-service"
 import type { NextRequest } from "next/server"
 
 // GET /api/users/me - Obter informações do usuário atual
 export async function GET(request: NextRequest) {
-  return apiAuthMiddleware(request, async (req, userId) => {
-    try {
-      try {
-        // Tentar buscar apenas os campos que sabemos que existem
-        const user = await prisma.user.findUnique({
-          where: {
-            id: userId,
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        })
+  try {
+    const session = await getServerSession(authOptions)
 
-        if (!user) {
-          return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
-        }
-
-        // Adicionar campos que podem não existir no banco de dados ainda
-        return NextResponse.json({
-          ...user,
-          theme: "system", // Campo que pode não existir no banco de dados
-          notificationSettings: JSON.stringify({
-            emailNotifications: true,
-            newContactAlert: true,
-            statusChangeAlert: true,
-            dailySummary: false,
-          }), // Campo que pode não existir no banco de dados
-        })
-      } catch (error) {
-        console.error("Erro ao buscar usuário do banco de dados:", error)
-
-        // Retornar erro
-        return NextResponse.json({ error: "Erro ao buscar usuário" }, { status: 500 })
-      }
-    } catch (error) {
-      console.error("Erro ao buscar usuário:", error)
-      return NextResponse.json({ error: "Erro ao buscar usuário" }, { status: 500 })
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-  })
+
+    const [user, error] = await getUserById(session.user.id)
+
+    if (error || !user) {
+      console.error("Error fetching user:", error)
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    // Ensure credits is a number before sending
+    const credits = user.credits ? user.credits.toNumber() : 0;
+
+    return NextResponse.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      plan: user.plan,
+      theme: user.theme,
+      notificationSettings: user.notificationSettings,
+      createdAt: user.createdAt,
+      credits: credits, // Return credits as a number
+    })
+  } catch (error) {
+    console.error("Error in /api/users/me route:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  }
 }
 
 // PUT /api/users/me - Atualizar informações do usuário atual

@@ -35,6 +35,7 @@ export async function createUser(data: UserInput) {
         plan: data.plan || "Starter",
         theme: data.theme,
         notificationSettings: data.notificationSettings ? JSON.stringify(data.notificationSettings) : null,
+        credits: 0.00, // Initialize credits for new users
       },
       select: {
         id: true,
@@ -64,6 +65,7 @@ export async function getUserByEmail(email: string) {
         isActive: true,
         notificationSettings: true,
         createdAt: true,
+        credits: true, // Include credits
       },
     }),
   )
@@ -82,6 +84,7 @@ export async function getUserById(id: string) {
         theme: true,
         notificationSettings: true,
         createdAt: true,
+        credits: true, // Include credits
       },
     }),
   )
@@ -140,7 +143,53 @@ export async function updateUser(id: string, data: Partial<Omit<UserInput, "pass
         theme: true,
         notificationSettings: true,
         updatedAt: true,
+        credits: true, // Include credits
       },
     })
   })
+}
+
+export async function updateUserCredits(userId: string, amount: number) {
+  return dbAction(async () => {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: {
+          increment: amount,
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        credits: true,
+      },
+    })
+  })
+}
+
+export async function deductUserCredits(userId: string, amount: number) {
+  return dbAction(async () => {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { credits: true },
+    });
+
+    if (!user || user.credits.toNumber() < amount) {
+      throw new Error("Insufficient credits");
+    }
+
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: {
+          decrement: amount,
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        credits: true,
+      },
+    });
+  });
 }

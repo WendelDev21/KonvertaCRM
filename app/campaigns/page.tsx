@@ -37,7 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, ArrowLeft, Trash2, Crown, Zap, Star, Save, FileText, Copy, RefreshCw, Plus, Search, Grid, List, MoreHorizontal, File, X, Download, ImageIcon, Edit, Calendar } from 'lucide-react'
+import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, ArrowLeft, Trash2, Crown, Zap, Star, Save, FileText, Copy, RefreshCw, Plus, Search, Grid, List, MoreHorizontal, File, X, Download, ImageIcon, Edit, Calendar, DollarSign, Wallet } from 'lucide-react'
 import Link from "next/link"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -99,13 +99,16 @@ interface UploadedFile {
   mimeType: string
 }
 
+const MESSAGE_COST = 0.09; // R$0,09 per message
+
 export default function CampaignsPage() {
-  const { data: session } = useSession()
+  const { data: session, update } = useSession()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [instances, setInstances] = useState<WhatsAppInstance[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [templates, setTemplates] = useState<MessageTemplate[]>([])
   const [dailyLimit, setDailyLimit] = useState<DailyLimit>({ sentCount: 0, limit: 100, date: "" })
+  const [userCredits, setUserCredits] = useState<number>(0) // New state for user credits
   const [loading, setLoading] = useState(false)
   const [deletingCampaign, setDeletingCampaign] = useState<string | null>(null)
   const [restartingCampaign, setRestartingCampaign] = useState<string | null>(null)
@@ -152,14 +155,16 @@ export default function CampaignsPage() {
 
   // Load data
   useEffect(() => {
-    if (session?.user) {
+    // Only load data if the user session is available and the user ID is stable
+    if (session?.user?.id) {
       loadContacts()
       loadInstances()
       loadCampaigns()
       loadTemplates()
       loadDailyLimit()
+      loadUserCredits() // Load user credits
     }
-  }, [session])
+  }, [session?.user?.id]) // Depend on session.user.id to prevent unnecessary re-fetches
 
   const loadContacts = async () => {
     try {
@@ -218,6 +223,25 @@ export default function CampaignsPage() {
       }
     } catch (error) {
       console.error("Error loading daily limit:", error)
+    }
+  }
+
+  const loadUserCredits = async () => {
+    try {
+      const response = await fetch("/api/users/me")
+      if (response.ok) {
+        const data = await response.json()
+        // Ensure data.credits is a number, default to 0 if null/undefined
+        const credits = typeof data.credits === 'number' ? data.credits : 0;
+        setUserCredits(credits)
+        // Only update session if the credits value has actually changed to avoid infinite loops
+        if (session?.user && (session.user as any).credits !== credits) {
+          update({ credits: credits });
+        }
+      }
+    } catch (error) {
+      console.error("Error loading user credits:", error)
+      setUserCredits(0); // Default to 0 on error
     }
   }
 
@@ -317,12 +341,19 @@ export default function CampaignsPage() {
   )
 
   const handleContactSelection = (contactId: string, checked: boolean) => {
+    const currentSelectedCount = selectedContacts.length;
+    const estimatedCost = (currentSelectedCount + (checked ? 1 : -1)) * MESSAGE_COST;
+
     if (checked) {
-      if (selectedContacts.length + 1 > dailyLimit.limit - dailyLimit.sentCount) {
+      if (currentSelectedCount + 1 > dailyLimit.limit - dailyLimit.sentCount) {
         toast.error(
           `Limite diário excedido. Você pode enviar apenas ${dailyLimit.limit - dailyLimit.sentCount} mensagens hoje.`,
         )
         return
+      }
+      if (userCredits < estimatedCost) {
+        toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para enviar esta mensagem. Saldo atual: R$${userCredits.toFixed(2)}.`)
+        return;
       }
       setSelectedContacts([...selectedContacts, contactId])
     } else {
@@ -331,12 +362,19 @@ export default function CampaignsPage() {
   }
 
   const handleEditContactSelection = (contactId: string, checked: boolean) => {
+    const currentSelectedCount = editSelectedContacts.length;
+    const estimatedCost = (currentSelectedCount + (checked ? 1 : -1)) * MESSAGE_COST;
+
     if (checked) {
-      if (editSelectedContacts.length + 1 > dailyLimit.limit - dailyLimit.sentCount) {
+      if (currentSelectedCount + 1 > dailyLimit.limit - dailyLimit.sentCount) {
         toast.error(
           `Limite diário excedido. Você pode enviar apenas ${dailyLimit.limit - dailyLimit.sentCount} mensagens hoje.`,
         )
         return
+      }
+      if (userCredits < estimatedCost) {
+        toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para enviar esta mensagem. Saldo atual: R$${userCredits.toFixed(2)}.`)
+        return;
       }
       setEditSelectedContacts([...editSelectedContacts, contactId])
     } else {
@@ -348,6 +386,15 @@ export default function CampaignsPage() {
     const statusContacts = contacts.filter((contact) => contact.status === status)
     const availableSlots = dailyLimit.limit - dailyLimit.sentCount
     const contactsToAdd = statusContacts.slice(0, availableSlots)
+
+    const currentSelectedCount = selectedContacts.length;
+    const newTotalContacts = currentSelectedCount + contactsToAdd.length;
+    const estimatedCost = newTotalContacts * MESSAGE_COST;
+
+    if (userCredits < estimatedCost) {
+      toast.error(`Créditos insuficientes para selecionar todos os contatos. Você precisa de R$${estimatedCost.toFixed(2)} para esta seleção. Saldo atual: R$${userCredits.toFixed(2)}.`)
+      return;
+    }
 
     if (statusContacts.length > availableSlots) {
       toast.warning(`Apenas ${availableSlots} contatos foram selecionados devido ao limite diário.`)
@@ -361,6 +408,15 @@ export default function CampaignsPage() {
     const statusContacts = contacts.filter((contact) => contact.status === status)
     const availableSlots = dailyLimit.limit - dailyLimit.sentCount
     const contactsToAdd = statusContacts.slice(0, availableSlots)
+
+    const currentSelectedCount = editSelectedContacts.length;
+    const newTotalContacts = currentSelectedCount + contactsToAdd.length;
+    const estimatedCost = newTotalContacts * MESSAGE_COST;
+
+    if (userCredits < estimatedCost) {
+      toast.error(`Créditos insuficientes para selecionar todos os contatos. Você precisa de R$${estimatedCost.toFixed(2)} para esta seleção. Saldo atual: R$${userCredits.toFixed(2)}.`)
+      return;
+    }
 
     if (statusContacts.length > availableSlots) {
       toast.warning(`Apenas ${availableSlots} contatos foram selecionados devido ao limite diário.`)
@@ -466,6 +522,12 @@ export default function CampaignsPage() {
       return
     }
 
+    const estimatedCost = selectedContacts.length * MESSAGE_COST;
+    if (userCredits < estimatedCost) {
+      toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`)
+      return;
+    }
+
     if (selectedContacts.length > dailyLimit.limit - dailyLimit.sentCount) {
       toast.error(
         `Limite diário excedido. Você pode enviar apenas ${dailyLimit.limit - dailyLimit.sentCount} mensagens hoje.`,
@@ -510,6 +572,7 @@ export default function CampaignsPage() {
         loadCampaigns()
         loadTemplates()
         loadDailyLimit()
+        loadUserCredits() // Reload credits after campaign creation
       } else {
         const error = await response.json()
         toast.error(error.message || "Erro ao criar campanha")
@@ -560,6 +623,12 @@ export default function CampaignsPage() {
     if (selectedContacts.length === 0) {
       toast.error("Selecione pelo menos um contato")
       return
+    }
+
+    const estimatedCost = selectedContacts.length * MESSAGE_COST;
+    if (userCredits < estimatedCost) {
+      toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`)
+      return;
     }
 
     if (selectedContacts.length > dailyLimit.limit - dailyLimit.sentCount) {
@@ -620,6 +689,7 @@ export default function CampaignsPage() {
         // Reload data
         loadCampaigns()
         loadDailyLimit()
+        loadUserCredits() // Reload credits after campaign creation
       } else {
         const error = await response.json()
         toast.error(error.message || "Erro ao criar campanha")
@@ -690,6 +760,12 @@ export default function CampaignsPage() {
       return
     }
 
+    const estimatedCost = editSelectedContacts.length * MESSAGE_COST;
+    if (userCredits < estimatedCost) {
+      toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`)
+      return;
+    }
+
     setLoading(true)
 
     try {
@@ -715,6 +791,7 @@ export default function CampaignsPage() {
         setShowEditDialog(false)
         setEditingCampaign(null)
         loadCampaigns()
+        loadUserCredits(); // Reload credits after campaign update
       } else {
         const error = await response.json()
         toast.error(error.error || "Erro ao atualizar campanha")
@@ -777,6 +854,7 @@ export default function CampaignsPage() {
         toast.success("Campanha reiniciada com sucesso!")
         loadCampaigns()
         loadDailyLimit()
+        loadUserCredits(); // Reload credits after campaign restart
       } else {
         const error = await response.json()
         toast.error(error.error || "Erro ao reiniciar campanha")
@@ -1001,21 +1079,42 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      {/* Daily Limit Alert */}
-      <Alert className="border-l-4 border-l-primary">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <div className="space-y-2">
+      {/* Daily Limit and Credits Alert */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Alert className="border-l-4 border-l-primary">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">
+                  Limite diário de envios: {dailyLimit.sentCount}/{dailyLimit.limit}
+                </span>
+                <span className="text-sm text-muted-foreground">Restam {remainingLimit} envios hoje</span>
+              </div>
+              <Progress value={limitPercentage} className="w-full h-2" />
+            </div>
+          </AlertDescription>
+        </Alert>
+        <Alert className="border-l-4 border-l-green-500">
+          <DollarSign className="h-4 w-4 text-green-600" />
+          <AlertDescription>
             <div className="flex items-center justify-between">
               <span className="font-medium">
-                Limite diário de envios: {dailyLimit.sentCount}/{dailyLimit.limit}
+                Seu Saldo de Créditos: <span className="text-green-600 font-bold">R$ {userCredits.toFixed(2)}</span>
               </span>
-              <span className="text-sm text-muted-foreground">Restam {remainingLimit} envios hoje</span>
+              <Button variant="link" size="sm" asChild>
+                <Link href="/credits">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Recarregar
+                </Link>
+              </Button>
             </div>
-            <Progress value={limitPercentage} className="w-full h-2" />
-          </div>
-        </AlertDescription>
-      </Alert>
+            <p className="text-sm text-muted-foreground mt-1">
+              Cada mensagem custa R$0,09.
+            </p>
+          </AlertDescription>
+        </Alert>
+      </div>
 
       <Tabs defaultValue="create" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -1293,6 +1392,8 @@ export default function CampaignsPage() {
                           intervalo de 30 minutos entre cada lote. Tempo estimado:{" "}
                           <strong>{Math.ceil(selectedContacts.length / 50) * 0.5} horas</strong>
                           <br />
+                          <strong>Custo estimado:</strong> R${(selectedContacts.length * MESSAGE_COST).toFixed(2)}
+                          <br />
                           <strong>Método:</strong> Arquivos serão convertidos para Base64 automaticamente
                           {isScheduled && (
                             <>
@@ -1307,7 +1408,7 @@ export default function CampaignsPage() {
 
                   <Button
                     onClick={createCampaign}
-                    disabled={loading || instances.length === 0 || remainingLimit === 0}
+                    disabled={loading || instances.length === 0 || remainingLimit === 0 || userCredits < (selectedContacts.length * MESSAGE_COST)}
                     className="w-full h-12 text-lg"
                     size="lg"
                   >
@@ -1404,7 +1505,7 @@ export default function CampaignsPage() {
                         <Checkbox
                           checked={selectedContacts.includes(contact.id)}
                           onCheckedChange={(checked) => handleContactSelection(contact.id, checked as boolean)}
-                          disabled={!selectedContacts.includes(contact.id) && selectedContacts.length >= remainingLimit}
+                          disabled={!selectedContacts.includes(contact.id) && (selectedContacts.length >= remainingLimit || userCredits < ((selectedContacts.length + 1) * MESSAGE_COST))}
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{contact.name}</p>
@@ -1924,7 +2025,7 @@ export default function CampaignsPage() {
                     <Checkbox
                       checked={selectedContacts.includes(contact.id)}
                       onCheckedChange={(checked) => handleContactSelection(contact.id, checked as boolean)}
-                      disabled={!selectedContacts.includes(contact.id) && selectedContacts.length >= remainingLimit}
+                      disabled={!selectedContacts.includes(contact.id) && (selectedContacts.length >= remainingLimit || userCredits < ((selectedContacts.length + 1) * MESSAGE_COST))}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{contact.name}</p>
@@ -1951,6 +2052,8 @@ export default function CampaignsPage() {
                   <strong>Cronograma:</strong> {selectedContacts.length} mensagens serão enviadas em{" "}
                   {Math.ceil(selectedContacts.length / 50)} lote(s) com intervalo de 30 minutos.
                   <br />
+                  <strong>Custo estimado:</strong> R${(selectedContacts.length * MESSAGE_COST).toFixed(2)}
+                  <br />
                   <strong>Método:</strong> Arquivos serão convertidos para Base64 automaticamente
                 </AlertDescription>
               </Alert>
@@ -1963,7 +2066,7 @@ export default function CampaignsPage() {
             </Button>
             <Button
               onClick={createCampaignFromTemplate}
-              disabled={loading || !selectedInstance || selectedContacts.length === 0}
+              disabled={loading || !selectedInstance || selectedContacts.length === 0 || userCredits < (selectedContacts.length * MESSAGE_COST)}
             >
               {loading ? (
                 <>
@@ -2177,7 +2280,7 @@ export default function CampaignsPage() {
                     <Checkbox
                       checked={editSelectedContacts.includes(contact.id)}
                       onCheckedChange={(checked) => handleEditContactSelection(contact.id, checked as boolean)}
-                      disabled={!editSelectedContacts.includes(contact.id) && editSelectedContacts.length >= remainingLimit}
+                      disabled={!editSelectedContacts.includes(contact.id) && (editSelectedContacts.length >= remainingLimit || userCredits < ((editSelectedContacts.length + 1) * MESSAGE_COST))}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{contact.name}</p>
@@ -2203,6 +2306,8 @@ export default function CampaignsPage() {
                 <AlertDescription className="text-blue-800 dark:text-blue-200">
                   <strong>Cronograma:</strong> {editSelectedContacts.length} mensagens serão enviadas em{" "}
                   {Math.ceil(editSelectedContacts.length / 50)} lote(s) com intervalo de 30 minutos.
+                  <br />
+                  <strong>Custo estimado:</strong> R${(editSelectedContacts.length * MESSAGE_COST).toFixed(2)}
                   {editIsScheduled && editScheduledAt && (
                     <>
                       <br />
@@ -2220,7 +2325,7 @@ export default function CampaignsPage() {
             </Button>
             <Button
               onClick={updateCampaign}
-              disabled={loading || editSelectedContacts.length === 0}
+              disabled={loading || editSelectedContacts.length === 0 || userCredits < (editSelectedContacts.length * MESSAGE_COST)}
             >
               {loading ? (
                 <>

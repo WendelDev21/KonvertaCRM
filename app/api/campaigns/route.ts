@@ -5,8 +5,12 @@ import { PrismaClient } from "@prisma/client"
 import { readFile, stat } from "fs/promises"
 import { join } from "path"
 import sharp from "sharp"
+import { updateUserCredits, getUserById } from "@/lib/services/user-service" // Import user service
 
 const prisma = new PrismaClient()
+
+// Cost per message
+const MESSAGE_COST = 0.09
 
 // Limite de 100MB para arquivos
 const MAX_FILE_SIZE = 200 * 1024 * 1024
@@ -62,11 +66,9 @@ export async function POST(request: NextRequest) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    })
+    const [user, userError] = await getUserById(session.user.id as string)
 
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
@@ -86,6 +88,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: `Limite diário excedido. Você pode enviar apenas ${maxDaily - currentSent} mensagens hoje.`,
+        },
+        { status: 400 },
+      )
+    }
+
+    // Check credits
+    const totalCost = contactIds.length * MESSAGE_COST
+    if (user.credits.toNumber() < totalCost) { // Use toNumber() for Decimal comparison
+      return NextResponse.json(
+        {
+          error: `Créditos insuficientes. Você precisa de R$${totalCost.toFixed(2)} para esta campanha. Saldo atual: R$${user.credits.toFixed(2)}.`,
         },
         { status: 400 },
       )
@@ -497,6 +510,30 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
       const contact = contacts[i]
 
       try {
+        // Check user credits before sending each message
+        const [currentUser, userError] = await getUserById(batch.campaign.userId);
+        if (userError || !currentUser) {
+          throw new Error("User not found for credit check.");
+        }
+
+        if (currentUser.credits.toNumber() < MESSAGE_COST) {
+          console.warn(`[Campaign] User ${currentUser.id} has insufficient credits for message to ${contact.contact}. Remaining credits: R$${currentUser.credits.toFixed(2)}`);
+          await prisma.campaignSend.update({
+            where: {
+              campaignId_contactId: {
+                campaignId,
+                contactId: contact.id,
+              },
+            },
+            data: {
+              status: "FAILED",
+              errorMessage: `Créditos insuficientes. Saldo atual: R$${currentUser.credits.toFixed(2)}.`,
+            },
+          });
+          failCount++;
+          continue; // Skip to next contact
+        }
+
         console.log(`[Campaign] Sending message ${i + 1}/${contacts.length} to ${contact.contact}`)
 
         let response
@@ -550,6 +587,10 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
 
         if (success && response) {
           const result = await response.json()
+
+          // Deduct credits for successful send
+          await updateUserCredits(batch.campaign.userId, -MESSAGE_COST);
+          console.log(`[Campaign] Deducted R$${MESSAGE_COST.toFixed(2)} from user ${batch.campaign.userId} credits.`);
 
           await prisma.campaignSend.update({
             where: {
