@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
-import { Copy, Server, Lock } from "lucide-react"
+import { Copy, Server, Lock } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -217,6 +217,26 @@ const apiRoutes: Record<string, ApiRoute[]> = {
         'curl -X PUT \'https://konvertaleads.com.br/api/admin/users/123e4567-e89b-12d3-a456-426614174000\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "role": "user",\n    "isActive": true,\n    "plan": "Business"\n  }\'',
     },
     {
+      method: "POST",
+      path: "/api/admin/users/[id]/credits",
+      description: "Adiciona ou deduz créditos de um usuário específico",
+      auth: "Somente Admin",
+      params: [{ name: "id", type: "string", description: "ID do usuário", required: true }],
+      bodyParams: [
+        { name: "amount", type: "number", description: "Quantidade de créditos a adicionar/deduzir", required: true },
+        { name: "type", type: "string", description: "Tipo de operação ('add' para adicionar, 'deduct' para deduzir)", required: true },
+      ],
+      response: "Status da operação e novos créditos do usuário",
+      responseExample: `{
+  "success": true,
+  "userId": "123e4567-e89b-12d3-a456-426614174000",
+  "newCredits": 150.00,
+  "message": "Créditos adicionados com sucesso."
+}`,
+      example:
+        'curl -X POST \'https://konvertaleads.com.br/api/admin/users/123e4567-e89b-12d3-a456-426614174000/credits\' \\\n  -H \'Authorization: Bearer seu_token_aqui\' \\\n  -H \'Content-Type: application/json\' \\\n  -d \'{\n    "amount": 50,\n    "type": "add"\n  }\'',
+    },
+    {
       method: "DELETE",
       path: "/api/admin/tokens",
       description: "Revoga todos os tokens ou um token específico",
@@ -368,7 +388,7 @@ export function AdminApiRoutesList() {
                           </div>
                         )}
 
-                        {route.queryParams?.length > 0 && (
+                        {route.queryParams && route.queryParams.length > 0 && (
                           <div>
                             <h4 className="font-medium mb-2">Parâmetros de Query</h4>
                             <ul className="space-y-2">
@@ -384,7 +404,7 @@ export function AdminApiRoutesList() {
                           </div>
                         )}
 
-                        {route.bodyParams?.length > 0 && (
+                        {route.bodyParams && route.bodyParams.length > 0 && (
                           <div>
                             <h4 className="font-medium mb-2">Parâmetros do Body</h4>
                             <ul className="space-y-2">
