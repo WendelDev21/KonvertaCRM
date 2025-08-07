@@ -1247,7 +1247,7 @@ export default function CampaignsPage() {
                           type="datetime-local"
                           value={scheduledAt}
                           onChange={(e) => setScheduledAt(e.target.value)}
-                          min={new Date().toISOString().slice(0, 16)}
+                          min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                         />
                         <p className="text-sm text-muted-foreground">
                           A campanha será executada automaticamente na data e hora especificadas
