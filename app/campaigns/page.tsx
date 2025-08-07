@@ -450,7 +450,7 @@ export default function CampaignsPage() {
   }
 
   const handleEditSelectAllByStatus = (status: string) => {
-    const statusContacts = contacts.filter((contact) => contact.status === status)
+    const statusContacts = contacts.filter((c) => c.status === status)
     const availableSlots = dailyLimit.limit - dailyLimit.sentCount
     const contactsToAdd = statusContacts.slice(0, availableSlots)
 
@@ -597,6 +597,7 @@ export default function CampaignsPage() {
           mediaType: templateToUse.mediaType,
           fileName: templateToUse.fileName,
           caption: templateToUse.caption,
+          scheduledAt: null, // Templates are for immediate use, not scheduled
         }),
       })
 
@@ -688,9 +689,14 @@ export default function CampaignsPage() {
       return
     }
 
-    if (isScheduled && new Date(scheduledAt) <= new Date()) {
-      toast.error("Data de agendamento deve ser no futuro")
-      return
+    if (isScheduled) {
+      // Validate that the scheduled time is in the future (local time comparison)
+      const selectedDateTime = new Date(scheduledAt);
+      const currentDateTime = new Date();
+      if (selectedDateTime.getTime() <= currentDateTime.getTime()) {
+        toast.error("Data de agendamento deve ser no futuro")
+        return
+      }
     }
 
     setLoading(true)
@@ -710,7 +716,8 @@ export default function CampaignsPage() {
           mediaType: uploadedFile?.mediaType,
           fileName: uploadedFile?.fileName,
           caption: caption || message,
-          scheduledAt: isScheduled ? scheduledAt : null,
+          // Convert local datetime-local string to UTC ISO string for server
+          scheduledAt: isScheduled ? new Date(scheduledAt).toISOString() : null,
         }),
       })
 
@@ -752,7 +759,14 @@ export default function CampaignsPage() {
     setEditCampaignName(campaign.name)
     setEditMessage(campaign.message)
     setEditCaption(campaign.caption || "")
-    setEditScheduledAt(campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : "")
+    
+    // Convert UTC date from DB to Brasília local time string for datetime-local input
+    // Assuming Brasília is UTC-3, subtract 3 hours from the UTC date to get the local equivalent.
+    setEditScheduledAt(campaign.scheduledAt ? 
+      new Date(new Date(campaign.scheduledAt).getTime() - (3 * 60 * 60 * 1000)).toISOString().slice(0, 16) 
+      : ""
+    );
+
     setEditIsScheduled(campaign.status === "SCHEDULED")
     
     if (campaign.mediaUrl) {
@@ -800,9 +814,14 @@ export default function CampaignsPage() {
       return
     }
 
-    if (editIsScheduled && new Date(editScheduledAt) <= new Date()) {
-      toast.error("Data de agendamento deve ser no futuro")
-      return
+    if (editIsScheduled) {
+      // Validate that the scheduled time is in the future (local time comparison)
+      const selectedDateTime = new Date(editScheduledAt);
+      const currentDateTime = new Date();
+      if (selectedDateTime.getTime() <= currentDateTime.getTime()) {
+        toast.error("Data de agendamento deve ser no futuro")
+        return
+      }
     }
 
     const estimatedCost = editSelectedContacts.length * MESSAGE_COST;
@@ -827,7 +846,8 @@ export default function CampaignsPage() {
           mediaType: editUploadedFile?.mediaType,
           fileName: editUploadedFile?.fileName,
           caption: editCaption || editMessage,
-          scheduledAt: editIsScheduled ? editScheduledAt : null,
+          // Convert local datetime-local string to UTC ISO string for server
+          scheduledAt: editIsScheduled ? new Date(editScheduledAt).toISOString() : null,
         }),
       })
 
@@ -1247,7 +1267,7 @@ export default function CampaignsPage() {
                           type="datetime-local"
                           value={scheduledAt}
                           onChange={(e) => setScheduledAt(e.target.value)}
-                          min={new Date().toISOString().slice(0, 16)}
+                          min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                         />
                         <p className="text-sm text-muted-foreground">
                           A campanha será executada automaticamente na data e hora especificadas
