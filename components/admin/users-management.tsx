@@ -666,7 +666,7 @@ export function AdminUsersManagement() {
             setIsDialogOpen(open)
           }}
         >
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg"> {/* Ajustado o max-width para o diálogo */}
             <DialogHeader>
               <DialogTitle>{selectedUser ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
               <DialogDescription>
@@ -676,7 +676,7 @@ export function AdminUsersManagement() {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4"> {/* Usando grid para 2 colunas */}
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
                 <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
@@ -767,12 +767,12 @@ export function AdminUsersManagement() {
                 />
               </div>
               {selectedUser && (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 col-span-full"> {/* Ocupa a largura total em ambas as colunas */}
                   <Switch id="user-active" checked={formData.isActive} onCheckedChange={handleSwitchChange} />
                   <Label htmlFor="user-active">Usuário ativo</Label>
                 </div>
               )}
-              <DialogFooter className="pt-4">
+              <DialogFooter className="pt-4 col-span-full"> {/* Ocupa a largura total em ambas as colunas */}
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancelar
                 </Button>
