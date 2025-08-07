@@ -101,6 +101,51 @@ interface UploadedFile {
 
 const MESSAGE_COST = 0.09; // R$0,09 per message
 
+// Helper component for displaying media
+const MediaDisplay = ({ url, type, fileName, caption }: { url: string; type?: string; fileName?: string; caption?: string }) => {
+  if (!url) return null;
+
+  const commonClasses = "max-w-full rounded-md border object-contain";
+  const mediaContainerClasses = "flex flex-col items-center justify-center bg-muted/50 p-2 rounded-lg";
+
+  // Default to 'document' if type is not provided or recognized
+  const mediaType = type || "document";
+
+  if (mediaType === "image") {
+    return (
+      <div className={mediaContainerClasses}>
+        <img src={url || "/placeholder.svg"} alt={caption || fileName || "Media"} className={`${commonClasses} max-h-48`} />
+        {caption && <p className="text-sm text-muted-foreground mt-2 text-center">{caption}</p>}
+      </div>
+    );
+  } else if (mediaType === "video") {
+    return (
+      <div className={mediaContainerClasses}>
+        <video src={url} controls className={`${commonClasses} max-h-48`} />
+        {caption && <p className="text-sm text-muted-foreground mt-2 text-center">{caption}</p>}
+      </div>
+    );
+  } else if (mediaType === "audio") {
+    return (
+      <div className={mediaContainerClasses}>
+        <audio src={url} controls className="w-full" />
+        {caption && <p className="text-sm text-muted-foreground mt-2 text-center">{caption}</p>}
+      </div>
+    );
+  } else { // document or other
+    return (
+      <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
+        <File className="h-4 w-4 text-green-500" />
+        <span className="text-xs text-muted-foreground truncate">{fileName || "Documento"}</span>
+        <Button variant="ghost" size="sm" onClick={() => window.open(url, "_blank")}>
+          <Download className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+};
+
+
 export default function CampaignsPage() {
   const { data: session, update } = useSession()
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -1260,22 +1305,14 @@ export default function CampaignsPage() {
                       <div className="border rounded-lg p-4 bg-muted/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            {uploadedFile.mediaType === "image" ? (
-                              <ImageIcon className="h-8 w-8 text-blue-500" />
-                            ) : (
-                              <File className="h-8 w-8 text-green-500" />
-                            )}
-                            <div>
-                              <p className="font-medium text-sm">{uploadedFile.fileName}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {uploadedFile.mediaType} • {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            </div>
+                            <MediaDisplay
+                              url={uploadedFile.url}
+                              type={uploadedFile.mediaType}
+                              fileName={uploadedFile.fileName}
+                              caption={caption}
+                            />
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => window.open(uploadedFile.url, "_blank")}>
-                              <Download className="h-4 w-4" />
-                            </Button>
                             <Button variant="outline" size="sm" onClick={removeUploadedFile}>
                               <X className="h-4 w-4" />
                             </Button>
@@ -1576,14 +1613,12 @@ export default function CampaignsPage() {
                     <CardContent className="pt-0">
                       <div className="space-y-3">
                         {template.mediaUrl && (
-                          <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
-                            {template.mediaType === "image" ? (
-                              <ImageIcon className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <File className="h-4 w-4 text-green-500" />
-                            )}
-                            <span className="text-xs text-muted-foreground truncate">{template.fileName}</span>
-                          </div>
+                          <MediaDisplay
+                            url={template.mediaUrl}
+                            type={template.mediaType}
+                            fileName={template.fileName}
+                            caption={template.caption}
+                          />
                         )}
 
                         {(template.message || template.caption) && (
@@ -1661,17 +1696,12 @@ export default function CampaignsPage() {
                     <CardContent className="pt-0">
                       <div className="space-y-4">
                         {campaign.mediaUrl && (
-                          <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
-                            {campaign.mediaType === "image" ? (
-                              <ImageIcon className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <File className="h-4 w-4 text-green-500" />
-                            )}
-                            <span className="text-xs text-muted-foreground truncate">{campaign.fileName}</span>
-                            <Button variant="ghost" size="sm" onClick={() => window.open(campaign.mediaUrl, "_blank")}>
-                              <Download className="h-3 w-3" />
-                            </Button>
-                          </div>
+                          <MediaDisplay
+                            url={campaign.mediaUrl}
+                            type={campaign.mediaType}
+                            fileName={campaign.fileName}
+                            caption={campaign.caption}
+                          />
                         )}
 
                         {(campaign.message || campaign.caption) && (
@@ -1941,17 +1971,12 @@ export default function CampaignsPage() {
               <Label>Conteúdo do Template</Label>
 
               {templateToUse?.mediaUrl && (
-                <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
-                  {templateToUse.mediaType === "image" ? (
-                    <ImageIcon className="h-4 w-4 text-blue-500" />
-                  ) : (
-                    <File className="h-4 w-4 text-green-500" />
-                  )}
-                  <span className="text-sm text-muted-foreground">{templateToUse.fileName}</span>
-                  <Button variant="ghost" size="sm" onClick={() => window.open(templateToUse.mediaUrl, "_blank")}>
-                    <Download className="h-3 w-3" />
-                  </Button>
-                </div>
+                <MediaDisplay
+                  url={templateToUse.mediaUrl}
+                  type={templateToUse.mediaType}
+                  fileName={templateToUse.fileName}
+                  caption={templateToUse.caption}
+                />
               )}
 
               {(templateToUse?.message || templateToUse?.caption) && (
@@ -2178,28 +2203,18 @@ export default function CampaignsPage() {
                 </div>
               ) : (
                 <div className="border rounded-lg p-4 bg-muted/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      {editUploadedFile.mediaType === "image" ? (
-                        <ImageIcon className="h-8 w-8 text-blue-500" />
-                      ) : (
-                        <File className="h-8 w-8 text-green-500" />
-                      )}
-                      <div>
-                        <p className="font-medium text-sm">{editUploadedFile.fileName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {editUploadedFile.mediaType}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => window.open(editUploadedFile.url, "_blank")}>
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={removeEditUploadedFile}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="flex items-center space-x-3">
+                    <MediaDisplay
+                      url={editUploadedFile.url}
+                      type={editUploadedFile.mediaType}
+                      fileName={editUploadedFile.fileName}
+                      caption={editCaption}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm" onClick={removeEditUploadedFile}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               )}
