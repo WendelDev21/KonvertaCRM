@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { name, message, instanceId, contactIds, mediaUrl, mediaType, fileName, caption, scheduledAt } = await request.json()
+    const { name, message, instanceId, contactIds, mediaUrl, mediaType, fileName, caption, scheduledAt: clientScheduledAtUTCString } = await request.json()
 
     if (!name || (!message && !mediaUrl) || !instanceId || !contactIds || contactIds.length === 0) {
       return NextResponse.json(
@@ -163,9 +163,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Determinar status inicial da campanha
-    const isScheduled = scheduledAt && new Date(scheduledAt) > new Date()
-    const initialStatus = isScheduled ? "SCHEDULED" : "PENDING"
+    // Handle scheduledAt: client sends UTC string, server parses as UTC
+    let finalScheduledDateForDb: Date | null = null;
+    let initialCampaignStatus: "PENDING" | "SCHEDULED" = "PENDING";
+
+    if (clientScheduledAtUTCString) {
+        const parsedScheduledTimeUTC = new Date(clientScheduledAtUTCString);
+
+        if (parsedScheduledTimeUTC.getTime() > Date.now()) {
+            initialCampaignStatus = "SCHEDULED";
+            finalScheduledDateForDb = parsedScheduledTimeUTC;
+        } else {
+            // If the scheduled time is in the past or current, treat as pending for immediate execution
+            initialCampaignStatus = "PENDING";
+            finalScheduledDateForDb = new Date(); // Set to current UTC time for immediate execution
+        }
+    } else {
+        // No scheduledAt provided, so it's for immediate execution
+        finalScheduledDateForDb = new Date();
+        initialCampaignStatus = "PENDING";
+    }
 
     // Criar a campanha
     const campaign = await prisma.campaign.create({
@@ -175,12 +192,12 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         instanceId,
         totalContacts: contactIds.length,
-        status: initialStatus,
+        status: initialCampaignStatus,
         mediaUrl: processedMediaUrl,
         mediaType,
         fileName,
         caption,
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
+        scheduledAt: finalScheduledDateForDb,
       },
     })
 
@@ -201,7 +218,7 @@ export async function POST(request: NextRequest) {
     console.log(`[Campaign] Using fixed batch size: ${batchSize}`)
 
     const batches = []
-    const baseTime = scheduledAt ? new Date(scheduledAt) : new Date()
+    const baseTime = finalScheduledDateForDb || new Date(); // Use the adjusted scheduled date for batch scheduling
     
     for (let i = 0; i < contactIds.length; i += batchSize) {
       const batchContacts = contactIds.slice(i, i + batchSize)
@@ -222,7 +239,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Se não é agendada, atualizar para RUNNING e processar imediatamente
-    if (!isScheduled) {
+    if (initialCampaignStatus === "PENDING") {
       await prisma.campaign.update({
         where: { id: campaign.id },
         data: {
@@ -234,9 +251,9 @@ export async function POST(request: NextRequest) {
       setTimeout(() => {
         processCampaignBatch(campaign.id, 1)
       }, 1000)
-    } else {
+    } else if (initialCampaignStatus === "SCHEDULED") {
       // Agendar execução da campanha
-      const delay = new Date(scheduledAt).getTime() - Date.now()
+      const delay = finalScheduledDateForDb.getTime() - Date.now()
       if (delay > 0) {
         setTimeout(() => {
           startScheduledCampaign(campaign.id)
