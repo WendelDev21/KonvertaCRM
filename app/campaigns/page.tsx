@@ -1394,7 +1394,6 @@ export default function CampaignsPage() {
                           <br />
                           <strong>Custo estimado:</strong> R${(selectedContacts.length * MESSAGE_COST).toFixed(2)}
                           <br />
-                          <strong>Método:</strong> Arquivos serão convertidos para Base64 automaticamente
                           {isScheduled && (
                             <>
                               <br />
