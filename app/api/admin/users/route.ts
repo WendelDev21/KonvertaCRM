@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           isActive: true,
+          credits: true, // Adicionado: Incluir o campo de créditos
           // Exclude password
         },
         orderBy: {
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
               role: userData.role || "user", // Default to "user" if not specified
               plan: plan, // Usar o plano fornecido ou "Starter" como padrão
               isActive: true,
+              credits: userData.credits || 0, // Adicionado: Definir créditos iniciais
             },
             select: {
               id: true,
@@ -137,6 +139,7 @@ export async function POST(request: NextRequest) {
               createdAt: true,
               updatedAt: true,
               isActive: true,
+              credits: true, // Adicionado: Incluir o campo de créditos
               // Exclude password
             },
           })

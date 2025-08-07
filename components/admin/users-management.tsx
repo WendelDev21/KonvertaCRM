@@ -30,15 +30,16 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/hooks/use-toast"
-import { Loader2, Plus, Pencil, Trash2, Search, Check, X, RefreshCw } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, Search, Check, X, RefreshCw } from 'lucide-react'
 
-// Atualizar a interface User para incluir o campo plan
+// Atualizar a interface User para incluir o campo plan e credits
 interface User {
   id: string
   name: string
   email: string
   role: string
   plan: string
+  credits: number // Adicionado: Campo de créditos
   createdAt: string
   updatedAt: string
   isActive: boolean
@@ -52,6 +53,7 @@ interface LocalUpdates {
     isActive?: boolean
     name?: string
     email?: string
+    credits?: number // Adicionado: Campo de créditos para atualizações locais
     timestamp: number
   }
 }
@@ -72,6 +74,7 @@ export function AdminUsersManagement() {
     confirmPassword: "",
     role: "user",
     plan: "Starter",
+    credits: 0, // Adicionado: Créditos iniciais
     isActive: true,
   })
 
@@ -101,6 +104,7 @@ export function AdminUsersManagement() {
             ...(updates.isActive !== undefined ? { isActive: updates.isActive } : {}),
             ...(updates.name !== undefined ? { name: updates.name } : {}),
             ...(updates.email !== undefined ? { email: updates.email } : {}),
+            ...(updates.credits !== undefined ? { credits: updates.credits } : {}), // Adicionado: Aplicar créditos
           }
         } else {
           // Remover atualizações antigas
@@ -181,14 +185,14 @@ export function AdminUsersManagement() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: name === "credits" ? parseInt(value, 10) || 0 : value }))
   }
 
   const handleSwitchChange = (checked: boolean) => {
     setFormData((prev) => ({ ...prev, isActive: checked }))
   }
 
-  // Atualizar a função resetForm para incluir o campo plan
+  // Atualizar a função resetForm para incluir o campo plan e credits
   const resetForm = () => {
     setFormData({
       name: "",
@@ -197,12 +201,13 @@ export function AdminUsersManagement() {
       confirmPassword: "",
       role: "user",
       plan: "Starter",
+      credits: 0, // Resetar créditos para 0
       isActive: true,
     })
     setSelectedUser(null)
   }
 
-  // Atualizar a função handleOpenDialog para incluir o plano do usuário
+  // Atualizar a função handleOpenDialog para incluir o plano e créditos do usuário
   const handleOpenDialog = (user?: User) => {
     if (user) {
       // Verificar se há atualizações locais para este usuário
@@ -216,6 +221,7 @@ export function AdminUsersManagement() {
         confirmPassword: "",
         role: localUpdate?.role ?? user.role,
         plan: localUpdate?.plan ?? (user.plan || "Starter"),
+        credits: localUpdate?.credits ?? user.credits, // Adicionado: Preencher créditos
         isActive: localUpdate?.isActive ?? user.isActive,
       })
     } else {
@@ -243,14 +249,14 @@ export function AdminUsersManagement() {
     }
 
     setIsLoading(true)
+    shouldFetchRef.current = false // Desativar temporariamente a busca automática de dados
 
     try {
       if (selectedUser) {
-        // Desativar temporariamente a busca automática de dados
-        shouldFetchRef.current = false
+        // --- Lógica de Atualização de Usuário Existente ---
 
-        // Criar o objeto de dados para atualização
-        const updateData = {
+        // 1. Preparar dados para atualização de detalhes do usuário (sem créditos)
+        const updateDetailsData = {
           name: formData.name,
           email: formData.email,
           role: formData.role,
@@ -259,17 +265,18 @@ export function AdminUsersManagement() {
           ...(formData.password ? { password: formData.password } : {}),
         }
 
-        // Atualizar localmente primeiro
+        // 2. Atualizar localmente primeiro (todos os campos, incluindo créditos)
         localUpdatesRef.current[selectedUser.id] = {
           name: formData.name,
           email: formData.email,
           role: formData.role,
           plan: formData.plan,
           isActive: formData.isActive,
+          credits: formData.credits, // Atualizar créditos localmente
           timestamp: Date.now(),
         }
 
-        // Atualizar a interface imediatamente
+        // 3. Atualizar a interface imediatamente
         setUsers((prevUsers) => {
           return prevUsers.map((user) => {
             if (user.id === selectedUser.id) {
@@ -280,6 +287,7 @@ export function AdminUsersManagement() {
                 role: formData.role,
                 plan: formData.plan,
                 isActive: formData.isActive,
+                credits: formData.credits, // Atualizar créditos na UI
                 updatedAt: new Date().toISOString(),
               }
             }
@@ -290,52 +298,69 @@ export function AdminUsersManagement() {
         // Forçar re-renderização
         setRenderCount((prev) => prev + 1)
 
-        // Update user no servidor
-        console.log(`Enviando atualização para o servidor: ${JSON.stringify(updateData)}`)
-        const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        // 4. Enviar atualização de detalhes do usuário para o servidor
+        console.log(`Enviando atualização de detalhes para o servidor: ${JSON.stringify(updateDetailsData)}`)
+        const detailsResponse = await fetch(`/api/admin/users/${selectedUser.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "Cache-Control": "no-cache, no-store, must-revalidate",
           },
-          body: JSON.stringify(updateData),
+          body: JSON.stringify(updateDetailsData),
         })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Falha ao atualizar usuário")
+        if (!detailsResponse.ok) {
+          const errorData = await detailsResponse.json()
+          throw new Error(errorData.error || "Falha ao atualizar detalhes do usuário")
         }
 
-        const updatedUser = await response.json()
-        console.log("Resposta do servidor após atualização:", updatedUser)
+        // 5. Lidar com a atualização de créditos separadamente
+        const creditDifference = formData.credits - selectedUser.credits
+        if (creditDifference !== 0) {
+          const creditType = creditDifference > 0 ? "add" : "deduct"
+          const creditAmount = Math.abs(creditDifference)
+
+          console.log(`Enviando atualização de créditos para o servidor: ${creditType} ${creditAmount}`)
+          const creditsResponse = await fetch(`/api/admin/users/${selectedUser.id}/credits`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount: creditAmount, type: creditType }),
+          })
+
+          if (!creditsResponse.ok) {
+            const errorData = await creditsResponse.json()
+            throw new Error(errorData.error || "Falha ao atualizar créditos do usuário")
+          }
+          toast({
+            title: "Sucesso",
+            description: `Créditos ${creditType === "add" ? "adicionados" : "deduzidos"} com sucesso.`,
+            variant: "success",
+          })
+        }
 
         toast({
           title: "Sucesso",
           description: "Usuário atualizado com sucesso",
           variant: "success",
         })
-
-        // Reativar a busca automática após um tempo
-        setTimeout(() => {
-          shouldFetchRef.current = true
-        }, 5000)
       } else {
-        // Desativar temporariamente a busca automática de dados
-        shouldFetchRef.current = false
+        // --- Lógica de Criação de Novo Usuário ---
 
-        // Criar o objeto de dados para criação
+        // 1. Preparar dados para criação de usuário (sem créditos iniciais aqui, serão adicionados depois)
         const createData = {
           name: formData.name,
           email: formData.email,
           password: formData.password,
           role: formData.role,
-          plan: formData.plan, // Garantir que o plano selecionado seja enviado
+          plan: formData.plan,
           isActive: formData.isActive,
         }
 
         console.log(`Enviando dados para criação de usuário: ${JSON.stringify(createData)}`)
 
-        // Create user
+        // 2. Criar usuário no servidor
         const response = await fetch("/api/admin/users", {
           method: "POST",
           headers: {
@@ -353,26 +378,38 @@ export function AdminUsersManagement() {
         const newUser = await response.json()
         console.log("Novo usuário criado (resposta do servidor):", newUser)
 
-        // Verificar se o plano foi definido corretamente
-        if (newUser.plan !== formData.plan) {
-          console.warn(
-            `Aviso: O plano retornado pelo servidor (${newUser.plan}) é diferente do plano selecionado (${formData.plan})`,
-          )
+        // 3. Se houver créditos a serem adicionados, fazer uma chamada separada
+        if (formData.credits > 0) {
+          console.log(`Adicionando ${formData.credits} créditos ao novo usuário ${newUser.id}`)
+          const creditsResponse = await fetch(`/api/admin/users/${newUser.id}/credits`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ amount: formData.credits, type: "add" }),
+          })
 
-          // Corrigir o plano no objeto do novo usuário
-          newUser.plan = formData.plan
-
-          // Adicionar à lista de atualizações locais para persistir a correção
-          if (newUser.id) {
-            localUpdatesRef.current[newUser.id] = {
-              plan: formData.plan,
-              timestamp: Date.now(),
-            }
+          if (!creditsResponse.ok) {
+            const errorData = await creditsResponse.json()
+            console.warn("Aviso: Falha ao adicionar créditos ao novo usuário:", errorData.error)
+            toast({
+              title: "Aviso",
+              description: `Usuário criado, mas falha ao adicionar créditos: ${errorData.error}`,
+              variant: "warning",
+            })
+          } else {
+            // Atualizar o objeto newUser com os créditos se a chamada for bem-sucedida
+            newUser.credits = formData.credits
+            toast({
+              title: "Sucesso",
+              description: "Créditos adicionados ao novo usuário.",
+              variant: "success",
+            })
           }
         }
 
-        // Adicionar o novo usuário à lista local com o plano correto
-        setUsers((prevUsers) => [...prevUsers, { ...newUser, plan: formData.plan }])
+        // Adicionar o novo usuário à lista local com o plano e créditos corretos
+        setUsers((prevUsers) => [...prevUsers, { ...newUser, plan: formData.plan, credits: newUser.credits || 0 }])
 
         // Forçar re-renderização
         setRenderCount((prev) => prev + 1)
@@ -382,11 +419,6 @@ export function AdminUsersManagement() {
           description: "Usuário criado com sucesso",
           variant: "success",
         })
-
-        // Reativar a busca automática após um tempo
-        setTimeout(() => {
-          shouldFetchRef.current = true
-        }, 5000)
       }
 
       // Fechar o diálogo e resetar o formulário
@@ -399,11 +431,12 @@ export function AdminUsersManagement() {
         description: error instanceof Error ? error.message : "Falha ao salvar usuário",
         variant: "destructive",
       })
-
-      // Reativar a busca automática em caso de erro
-      shouldFetchRef.current = true
     } finally {
       setIsLoading(false)
+      // Reativar a busca automática após um tempo, independentemente do sucesso
+      setTimeout(() => {
+        shouldFetchRef.current = true
+      }, 5000)
     }
   }
 
@@ -411,11 +444,9 @@ export function AdminUsersManagement() {
     if (!selectedUser) return
 
     setIsLoading(true)
+    shouldFetchRef.current = false // Desativar temporariamente a busca automática de dados
 
     try {
-      // Desativar temporariamente a busca automática de dados
-      shouldFetchRef.current = false
-
       // Atualizar localmente primeiro
       localUpdatesRef.current[selectedUser.id] = {
         ...localUpdatesRef.current[selectedUser.id],
@@ -457,11 +488,6 @@ export function AdminUsersManagement() {
 
       // Fechar o diálogo
       setIsDeleteDialogOpen(false)
-
-      // Reativar a busca automática após um tempo
-      setTimeout(() => {
-        shouldFetchRef.current = true
-      }, 5000)
     } catch (error) {
       console.error("Error deactivating user:", error)
       toast({
@@ -469,11 +495,12 @@ export function AdminUsersManagement() {
         description: error instanceof Error ? error.message : "Falha ao desativar usuário",
         variant: "destructive",
       })
-
-      // Reativar a busca automática em caso de erro
-      shouldFetchRef.current = true
     } finally {
       setIsLoading(false)
+      // Reativar a busca automática após um tempo, independentemente do sucesso
+      setTimeout(() => {
+        shouldFetchRef.current = true
+      }, 5000)
     }
   }
 
@@ -536,7 +563,7 @@ export function AdminUsersManagement() {
         ) : (
           <div className="border rounded-md">
             <Table>
-              {/* Tabela de usuários com coluna de plano */}
+              {/* Tabela de usuários com coluna de plano e créditos */}
               <TableHeader>
                 <TableRow>
                   <TableHead>Status</TableHead>
@@ -544,6 +571,7 @@ export function AdminUsersManagement() {
                   <TableHead>Email</TableHead>
                   <TableHead>Função</TableHead>
                   <TableHead>Plano</TableHead>
+                  <TableHead>Créditos</TableHead> {/* Adicionado: Coluna de Créditos */}
                   <TableHead>Criado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -551,14 +579,14 @@ export function AdminUsersManagement() {
               <TableBody>
                 {users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   users.map((user) => (
                     <TableRow
-                      key={`${user.id}-${user.plan}-${renderCount}`}
+                      key={`${user.id}-${user.plan}-${user.credits}-${renderCount}`} // Adicionado credits à key
                       className={!user.isActive ? "opacity-60" : ""}
                     >
                       <TableCell>
@@ -606,6 +634,7 @@ export function AdminUsersManagement() {
                           {user.plan || "Starter"}
                         </Badge>
                       </TableCell>
+                      <TableCell>{user.credits}</TableCell> {/* Adicionado: Exibir créditos */}
                       <TableCell title={`Atualizado em: ${formatDate(user.updatedAt)}`}>
                         {formatDate(user.createdAt)}
                       </TableCell>
@@ -724,6 +753,18 @@ export function AdminUsersManagement() {
                 {formData.role === "admin" && (
                   <p className="text-xs text-muted-foreground mt-1">Administradores não possuem planos atribuídos</p>
                 )}
+              </div>
+              {/* Adicionado: Campo de entrada para Créditos */}
+              <div className="space-y-2">
+                <Label htmlFor="credits">Créditos</Label>
+                <Input
+                  id="credits"
+                  name="credits"
+                  type="number"
+                  value={formData.credits}
+                  onChange={handleInputChange}
+                  min="0"
+                />
               </div>
               {selectedUser && (
                 <div className="flex items-center space-x-2">

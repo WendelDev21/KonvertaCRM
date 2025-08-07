@@ -32,6 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           isActive: true,
           theme: true,
           notificationSettings: true,
+          credits: true, // Adicionado: Incluir o campo de créditos
           // Exclude password
         },
       })
@@ -103,6 +104,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           updatedAt: true,
           isActive: true,
           theme: true,
+          credits: true, // Adicionado: Incluir o campo de créditos
           // Exclude password
         },
       })
