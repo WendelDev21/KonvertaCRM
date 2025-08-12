@@ -17,6 +17,34 @@ const MAX_FILE_SIZE = 200 * 1024 * 1024
 // Limite de 200MB para base64 (considerando aumento de 33%)
 const BASE64_THRESHOLD = 200 * 1024 * 1024
 
+// Função para converter data do fuso horário brasileiro para UTC
+function convertBrazilTimeToUTC(dateString: string): Date {
+  // O dateString vem no formato ISO do input datetime-local
+  // Assumimos que é horário de Brasília (GMT-3)
+  const localDate = new Date(dateString)
+
+  // Adiciona 3 horas para converter de Brasília (GMT-3) para UTC
+  // Se o servidor estiver em UTC, isso funcionará corretamente
+  // Se o servidor estiver em outro fuso, o Date será interpretado corretamente
+  const utcTime = new Date(localDate.getTime() + 3 * 60 * 60 * 1000)
+
+  console.log(`[Campaign] Converting Brazil time: ${dateString} -> UTC: ${utcTime.toISOString()}`)
+
+  return utcTime
+}
+
+// Função para verificar se uma data está no futuro considerando fuso horário brasileiro
+function isDateInFuture(dateString: string): boolean {
+  const brazilDate = new Date(dateString)
+  const nowInBrazil = new Date(Date.now() - 3 * 60 * 60 * 1000) // Subtrai 3h para obter horário do Brasil
+
+  console.log(
+    `[Campaign] Checking future date - Input: ${dateString}, Brazil now: ${nowInBrazil.toISOString()}, Is future: ${brazilDate > nowInBrazil}`,
+  )
+
+  return brazilDate > nowInBrazil
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -51,7 +79,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { name, message, instanceId, contactIds, mediaUrl, mediaType, fileName, caption, scheduledAt } = await request.json()
+    const { name, message, instanceId, contactIds, mediaUrl, mediaType, fileName, caption, scheduledAt } =
+      await request.json()
 
     if (!name || (!message && !mediaUrl) || !instanceId || !contactIds || contactIds.length === 0) {
       return NextResponse.json(
@@ -95,7 +124,8 @@ export async function POST(request: NextRequest) {
 
     // Check credits
     const totalCost = contactIds.length * MESSAGE_COST
-    if (user.credits.toNumber() < totalCost) { // Use toNumber() for Decimal comparison
+    if (user.credits.toNumber() < totalCost) {
+      // Use toNumber() for Decimal comparison
       return NextResponse.json(
         {
           error: `Créditos insuficientes. Você precisa de R$${totalCost.toFixed(2)} para esta campanha. Saldo atual: R$${user.credits.toFixed(2)}.`,
@@ -163,8 +193,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Processar agendamento considerando fuso horário brasileiro
+    let campaignScheduledAt = new Date()
+    let isScheduled = false
+
+    if (scheduledAt) {
+      // Verificar se a data está no futuro (considerando horário brasileiro)
+      if (!isDateInFuture(scheduledAt)) {
+        return NextResponse.json(
+          {
+            error: "Data de agendamento deve ser no futuro (horário de Brasília)",
+          },
+          { status: 400 },
+        )
+      }
+
+      // Converter de horário brasileiro para UTC para armazenar corretamente
+      campaignScheduledAt = convertBrazilTimeToUTC(scheduledAt)
+      isScheduled = true
+    }
+
     // Determinar status inicial da campanha
-    const isScheduled = scheduledAt && new Date(scheduledAt) > new Date()
     const initialStatus = isScheduled ? "SCHEDULED" : "PENDING"
 
     // Criar a campanha
@@ -180,7 +229,7 @@ export async function POST(request: NextRequest) {
         mediaType,
         fileName,
         caption,
-        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
+        scheduledAt: campaignScheduledAt,
       },
     })
 
@@ -201,8 +250,8 @@ export async function POST(request: NextRequest) {
     console.log(`[Campaign] Using fixed batch size: ${batchSize}`)
 
     const batches = []
-    const baseTime = scheduledAt ? new Date(scheduledAt) : new Date()
-    
+    const baseTime = campaignScheduledAt
+
     for (let i = 0; i < contactIds.length; i += batchSize) {
       const batchContacts = contactIds.slice(i, i + batchSize)
       const batchNumber = Math.floor(i / batchSize) + 1
@@ -236,11 +285,24 @@ export async function POST(request: NextRequest) {
       }, 1000)
     } else {
       // Agendar execução da campanha
-      const delay = new Date(scheduledAt).getTime() - Date.now()
+      // Calcular delay considerando que campaignScheduledAt já está em UTC
+      const now = new Date()
+      const delay = campaignScheduledAt.getTime() - now.getTime()
+
+      console.log(
+        `[Campaign] Scheduling campaign for: ${campaignScheduledAt.toISOString()}, delay: ${delay}ms (${delay / 1000 / 60} minutes)`,
+      )
+
       if (delay > 0) {
         setTimeout(() => {
           startScheduledCampaign(campaign.id)
         }, delay)
+      } else {
+        // Se por algum motivo o delay for negativo, executar imediatamente
+        console.log(`[Campaign] Delay is negative (${delay}ms), executing immediately`)
+        setTimeout(() => {
+          startScheduledCampaign(campaign.id)
+        }, 1000)
       }
     }
 
@@ -254,7 +316,7 @@ export async function POST(request: NextRequest) {
 async function startScheduledCampaign(campaignId: string) {
   try {
     console.log(`[Campaign] Starting scheduled campaign ${campaignId}`)
-    
+
     // Atualizar status para RUNNING
     await prisma.campaign.update({
       where: { id: campaignId },
@@ -496,7 +558,9 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
         console.log(`[Campaign] File converted to base64 successfully`)
       } catch (error) {
         console.error("[Campaign] Error processing media file:", error)
-        throw new Error("Erro ao processar arquivo de mídia: " + (error instanceof Error ? error.message : "Erro desconhecido"))
+        throw new Error(
+          "Erro ao processar arquivo de mídia: " + (error instanceof Error ? error.message : "Erro desconhecido"),
+        )
       }
     }
 
@@ -511,13 +575,15 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
 
       try {
         // Check user credits before sending each message
-        const [currentUser, userError] = await getUserById(batch.campaign.userId);
+        const [currentUser, userError] = await getUserById(batch.campaign.userId)
         if (userError || !currentUser) {
-          throw new Error("User not found for credit check.");
+          throw new Error("User not found for credit check.")
         }
 
         if (currentUser.credits.toNumber() < MESSAGE_COST) {
-          console.warn(`[Campaign] User ${currentUser.id} has insufficient credits for message to ${contact.contact}. Remaining credits: R$${currentUser.credits.toFixed(2)}`);
+          console.warn(
+            `[Campaign] User ${currentUser.id} has insufficient credits for message to ${contact.contact}. Remaining credits: R$${currentUser.credits.toFixed(2)}`,
+          )
           await prisma.campaignSend.update({
             where: {
               campaignId_contactId: {
@@ -529,9 +595,9 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
               status: "FAILED",
               errorMessage: `Créditos insuficientes. Saldo atual: R$${currentUser.credits.toFixed(2)}.`,
             },
-          });
-          failCount++;
-          continue; // Skip to next contact
+          })
+          failCount++
+          continue // Skip to next contact
         }
 
         console.log(`[Campaign] Sending message ${i + 1}/${contacts.length} to ${contact.contact}`)
@@ -589,8 +655,8 @@ async function processCampaignBatch(campaignId: string, batchNumber: number) {
           const result = await response.json()
 
           // Deduct credits for successful send
-          await updateUserCredits(batch.campaign.userId, -MESSAGE_COST);
-          console.log(`[Campaign] Deducted R$${MESSAGE_COST.toFixed(2)} from user ${batch.campaign.userId} credits.`);
+          await updateUserCredits(batch.campaign.userId, -MESSAGE_COST)
+          console.log(`[Campaign] Deducted R$${MESSAGE_COST.toFixed(2)} from user ${batch.campaign.userId} credits.`)
 
           await prisma.campaignSend.update({
             where: {

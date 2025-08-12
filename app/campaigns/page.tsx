@@ -37,7 +37,38 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, Users, Clock, CheckCircle, XCircle, AlertCircle, Play, Pause, RotateCcw, ArrowLeft, Trash2, Crown, Zap, Star, Save, FileText, Copy, RefreshCw, Plus, Search, Grid, List, MoreHorizontal, File, X, Download, ImageIcon, Edit, Calendar, DollarSign, Wallet } from 'lucide-react'
+import {
+  Send,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Play,
+  Pause,
+  RotateCcw,
+  ArrowLeft,
+  Trash2,
+  Crown,
+  Zap,
+  Star,
+  Save,
+  FileText,
+  Copy,
+  RefreshCw,
+  Plus,
+  Search,
+  Grid,
+  List,
+  MoreHorizontal,
+  File,
+  X,
+  Download,
+  ImageIcon,
+  Edit,
+  Calendar,
+  DollarSign,
+} from "lucide-react"
 import Link from "next/link"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -99,40 +130,67 @@ interface UploadedFile {
   mimeType: string
 }
 
-const MESSAGE_COST = 0.09; // R$0,09 per message
+const MESSAGE_COST = 0.09 // R$0,09 per message
+
+// Função para converter data de Brasília para formato local do input
+function convertUTCToBrazilTime(utcDateString: string): string {
+  const utcDate = new Date(utcDateString)
+  // Subtrai 3 horas para obter horário de Brasília (GMT-3)
+  const brazilDate = new Date(utcDate.getTime() - 3 * 60 * 60 * 1000)
+  // Retorna no formato yyyy-MM-ddTHH:mm para o input datetime-local
+  return brazilDate.toISOString().slice(0, 16)
+}
+
+// Função para obter horário mínimo permitido (agora no Brasil)
+function getMinDateTime(): string {
+  const now = new Date()
+  // Subtrai 3 horas para obter horário atual do Brasil
+  const brazilNow = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+  return brazilNow.toISOString().slice(0, 16)
+}
 
 // Helper component for displaying media
-const MediaDisplay = ({ url, type, fileName, caption }: { url: string; type?: string; fileName?: string; caption?: string }) => {
-  if (!url) return null;
+const MediaDisplay = ({
+  url,
+  type,
+  fileName,
+  caption,
+}: { url: string; type?: string; fileName?: string; caption?: string }) => {
+  if (!url) return null
 
-  const commonClasses = "max-w-full rounded-md border object-contain";
-  const mediaContainerClasses = "flex flex-col items-center justify-center bg-muted/50 p-2 rounded-lg";
+  const commonClasses = "max-w-full rounded-md border object-contain"
+  const mediaContainerClasses = "flex flex-col items-center justify-center bg-muted/50 p-2 rounded-lg"
 
   // Default to 'document' if type is not provided or recognized
-  const mediaType = type || "document";
+  const mediaType = type || "document"
 
   if (mediaType === "image") {
     return (
       <div className={mediaContainerClasses}>
-        <img src={url || "/placeholder.svg"} alt={caption || fileName || "Media"} className={`${commonClasses} max-h-48`} />
+        <img
+          src={url || "/placeholder.svg"}
+          alt={caption || fileName || "Media"}
+          className={`${commonClasses} max-h-48`}
+        />
         {caption && <p className="text-sm text-muted-foreground mt-2 text-center">{caption}</p>}
       </div>
-    );
+    )
   } else if (mediaType === "video") {
     return (
       <div className={mediaContainerClasses}>
         <video src={url} controls className={`${commonClasses} max-h-48`} />
         {caption && <p className="text-sm text-muted-foreground mt-2 text-center">{caption}</p>}
       </div>
-    );
+    )
   } else if (mediaType === "audio") {
     return (
       <div className={mediaContainerClasses}>
         <audio src={url} controls className="w-full" />
         {caption && <p className="text-sm text-muted-foreground mt-2 text-center">{caption}</p>}
       </div>
-    );
-  } else { // document or other
+    )
+  } else {
+    // document or other
     return (
       <div className="flex items-center space-x-2 p-2 bg-muted/50 rounded">
         <File className="h-4 w-4 text-green-500" />
@@ -141,10 +199,9 @@ const MediaDisplay = ({ url, type, fileName, caption }: { url: string; type?: st
           <Download className="h-3 w-3" />
         </Button>
       </div>
-    );
+    )
   }
-};
-
+}
 
 export default function CampaignsPage() {
   const { data: session, update } = useSession()
@@ -277,16 +334,16 @@ export default function CampaignsPage() {
       if (response.ok) {
         const data = await response.json()
         // Ensure data.credits is a number, default to 0 if null/undefined
-        const credits = typeof data.credits === 'number' ? data.credits : 0;
+        const credits = typeof data.credits === "number" ? data.credits : 0
         setUserCredits(credits)
         // Only update session if the credits value has actually changed to avoid infinite loops
         if (session?.user && (session.user as any).credits !== credits) {
-          update({ credits: credits });
+          update({ credits: credits })
         }
       }
     } catch (error) {
       console.error("Error loading user credits:", error)
-      setUserCredits(0); // Default to 0 on error
+      setUserCredits(0) // Default to 0 on error
     }
   }
 
@@ -386,8 +443,8 @@ export default function CampaignsPage() {
   )
 
   const handleContactSelection = (contactId: string, checked: boolean) => {
-    const currentSelectedCount = selectedContacts.length;
-    const estimatedCost = (currentSelectedCount + (checked ? 1 : -1)) * MESSAGE_COST;
+    const currentSelectedCount = selectedContacts.length
+    const estimatedCost = (currentSelectedCount + (checked ? 1 : -1)) * MESSAGE_COST
 
     if (checked) {
       if (currentSelectedCount + 1 > dailyLimit.limit - dailyLimit.sentCount) {
@@ -397,8 +454,10 @@ export default function CampaignsPage() {
         return
       }
       if (userCredits < estimatedCost) {
-        toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para enviar esta mensagem. Saldo atual: R$${userCredits.toFixed(2)}.`)
-        return;
+        toast.error(
+          `Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para enviar esta mensagem. Saldo atual: R$${userCredits.toFixed(2)}.`,
+        )
+        return
       }
       setSelectedContacts([...selectedContacts, contactId])
     } else {
@@ -407,8 +466,8 @@ export default function CampaignsPage() {
   }
 
   const handleEditContactSelection = (contactId: string, checked: boolean) => {
-    const currentSelectedCount = editSelectedContacts.length;
-    const estimatedCost = (currentSelectedCount + (checked ? 1 : -1)) * MESSAGE_COST;
+    const currentSelectedCount = editSelectedContacts.length
+    const estimatedCost = (currentSelectedCount + (checked ? 1 : -1)) * MESSAGE_COST
 
     if (checked) {
       if (currentSelectedCount + 1 > dailyLimit.limit - dailyLimit.sentCount) {
@@ -418,8 +477,10 @@ export default function CampaignsPage() {
         return
       }
       if (userCredits < estimatedCost) {
-        toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para enviar esta mensagem. Saldo atual: R$${userCredits.toFixed(2)}.`)
-        return;
+        toast.error(
+          `Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para enviar esta mensagem. Saldo atual: R$${userCredits.toFixed(2)}.`,
+        )
+        return
       }
       setEditSelectedContacts([...editSelectedContacts, contactId])
     } else {
@@ -432,13 +493,15 @@ export default function CampaignsPage() {
     const availableSlots = dailyLimit.limit - dailyLimit.sentCount
     const contactsToAdd = statusContacts.slice(0, availableSlots)
 
-    const currentSelectedCount = selectedContacts.length;
-    const newTotalContacts = currentSelectedCount + contactsToAdd.length;
-    const estimatedCost = newTotalContacts * MESSAGE_COST;
+    const currentSelectedCount = selectedContacts.length
+    const newTotalContacts = currentSelectedCount + contactsToAdd.length
+    const estimatedCost = newTotalContacts * MESSAGE_COST
 
     if (userCredits < estimatedCost) {
-      toast.error(`Créditos insuficientes para selecionar todos os contatos. Você precisa de R$${estimatedCost.toFixed(2)} para esta seleção. Saldo atual: R$${userCredits.toFixed(2)}.`)
-      return;
+      toast.error(
+        `Créditos insuficientes para selecionar todos os contatos. Você precisa de R$${estimatedCost.toFixed(2)} para esta seleção. Saldo atual: R$${userCredits.toFixed(2)}.`,
+      )
+      return
     }
 
     if (statusContacts.length > availableSlots) {
@@ -454,13 +517,15 @@ export default function CampaignsPage() {
     const availableSlots = dailyLimit.limit - dailyLimit.sentCount
     const contactsToAdd = statusContacts.slice(0, availableSlots)
 
-    const currentSelectedCount = editSelectedContacts.length;
-    const newTotalContacts = currentSelectedCount + contactsToAdd.length;
-    const estimatedCost = newTotalContacts * MESSAGE_COST;
+    const currentSelectedCount = editSelectedContacts.length
+    const newTotalContacts = currentSelectedCount + contactsToAdd.length
+    const estimatedCost = newTotalContacts * MESSAGE_COST
 
     if (userCredits < estimatedCost) {
-      toast.error(`Créditos insuficientes para selecionar todos os contatos. Você precisa de R$${estimatedCost.toFixed(2)} para esta seleção. Saldo atual: R$${userCredits.toFixed(2)}.`)
-      return;
+      toast.error(
+        `Créditos insuficientes para selecionar todos os contatos. Você precisa de R$${estimatedCost.toFixed(2)} para esta seleção. Saldo atual: R$${userCredits.toFixed(2)}.`,
+      )
+      return
     }
 
     if (statusContacts.length > availableSlots) {
@@ -567,10 +632,12 @@ export default function CampaignsPage() {
       return
     }
 
-    const estimatedCost = selectedContacts.length * MESSAGE_COST;
+    const estimatedCost = selectedContacts.length * MESSAGE_COST
     if (userCredits < estimatedCost) {
-      toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`)
-      return;
+      toast.error(
+        `Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`,
+      )
+      return
     }
 
     if (selectedContacts.length > dailyLimit.limit - dailyLimit.sentCount) {
@@ -670,10 +737,12 @@ export default function CampaignsPage() {
       return
     }
 
-    const estimatedCost = selectedContacts.length * MESSAGE_COST;
+    const estimatedCost = selectedContacts.length * MESSAGE_COST
     if (userCredits < estimatedCost) {
-      toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`)
-      return;
+      toast.error(
+        `Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`,
+      )
+      return
     }
 
     if (selectedContacts.length > dailyLimit.limit - dailyLimit.sentCount) {
@@ -685,11 +754,6 @@ export default function CampaignsPage() {
 
     if (isScheduled && !scheduledAt) {
       toast.error("Data e hora de agendamento são obrigatórias")
-      return
-    }
-
-    if (isScheduled && new Date(scheduledAt) <= new Date()) {
-      toast.error("Data de agendamento deve ser no futuro")
       return
     }
 
@@ -717,9 +781,9 @@ export default function CampaignsPage() {
       if (response.ok) {
         const campaign = await response.json()
         toast.success(
-          isScheduled 
-            ? "Campanha agendada com sucesso!" 
-            : "Campanha criada com sucesso! O envio será iniciado em breve."
+          isScheduled
+            ? "Campanha agendada com sucesso!"
+            : "Campanha criada com sucesso! O envio será iniciado em breve.",
         )
 
         // Reset form
@@ -752,9 +816,10 @@ export default function CampaignsPage() {
     setEditCampaignName(campaign.name)
     setEditMessage(campaign.message)
     setEditCaption(campaign.caption || "")
-    setEditScheduledAt(campaign.scheduledAt ? new Date(campaign.scheduledAt).toISOString().slice(0, 16) : "")
+    // Converter de UTC para horário brasileiro para exibição
+    setEditScheduledAt(campaign.scheduledAt ? convertUTCToBrazilTime(campaign.scheduledAt) : "")
     setEditIsScheduled(campaign.status === "SCHEDULED")
-    
+
     if (campaign.mediaUrl) {
       setEditUploadedFile({
         url: campaign.mediaUrl,
@@ -800,15 +865,12 @@ export default function CampaignsPage() {
       return
     }
 
-    if (editIsScheduled && new Date(editScheduledAt) <= new Date()) {
-      toast.error("Data de agendamento deve ser no futuro")
-      return
-    }
-
-    const estimatedCost = editSelectedContacts.length * MESSAGE_COST;
+    const estimatedCost = editSelectedContacts.length * MESSAGE_COST
     if (userCredits < estimatedCost) {
-      toast.error(`Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`)
-      return;
+      toast.error(
+        `Créditos insuficientes. Você precisa de R$${estimatedCost.toFixed(2)} para esta campanha. Saldo atual: R$${userCredits.toFixed(2)}.`,
+      )
+      return
     }
 
     setLoading(true)
@@ -836,7 +898,7 @@ export default function CampaignsPage() {
         setShowEditDialog(false)
         setEditingCampaign(null)
         loadCampaigns()
-        loadUserCredits(); // Reload credits after campaign update
+        loadUserCredits() // Reload credits after campaign update
       } else {
         const error = await response.json()
         toast.error(error.error || "Erro ao atualizar campanha")
@@ -899,7 +961,7 @@ export default function CampaignsPage() {
         toast.success("Campanha reiniciada com sucesso!")
         loadCampaigns()
         loadDailyLimit()
-        loadUserCredits(); // Reload credits after campaign restart
+        loadUserCredits() // Reload credits after campaign restart
       } else {
         const error = await response.json()
         toast.error(error.error || "Erro ao reiniciar campanha")
@@ -1154,9 +1216,7 @@ export default function CampaignsPage() {
                 </Link>
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Cada mensagem custa R$0,09.
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">Cada mensagem custa R$0,09.</p>
           </AlertDescription>
         </Alert>
       </div>
@@ -1241,16 +1301,16 @@ export default function CampaignsPage() {
 
                     {isScheduled && (
                       <div className="space-y-2">
-                        <Label htmlFor="scheduledAt">Data e Hora do Envio</Label>
+                        <Label htmlFor="scheduledAt">Data e Hora do Envio (Horário de Brasília)</Label>
                         <Input
                           id="scheduledAt"
                           type="datetime-local"
                           value={scheduledAt}
                           onChange={(e) => setScheduledAt(e.target.value)}
-                          min={new Date().toISOString().slice(0, 16)}
+                          min={getMinDateTime()}
                         />
                         <p className="text-sm text-muted-foreground">
-                          A campanha será executada automaticamente na data e hora especificadas
+                          A campanha será executada automaticamente na data e hora especificadas (horário de Brasília)
                         </p>
                       </div>
                     )}
@@ -1434,7 +1494,10 @@ export default function CampaignsPage() {
                           {isScheduled && (
                             <>
                               <br />
-                              <strong>Agendamento:</strong> Campanha iniciará em {new Date(scheduledAt).toLocaleString()}
+                              <strong>Agendamento:</strong> Campanha iniciará em{" "}
+                              {scheduledAt
+                                ? new Date(scheduledAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+                                : ""}
                             </>
                           )}
                         </AlertDescription>
@@ -1444,7 +1507,12 @@ export default function CampaignsPage() {
 
                   <Button
                     onClick={createCampaign}
-                    disabled={loading || instances.length === 0 || remainingLimit === 0 || userCredits < (selectedContacts.length * MESSAGE_COST)}
+                    disabled={
+                      loading ||
+                      instances.length === 0 ||
+                      remainingLimit === 0 ||
+                      userCredits < selectedContacts.length * MESSAGE_COST
+                    }
                     className="w-full h-12 text-lg"
                     size="lg"
                   >
@@ -1541,7 +1609,11 @@ export default function CampaignsPage() {
                         <Checkbox
                           checked={selectedContacts.includes(contact.id)}
                           onCheckedChange={(checked) => handleContactSelection(contact.id, checked as boolean)}
-                          disabled={!selectedContacts.includes(contact.id) && (selectedContacts.length >= remainingLimit || userCredits < ((selectedContacts.length + 1) * MESSAGE_COST))}
+                          disabled={
+                            !selectedContacts.includes(contact.id) &&
+                            (selectedContacts.length >= remainingLimit ||
+                              userCredits < (selectedContacts.length + 1) * MESSAGE_COST)
+                          }
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{contact.name}</p>
@@ -1682,11 +1754,15 @@ export default function CampaignsPage() {
                         <div className="flex-1">
                           <CardTitle className="text-lg">{campaign.name}</CardTitle>
                           <p className="text-sm text-muted-foreground">
-                            Criada em {new Date(campaign.createdAt).toLocaleString()}
+                            Criada em{" "}
+                            {new Date(campaign.createdAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                           </p>
                           {campaign.scheduledAt && (
                             <p className="text-sm text-purple-600">
-                              {campaign.status === "SCHEDULED" ? "Agendada para" : "Executada em"}: {new Date(campaign.scheduledAt).toLocaleString()}
+                              {campaign.status === "SCHEDULED" ? "Agendada para" : "Executada em"}:{" "}
+                              {new Date(campaign.scheduledAt).toLocaleString("pt-BR", {
+                                timeZone: "America/Sao_Paulo",
+                              })}
                             </p>
                           )}
                         </div>
@@ -1902,7 +1978,8 @@ export default function CampaignsPage() {
                         </p>
                         {campaign.scheduledAt && campaign.status === "SCHEDULED" && (
                           <p className="text-xs text-purple-600">
-                            Agendada para {new Date(campaign.scheduledAt).toLocaleString()}
+                            Agendada para{" "}
+                            {new Date(campaign.scheduledAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                           </p>
                         )}
                       </div>
@@ -2049,7 +2126,11 @@ export default function CampaignsPage() {
                     <Checkbox
                       checked={selectedContacts.includes(contact.id)}
                       onCheckedChange={(checked) => handleContactSelection(contact.id, checked as boolean)}
-                      disabled={!selectedContacts.includes(contact.id) && (selectedContacts.length >= remainingLimit || userCredits < ((selectedContacts.length + 1) * MESSAGE_COST))}
+                      disabled={
+                        !selectedContacts.includes(contact.id) &&
+                        (selectedContacts.length >= remainingLimit ||
+                          userCredits < (selectedContacts.length + 1) * MESSAGE_COST)
+                      }
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{contact.name}</p>
@@ -2090,7 +2171,12 @@ export default function CampaignsPage() {
             </Button>
             <Button
               onClick={createCampaignFromTemplate}
-              disabled={loading || !selectedInstance || selectedContacts.length === 0 || userCredits < (selectedContacts.length * MESSAGE_COST)}
+              disabled={
+                loading ||
+                !selectedInstance ||
+                selectedContacts.length === 0 ||
+                userCredits < selectedContacts.length * MESSAGE_COST
+              }
             >
               {loading ? (
                 <>
@@ -2144,13 +2230,13 @@ export default function CampaignsPage() {
 
               {editIsScheduled && (
                 <div className="space-y-2">
-                  <Label htmlFor="editScheduledAt">Data e Hora do Envio</Label>
+                  <Label htmlFor="editScheduledAt">Data e Hora do Envio (Horário de Brasília)</Label>
                   <Input
                     id="editScheduledAt"
                     type="datetime-local"
                     value={editScheduledAt}
                     onChange={(e) => setEditScheduledAt(e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
+                    min={getMinDateTime()}
                   />
                 </div>
               )}
@@ -2175,10 +2261,8 @@ export default function CampaignsPage() {
                     <div>
                       <Label htmlFor="edit-file-upload" className="cursor-pointer">
                         <div className="text-sm text-muted-foreground">
-                          <span className="font-medium text-primary hover:text-primary/80">
-                            Clique para enviar
-                          </span>{" "}
-                          ou arraste e solte
+                          <span className="font-medium text-primary hover:text-primary/80">Clique para enviar</span> ou
+                          arraste e solte
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
                           JPG, PNG, GIF, PDF, DOC, XLS, etc. (Máx. 3MB)
@@ -2294,7 +2378,11 @@ export default function CampaignsPage() {
                     <Checkbox
                       checked={editSelectedContacts.includes(contact.id)}
                       onCheckedChange={(checked) => handleEditContactSelection(contact.id, checked as boolean)}
-                      disabled={!editSelectedContacts.includes(contact.id) && (editSelectedContacts.length >= remainingLimit || userCredits < ((editSelectedContacts.length + 1) * MESSAGE_COST))}
+                      disabled={
+                        !editSelectedContacts.includes(contact.id) &&
+                        (editSelectedContacts.length >= remainingLimit ||
+                          userCredits < (editSelectedContacts.length + 1) * MESSAGE_COST)
+                      }
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{contact.name}</p>
@@ -2325,7 +2413,8 @@ export default function CampaignsPage() {
                   {editIsScheduled && editScheduledAt && (
                     <>
                       <br />
-                      <strong>Agendamento:</strong> Campanha iniciará em {new Date(editScheduledAt).toLocaleString()}
+                      <strong>Agendamento:</strong> Campanha iniciará em{" "}
+                      {new Date(editScheduledAt).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                     </>
                   )}
                 </AlertDescription>
@@ -2339,7 +2428,9 @@ export default function CampaignsPage() {
             </Button>
             <Button
               onClick={updateCampaign}
-              disabled={loading || editSelectedContacts.length === 0 || userCredits < (editSelectedContacts.length * MESSAGE_COST)}
+              disabled={
+                loading || editSelectedContacts.length === 0 || userCredits < editSelectedContacts.length * MESSAGE_COST
+              }
             >
               {loading ? (
                 <>
